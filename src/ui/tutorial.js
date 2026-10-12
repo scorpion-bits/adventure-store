@@ -37,14 +37,14 @@ export function createTutorial({ game, tabbar, onFinish }) {
 
   function desenhar() {
     root.removeChildren().forEach((c) => c.destroy({ children: true }));
-    tabbar && TABS.forEach((_, i) => tabbar.setBadge(i, false));
+    tabbar && TABS.forEach((_, i) => tabbar.setBadge(i, false, 'tutorial'));
     for (const k of Object.keys(refs)) delete refs[k];
     const p = passo();
     root.visible = !!p && !!L;
     if (!p || !L) return;
 
     const aba = TABS.findIndex((t) => t.id === p.aba);
-    if (tabbar && aba >= 0 && TABS[aba].id !== tela) tabbar.setBadge(aba, true);
+    if (tabbar && aba >= 0 && TABS[aba].id !== tela) tabbar.setBadge(aba, true, 'tutorial');
 
     const landscape = L.mode === 'landscape';
     const w = landscape ? Math.min(L.content.w * 0.46, 360) : Math.min(L.content.w, 560);

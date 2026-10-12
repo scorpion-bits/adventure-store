@@ -29,7 +29,7 @@ export function createTabBar({ onSelect }) {
     c.cursor = 'pointer';
     c.on('pointertap', () => { if (!wasDragged()) onSelect(i); });
     root.addChild(c);
-    return { tab, c, bg, icon, label, badge, w: 0, h: 0, badgeOn: false };
+    return { tab, c, bg, icon, label, badge, w: 0, h: 0, fontes: new Set() };
   });
 
   let active = 0;
@@ -51,7 +51,7 @@ export function createTabBar({ onSelect }) {
     cell.label.style.fontSize = w < 76 ? 10 : 11;
     cell.label.position.set(w / 2, h * 0.36 + iconSize * 0.62);
     cell.badge.clear();
-    if (cell.badgeOn) cell.badge.circle(w / 2 + iconSize * 0.5, h * 0.36 - iconSize * 0.4, 5).fill(C.bad);
+    if (cell.fontes.size) cell.badge.circle(w / 2 + iconSize * 0.5, h * 0.36 - iconSize * 0.4, 5).fill(C.bad);
     cell.c.hitArea = new Rectangle(0, 0, w, h);
   };
 
@@ -86,10 +86,12 @@ export function createTabBar({ onSelect }) {
         tween(c, { scale: 1 }, 300);
       }
     },
-    setBadge(i, on) {
-      cells[i].badgeOn = on;
+    // `fonte`: quem pediu o aviso (tutorial, pendências...); o ponto some quando nenhuma fonte o pede
+    setBadge(i, on, fonte = 'tutorial') {
+      if (on) cells[i].fontes.add(fonte); else cells[i].fontes.delete(fonte);
       paintCell(cells[i], i);
     },
+    temBadge: (i) => cells[i].fontes.size > 0,
     cellCenter(i) {
       const r = L.cells[i];
       return { x: r.x + r.w / 2, y: r.y + r.h / 2 };

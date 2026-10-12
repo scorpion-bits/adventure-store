@@ -9,6 +9,7 @@ import { fmt } from '../format.js';
 import { temaAtual } from '../core/upgrades.js';
 import { capacidadeEstoque, totalEstoque } from '../core/estoque.js';
 import { descreverEfeito } from '../core/mods.js';
+import { sazonaisAtivos } from '../core/seasons.js';
 import { fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -323,10 +324,17 @@ export function createLojaScreen({ game, toast }) {
   // faixa de efeitos ativos (bônus de eventos): nome, o que faz e quanto tempo falta
   function faixaBonus(w) {
     const lista = game.state.bonus.filter((b) => b.ate > game.clock.now());
-    if (!lista.length) return null;
+    const sazonais = sazonaisAtivos(game);
+    if (!lista.length && !sazonais.length) return null;
     const c = new Container();
     const bg = new Graphics();
     let y = 8;
+    for (const sz of sazonais) {
+      const t = para(`${sz.nome}: ${sz.efeitos.map((e) => descreverEfeito(e, game)).join(' · ')}`, C.gold, 12, w - 24, { bold: true });
+      t.position.set(12, y);
+      c.addChild(t);
+      y += t.height + 4;
+    }
     for (const b of lista.slice(0, 4)) {
       const t = txt(`${b.rotulo}: ${descreverEfeito(b.efeito, game)}`, C.accent, 12, true);
       t.position.set(12, y);

@@ -1,7 +1,13 @@
 // Tela Aventureiros: Hoje (retenção, M8), Coleção (M9) e Lendários (histórias em capítulos).
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
-import { portraitSprite } from '../assets.js';
+import { portraitSprite, iconSprite } from '../assets.js';
+import { sazonaisAtivos } from '../core/seasons.js';
+import { descreverEfeito } from '../core/mods.js';
+import {
+  bonusDoDia, coletarBonus, entregarEncomenda, podeEntregar, unidadesParaEncomenda, metasCumpridas, progressoMeta, metaCumprida, textoMeta, abrirBau,
+} from '../core/daily.js';
+import { fmt } from '../format.js';
 import { progressoLenda, capituloAtual, lendaConcluida, nivelNecessario, qualidadeMinima } from '../core/legends.js';
 import { conteudoCapitulo } from './lendas.js';
 import { sfx } from '../audio/sfx.js';
@@ -12,18 +18,20 @@ const SUBS = [
   { id: 'lendarios', nome: 'Lendários' },
 ];
 
-export function createAventureirosScreen({ game, modal }) {
+export function createAventureirosScreen({ game, modal, toast }) {
   const root = new Container();
   const scroll = createScroll(300);
   root.addChild(scroll.root);
 
   let R = { x: 0, y: 0, w: 360, h: 600 };
-  let sub = 'lendarios';
+  let sub = 'hoje';
   let dirty = true;
   let quadros = 0;
   const refs = {};
   const marcar = () => { dirty = true; };
-  for (const ev of ['lenda', 'rep', 'chegou']) game.on(ev, marcar);
+  for (const ev of ['lenda', 'rep', 'chegou', 'diario', 'estoque', 'encomenda', 'bonusDiario', 'bau', 'especialAtendido', 'ouro']) game.on(ev, marcar);
+  game.on('especialAtendido', (r) => { sfx.achievement(); toast?.(`${game.data.aventureiros[r.adv].nome} adorou! +${fmt(r.ouro)} ouro de bônus`, C.gold); });
+  game.on('encomenda', ({ enc }) => { sfx.sell(); toast?.(`Encomenda entregue: +${fmt(enc.ouro)} ouro`, C.good); });
   const reg = (nome, c, w, h) => { refs[nome] = { c, w, h }; };
 
   function barraSub(w) {
@@ -141,6 +149,156 @@ export function createAventureirosScreen({ game, modal }) {
     return { c, h: y + 6 };
   }
 
+  // ---------- Hoje ----------
+  const secao = (texto) => { const t = txt(texto, C.dim, 12, true); return { c: t, h: t.height }; };
+
+  function cartaoSazonal(w, sz) {
+    const c = new Container();
+    const bg = new Graphics();
+    const t = txt(`✦ ${sz.nome}`, C.gold, 15, true);
+    t.position.set(14, 12);
+    const d = para(sz.desc, C.dim, 12, w - 28);
+    d.position.set(14, t.y + t.height + 2);
+    c.addChild(bg, t, d);
+    let y = d.y + d.height + 4;
+    for (const e of sz.efeitos) {
+      const p = para(`• ${descreverEfeito(e, game)}`, C.accent, 12, w - 28, { bold: true });
+      p.position.set(14, y);
+      c.addChild(p);
+      y += p.height + 1;
+    }
+    const h = y + 12;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: C.gold });
+    return { c, h };
+  }
+
+  function cartaoBonus(w) {
+    const c = new Container();
+    const bg = new Graphics();
+    const seq = game.state.sequencia.dias;
+    const b = bonusDoDia(game);
+    const t = txt(`Dia ${seq} da sequência`, C.text, 16, true);
+    t.position.set(14, 12);
+    c.addChild(bg, t);
+    // os últimos 7 dias da sequência
+    const pips = new Graphics();
+    const naSemana = ((seq - 1) % 7) + 1;
+    for (let i = 0; i < 7; i++) pips.circle(i * 18, 0, 6).fill(i < naSemana ? C.gold : 0x000000).stroke({ width: 1, color: C.gold, alpha: i < naSemana ? 1 : 0.4 });
+    pips.position.set(20, 12 + t.height + 14);
+    c.addChild(pips);
+    const faltam = 7 - naSemana;
+    const dica = txt(b.pacote ? 'Hoje tem pacote de materiais!' : faltam === 0 ? 'Amanhã a sequência reinicia o ciclo' : `Pacote de materiais em ${faltam} ${faltam === 1 ? 'dia' : 'dias'}`, b.pacote ? C.good : C.dim, 11);
+    dica.position.set(14, pips.y + 14);
+    c.addChild(dica);
+    const y = dica.y + dica.height + 8;
+    const coletado = game.state.diario.bonusColetado;
+    const btn = labelButton(coletado ? '✓ Bônus de hoje coletado' : `Coletar bônus: ${fmt(b.ouro)} ouro`, w - 28, 44, { tint: coletado ? C.dim : C.gold, size: 14 });
+    btn.position.set(14, y);
+    if (coletado) btn.setDisabled(true);
+    btn.tap(() => {
+      const r = coletarBonus(game);
+      if (r.ok) { sfx.levelUp(); toast?.(r.linhas.join(' · '), C.gold); }
+    });
+    c.addChild(btn);
+    reg('bonus', btn, w - 28, 44);
+    const h = y + 44 + 14;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: coletado ? C.faint : C.gold });
+    return { c, h };
+  }
+
+  function cartaoEspecial(w) {
+    const e = game.state.diario.especial;
+    if (!e || !game.data.aventureiros[e.adv]) return null;
+    const adv = game.data.aventureiros[e.adv];
+    const item = game.data.itens[e.item];
+    const c = new Container();
+    const bg = new Graphics();
+    const p = portraitSprite(e.adv, 48);
+    p.position.set(12, 12);
+    const t = txt('Aventureiro especial do dia', C.dim, 11, true);
+    t.position.set(70, 12);
+    const n = txt(adv.nome, C.text, 15, true);
+    n.position.set(70, 12 + t.height + 1);
+    const status = e.atendido ? '✓ Atendido hoje' : e.visitou ? 'Já passou por aqui hoje' : 'Vai aparecer em algum momento do dia';
+    const pedido = para(`Pede: ${item.nome}. Atenda bem e ele paga a mais.`, C.accent, 12, w - 84, { bold: true });
+    pedido.position.set(70, n.y + n.height + 3);
+    const s = txt(status, e.atendido ? C.good : C.dim, 11);
+    s.position.set(70, pedido.y + pedido.height + 3);
+    c.addChild(bg, p, t, n, pedido, s);
+    const h = Math.max(72, s.y + s.height + 12);
+    drawCard(bg, w, h, { fill: C.card, accent: e.atendido ? C.good : C.accent });
+    return { c, h };
+  }
+
+  function linhaEncomenda(w, enc, i) {
+    const item = game.data.itens[enc.item];
+    const c = new Container();
+    const bg = new Graphics();
+    const ic = iconSprite('item', enc.item, 36);
+    ic.position.set(12, 14);
+    const min = enc.qualidadeMin > 0 ? ` (${game.data.meta.qualidades[enc.qualidadeMin].nome}+)` : '';
+    const nome = txt(`${item.nome} ×${enc.qtd}${min}`, enc.entregue ? C.faint : C.text, 14, true);
+    nome.position.set(58, 10);
+    const tem = unidadesParaEncomenda(game, enc);
+    const sub = txt(enc.entregue ? 'Entregue ✓' : `Você tem ${Math.min(tem, 99)}/${enc.qtd} · +${fmt(enc.ouro)} ouro · +${enc.rep} reputação`, enc.entregue ? C.good : tem >= enc.qtd ? C.good : C.dim, 11);
+    sub.position.set(58, 10 + nome.height + 2);
+    c.addChild(bg, ic, nome, sub);
+    const bw = 84;
+    if (!enc.entregue) {
+      const pode = podeEntregar(game, enc);
+      const b = labelButton('Entregar', bw, 34, { tint: pode ? C.good : C.dim, size: 12 });
+      b.position.set(w - bw - 12, 38);
+      if (!pode) { b.paint({ alpha: 0.05 }); b.label.style.fill = C.faint; }
+      b.tap(() => { const r = entregarEncomenda(game, i); if (!r.ok) { sfx.deny(); toast?.('Faltam itens (ou qualidade) nas prateleiras', C.bad); } });
+      c.addChild(b);
+      reg(`entregar:${i}`, b, bw, 34);
+    }
+    const h = 78;
+    drawCard(bg, w, h, { fill: C.card, fillAlpha: enc.entregue ? 0.55 : 1, radius: 12 });
+    return { c, h };
+  }
+
+  function cartaoSemana(w) {
+    const s = game.state.semanal;
+    const c = new Container();
+    const bg = new Graphics();
+    const t = txt(`Metas da semana (${metasCumpridas(game)}/${s.metas.length})`, C.text, 15, true);
+    t.position.set(14, 12);
+    c.addChild(bg, t);
+    let y = 12 + t.height + 8;
+    for (const m of s.metas) {
+      const p = progressoMeta(game, m);
+      const ok = metaCumprida(game, m);
+      const x = txt(`${ok ? '✓ ' : ''}${textoMeta(game, m)}`, ok ? C.good : C.text, 12, true);
+      x.position.set(14, y);
+      const n = txt(`${fmt(Math.min(p, m.alvo))}/${fmt(m.alvo)}`, C.dim, 11);
+      n.position.set(w - 14 - n.width, y + 1);
+      const barra = new Graphics();
+      barra.position.set(14, y + x.height + 3);
+      barra.roundRect(0, 0, w - 28, 5, 2.5).fill({ color: 0x000000, alpha: 0.45 });
+      if (p > 0) barra.roundRect(0, 0, Math.max(5, (w - 28) * Math.min(1, p / m.alvo)), 5, 2.5).fill(ok ? C.good : C.accent);
+      c.addChild(x, n, barra);
+      y += x.height + 16;
+    }
+    const n = metasCumpridas(game);
+    const aberto = s.bauAberto;
+    const btn = labelButton(aberto ? '✓ Baú da semana aberto' : n > 0 ? `Abrir o baú (${n} ${n === 1 ? 'meta' : 'metas'})` : 'Cumpra uma meta para abrir o baú', w - 28, 44, { tint: aberto || n === 0 ? C.dim : C.gold, size: 13 });
+    btn.position.set(14, y + 2);
+    if (aberto || n === 0) btn.setDisabled(true);
+    btn.tap(() => {
+      const r = abrirBau(game);
+      if (r.ok) {
+        sfx.levelUp();
+        modal.open({ title: 'Baú da semana', build: (sc, ww) => { const l = para(r.linhas.join('\n'), C.text, 15, ww); sc.add(l, l.height); } });
+      }
+    });
+    c.addChild(btn);
+    reg('bau', btn, w - 28, 44);
+    const h = y + 2 + 44 + 14;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: aberto ? C.faint : C.accent });
+    return { c, h };
+  }
+
   function render() {
     dirty = false;
     quadros = 0;
@@ -157,7 +315,13 @@ export function createAventureirosScreen({ game, modal }) {
       const ordem = [...game.data.listas.lendarios].sort((a, b) => nivelNecessario(game, a.id) - nivelNecessario(game, b.id));
       for (const def of ordem) add(cartaoLenda(w, def));
     } else if (sub === 'hoje') {
-      add(cartaEmBreve(w, 'Hoje', 'O aventureiro especial do dia, as encomendas diárias, a sequência de dias e o baú semanal.', 'M8'));
+      for (const sz of sazonaisAtivos(game)) add(cartaoSazonal(w, sz));
+      add(cartaoBonus(w));
+      const esp = cartaoEspecial(w);
+      if (esp) add(esp);
+      add(secao('Encomendas de hoje (novas à meia-noite)'));
+      game.state.diario.encomendas.forEach((enc, i) => add(linhaEncomenda(w, enc, i)));
+      add(cartaoSemana(w));
     } else {
       add(cartaEmBreve(w, 'Coleção', 'A enciclopédia de itens e de aventureiros que você já descobriu.', 'M9'));
     }

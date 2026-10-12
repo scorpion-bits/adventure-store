@@ -9,6 +9,11 @@ async function irParaAventureiros(page) {
   await page.mouse.click(p.x, p.y);
   await page.waitForFunction(() => window.__loja.tab() === 'aventureiros');
   await prontaAv(page);
+  await quadros(page, 3);
+  const s = await page.evaluate(() => window.__loja.aventureiros.centro('sub:lendarios'));
+  await page.mouse.click(s.x, s.y);
+  await page.waitForFunction(() => window.__loja.aventureiros.sub() === 'lendarios');
+  await prontaAv(page);
 }
 
 test.describe('lendários (retrato)', () => {
@@ -73,9 +78,9 @@ test.describe('lendários (retrato)', () => {
   test('outras sub-abas avisam o que vem', async ({ page }) => {
     const errors = await openGame(page);
     await irParaAventureiros(page);
-    const s = await page.evaluate(() => window.__loja.aventureiros.centro('sub:hoje'));
+    const s = await page.evaluate(() => window.__loja.aventureiros.centro('sub:colecao'));
     await page.mouse.click(s.x, s.y);
-    await page.waitForFunction(() => window.__loja.aventureiros.sub() === 'hoje');
+    await page.waitForFunction(() => window.__loja.aventureiros.sub() === 'colecao');
     expect(errors).toEqual([]);
   });
 });

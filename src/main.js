@@ -14,13 +14,14 @@ import { unlockAudio, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
 import { loadState, saveState, clearSave } from './core/save.js';
-import { createClock } from './core/time.js';
+import { createClock, dayKey } from './core/time.js';
 import { avancarProducao, totalProntos } from './core/craft.js';
 import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
 import { initAssets, carregarAtlas, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
 import { createEventos } from './ui/eventos.js';
+import { pendencias } from './core/daily.js';
 import { createLendas } from './ui/lendas.js';
 import { disparar as dispararEvento } from './core/events.js';
 import { criarCliente, receberCliente } from './core/shop.js';
@@ -66,6 +67,8 @@ async function start() {
   // em desenvolvimento, ?hoje=AAAA-MM-DD fixa a data do jogo (os testes usam isso para não depender de eventos sazonais)
   const hoje = import.meta.env.DEV ? new URLSearchParams(location.search).get('hoje') : null;
   const clock = hoje ? createClock(new Date(`${hoje}T12:00:00`).getTime(), { correr: true }) : createClock();
+  // jogo novo com data fixa: o dia de início e a sequência já nascem nessa data
+  if (hoje && origem !== 'carregado') { state.criadoEm = clock.now(); state.dia.data = dayKey(clock.now()); }
   const game = createGame({ state, clock });
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) game.state.tutorial.feito = true;
   game.verificarDia();
@@ -149,6 +152,10 @@ async function start() {
   setInterval(guardar, 10_000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) guardar(); });
   window.addEventListener('pagehide', guardar);
+  // aviso (ponto) na aba Aventureiros quando há bônus, encomenda pronta ou baú esperando
+  const atualizarAviso = () => { const p = pendencias(game); tabbar.setBadge(3, p.bonus || p.encomendas > 0 || p.bau, 'pendencias'); };
+  for (const ev of ['diario', 'estoque', 'encomenda', 'bonusDiario', 'bau', 'venda', 'producao']) game.on(ev, atualizarAviso);
+  atualizarAviso();
   game.on('nivel', (n) => { toasts.show(`Reputação nível ${n}!`, 0xc79cf0); sfx.levelUp(); });
 
   app.ticker.add((t) => {
@@ -227,6 +234,7 @@ async function start() {
       eventos: { ...eventos.hooks, disparar: (id) => dispararEvento(game, id) },
       melhorias: screens[4].hooks,
       aventureiros: screens[3].hooks,
+      avisoAventureiros: () => tabbar.temBadge(3),
       lendas: lendas.hooks,
       chamarLenda: (id) => { game.state.fila.length = 0; const c = criarCliente(game, id); if (c) receberCliente(game, c); return !!c; },
       skip: (ms) => { clock.advance(ms); game.tick(0); },
