@@ -22,6 +22,7 @@ import { para, labelButton } from './ui/ui.js';
 import { initAssets, carregarAtlas, carregarGui, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
 import { ABAS_COM_TUTORIAL } from './data/tutorial.js';
+import { iniciarPwa, emApp } from './pwa.js';
 import { createEventos } from './ui/eventos.js';
 import { pendencias } from './core/daily.js';
 import { createLendas } from './ui/lendas.js';
@@ -94,6 +95,7 @@ async function start() {
   const topbar = createTopBar({ onSettings: () => openSettings() });
   const tabbar = createTabBar({ onSelect: (i) => selectTab(i) });
   const toasts = createToasts();
+  iniciarPwa({ aviso: (t) => toasts.show(t, 0x8fd18a) });
   const modal = createModal();
   app.stage.addChild(screensLayer, topbar.root, tabbar.root, toasts.root, modal.root);
 
@@ -137,7 +139,8 @@ async function start() {
 
   function layout() {
     L = computeLayout(app.screen.width, app.screen.height, measureSafe());
-    const inset = Math.max(0, BACK_INSET - L.top.x - Math.max(0, L.content.x - L.top.x));
+    // instalado como app, o botão "voltar ao site" não existe: não reserva espaço para ele
+    const inset = emApp() ? 0 : Math.max(0, BACK_INSET - L.top.x - Math.max(0, L.content.x - L.top.x));
     topbar.layout({ x: L.content.x - 12, y: 0, w: L.content.w + 24, h: L.topH }, L.mode === 'landscape' ? 0 : inset, L.safe.top);
     tabbar.layout(L);
     toasts.layout(L);

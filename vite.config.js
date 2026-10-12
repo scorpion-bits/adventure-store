@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+import { pwaPlugin } from './scripts/pwa-plugin.mjs';
 
 // `npm run build:site` gera a versão que vai para scorpionbits.com/loja/ (modo "site"):
 //  - usa o PixiJS que o site já tem (assets/vendor), sem empacotar outro;
@@ -35,8 +36,14 @@ const pageShell = (variant) => ({
         { tag: 'meta', attrs: { property: 'og:title', content: TITLE }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:description', content: DESC }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:locale', content: 'pt_BR' }, injectTo: 'head' },
+        // app instalável (PWA): manifesto, ícone do iOS e modo de tela cheia
+        { tag: 'link', attrs: { rel: 'manifest', href: './manifest.webmanifest' }, injectTo: 'head' },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: './icons/apple-touch-icon.png' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: 'Loja do Aventureiro' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }, injectTo: 'head' },
         { tag: 'link', attrs: { rel: 'icon', href: v.icon, type: 'image/png' }, injectTo: 'head' },
-        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: v.icon }, injectTo: 'head' },
         { tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `${v.fonts}/grotesk-latin.woff2`, crossorigin: '' }, injectTo: 'head' },
         { tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `${v.fonts}/inter-latin.woff2`, crossorigin: '' }, injectTo: 'head' },
         {
@@ -52,6 +59,8 @@ html, body { background: #1b130f; }
   display: grid; place-items: center; color: #f6ead6; text-decoration: none;
   background: rgba(240, 179, 90, 0.1); border: 1px solid rgba(240, 179, 90, 0.35); }
 .back svg { width: 16px; height: 16px; }
+/* instalado como app não há site para onde voltar */
+@media (display-mode: standalone) { .back { display: none; } }
 
 /* tela de carregamento: some com fade quando o jogo está pronto */
 #boot { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; justify-items: center; gap: 14px;
@@ -95,11 +104,17 @@ export default defineConfig(({ mode }) => {
   const site = mode === 'site';
   return {
     base: './',
-    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+    define: { __APP_VERSION__: JSON.stringify(pkg.version), __PWA__: 'true' },
     resolve: site
       ? { alias: { 'pixi.js': fileURLToPath(new URL('./src/pixi-global.js', import.meta.url)) } }
       : {},
-    plugins: [pageShell(site ? 'site' : 'standalone')],
+    plugins: [
+      pageShell(site ? 'site' : 'standalone'),
+      // no site o PixiJS, as fontes e o logo vêm de ../assets (mesma origem, fora da pasta /loja/): entram no cache também
+      pwaPlugin(site
+        ? { extras: ['../assets/vendor/pixi.min.js?v=8.22.0', '../assets/fonts/grotesk-latin.woff2', '../assets/fonts/inter-latin.woff2', '../assets/logo-glyph.png', '../assets/favicon.png'], copiarPublico: ['manifest.webmanifest', 'icons'] }
+        : {}),
+    ],
     // no site, fontes e logo vêm de assets/ do próprio site, então não copia a pasta public
     publicDir: site ? false : 'public',
     build: { outDir: site ? 'dist-site' : 'dist' },

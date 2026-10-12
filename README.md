@@ -135,6 +135,21 @@ Sem arquivos, não há música e nada quebra.
 Veja [`CREDITS.md`](CREDITS.md). Os pacotes de arte originais ficam em `assets-src/` (ignorado pelo git,
 por causa das licenças); só o atlas gerado a partir deles entra no repositório.
 
+### Instalar como app (PWA)
+
+O jogo (tanto a versão da página do repositório, `npm run build`, em `scorpionbits.com/adventure-store/`, quanto a do site, em `scorpionbits.com/loja/`) é um **app instalável** e funciona **sem internet**:
+- **Android (Chrome):** menu → *Instalar app*, ou o botão **Instalar o app** nas Configurações do jogo.
+- **iPhone/iPad (Safari):** *Compartilhar* → *Adicionar à Tela de Início*.
+- **Computador (Chrome/Edge):** ícone de instalar na barra de endereço, ou o botão nas Configurações.
+
+Como funciona: `public/manifest.webmanifest` descreve o app (nome, cores, tela cheia, ícones); o plugin `scripts/pwa-plugin.mjs` gera `dist/sw.js` no build,
+um service worker que guarda o jogo inteiro na primeira visita. Quando sai uma versão nova, o app avisa para fechar e abrir de novo. O save continua no
+`localStorage` do aparelho. Os ícones (uma espada do pack Raven sobre madeira escura) saem de `npm run icons:app`.
+A versão do site (`npm run build:site`, publicada em `scorpionbits.com/loja/`) também é instalável e offline: o service worker dela (escopo `/loja/`)
+guarda, além do jogo, o PixiJS, as fontes e o logo que vêm de `/assets/` do site.
+`npm run test:pwa` confere, nas duas versões, manifesto, ícones, instalação do service worker e abertura offline (a versão do site é testada numa cópia
+montada em `tests/out/site-raiz` por `tests/pwa/servidor-site.mjs`).
+
 ### Jogar pelo GitHub Pages
 
 O workflow `.github/workflows/pages.yml` compila (`npm run build`) e publica a cada push na `main` (e pode ser rodado à mão em *Actions*).
