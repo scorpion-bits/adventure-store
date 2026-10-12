@@ -1,6 +1,6 @@
 // Tela Aventureiros: Hoje (retenção, M8), Coleção (M9) e Lendários (histórias em capítulos).
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal } from './ui.js';
 import { portraitSprite, iconSprite } from '../assets.js';
 import { sazonaisAtivos } from '../core/seasons.js';
 import { descreverEfeito } from '../core/mods.js';
@@ -511,6 +511,10 @@ export function createAventureirosScreen({ game, modal, toast }) {
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
+      nomes: () => Object.keys(refs),
+      retangulo: (nome) => retanguloGlobal(refs[nome]),
+      irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },
+
       centro: (nome) => global(refs[nome]),
       ver: (nome) => {
         const p = global(refs[nome]);

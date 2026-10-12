@@ -1,7 +1,7 @@
 // Tela da Loja: a cena (prateleiras com o estoque de verdade e a fila no balcão) e o atendimento
 // (cliente, o que oferecer, os três preços). A lógica está em core/shop.js; aqui só desenho e toques.
 import { Container, Graphics } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten, retanguloGlobal } from './ui.js';
 import { iconSprite, portraitSprite, guiPronto, guiSprite } from '../assets.js';
 import { tween, ease } from './anim.js';
 import { opcoes, avaliar, vender, dispensar, passarNaFrente, pedidoTexto, adventureiro, temperamentoDe } from '../core/shop.js';
@@ -297,8 +297,10 @@ export function createLojaScreen({ game, toast }) {
         const av = avaliar(game, cli, entrada, nv.id);
         const t2 = txt(`${fmt(av.preco)} ouro`, C.gold, 15, true);
         t2.position.set((bw - t2.width) / 2, 30);
-        const t3 = txt(av.reacao.texto, COR_REACAO[av.reacao.id], 11, true);
-        t3.position.set((bw - t3.width) / 2, 52);
+        // chance de o cliente aceitar, em %, junto da reação (cabe no botão: o texto diminui se precisar)
+        const t3 = txt(`${Math.round(av.chance * 100)}% · ${av.reacao.texto}`, COR_REACAO[av.reacao.id], 11, true);
+        for (let tam = 11; t3.width > bw - 8 && tam > 8; tam--) t3.style.fontSize = tam;
+        t3.position.set((bw - t3.width) / 2, 52 + (11 - t3.style.fontSize) / 2);
         const t4 = txt(`${sinal(av.rep)} reputação`, C.dim, 10);
         t4.position.set((bw - t4.width) / 2, 68);
         b.addChild(t2, t3, t4);
@@ -398,7 +400,12 @@ export function createLojaScreen({ game, toast }) {
     if (ops.length) {
       // os preços vêm logo abaixo do cliente (ao alcance do polegar); a lista para trocar o item fica depois
       const atual = ops.find((o) => o.chave === sel);
-      const t = txt(`Oferecendo: ${atual.item.nome} (${game.data.meta.qualidades[atual.qualidade].nome})`, C.dim, 12, true);
+      const qual = game.data.meta.qualidades[atual.qualidade].nome;
+      const pediu = cli.pedido.tipo === 'item' ? game.data.itens[cli.pedido.item]?.nome : null;
+      // oferecer outra coisa que não o pedido funciona (com menos chance), mas a tela precisa deixar isso claro
+      const t = atual.substituto && pediu && atual.item.id !== cli.pedido.item
+        ? para(`Oferecendo ${atual.item.nome} (${qual}) no lugar de ${pediu}: ele pode não gostar`, C.warn, 12, w, { bold: true })
+        : txt(`Oferecendo: ${atual.item.nome} (${qual})`, C.dim, 12, true);
       itens.push({ c: t, h: t.height });
       itens.push(linhaPrecos(w, cli, ops));
       refs.opcoes = [];
@@ -503,6 +510,8 @@ export function createLojaScreen({ game, toast }) {
       pronta: () => !dirty && quadros >= 2,
       selecionada: () => sel,
       resultado: () => resultado,
+      nomes: () => Object.keys(refs.precos).map((n) => `preco:${n}`),
+      retangulo: (nome) => (nome.startsWith('preco:') ? retanguloGlobal(refs.precos[nome.slice(6)]) : null),
       precoCentro: (nivel) => (refs.precos[nivel] ? global(refs.precos[nivel]) : null),
       dispensarCentro: () => (refs.dispensar ? global(refs.dispensar) : null),
       opcaoCentro: (i) => (refs.opcoes[i] ? global(refs.opcoes[i]) : null),

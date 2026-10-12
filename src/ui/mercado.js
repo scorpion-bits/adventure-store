@@ -1,14 +1,14 @@
 // Tela do Mercado: o depósito (o que você tem) e os fornecedores do dia, com preço e estoque que mudam à meia-noite.
 // A lógica está em core/market.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '../core/market.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
-const ROW_H = 78;
+const ROW_H = 84;
 
 export function createMercadoScreen({ game, toast, modal }) {
   const root = new Container();
@@ -75,7 +75,8 @@ export function createMercadoScreen({ game, toast, modal }) {
       lista.forEach((m, i) => {
         const x = 12 + (i % per) * cell;
         const yy = y + Math.floor(i / per) * 60;
-        const ic = iconSprite('material', m.id, 32);
+        const nomeM = game.data.materiais[m.id]?.nome ?? m.id;
+        const ic = iconeComNome('material', m.id, 32, () => toast(`${nomeM}: ${fmt(m.qtd)} no depósito`, C.dim), { w: 40, h: 52 });
         ic.position.set(x + (cell - 32) / 2 - 2, yy);
         const n = txt(`${fmt(m.qtd)}`, C.text, 12, true);
         n.position.set(x + (cell - n.width) / 2 - 2, yy + 34);
@@ -91,7 +92,7 @@ export function createMercadoScreen({ game, toast, modal }) {
   function botaoCompra(rotulo, w, o, f, tipo) {
     const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o);
     const pode = tipo === 'max' ? n > 0 : o.restante > 0;
-    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 32, { size: 12, tint: pode ? C.accent : C.dim });
+    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: pode ? C.accent : C.dim });
     if (!pode) b.setDisabled(true);
     b.tap(() => {
       const r = comprar(game, f.id, o.material, n);
@@ -128,9 +129,9 @@ export function createMercadoScreen({ game, toast, modal }) {
     const bw = Math.min(70, (w - 54 - 12 - 12) / 3);
     [['+1', 'x1'], ['+5', 'x5'], ['Máx', 'max']].forEach(([rot, tipo], i) => {
       const b = botaoCompra(rot, bw, o, f, tipo);
-      b.position.set(w - 12 - (3 - i) * bw - (2 - i) * 6, ROW_H - 38);
+      b.position.set(w - 12 - (3 - i) * bw - (2 - i) * 6, ROW_H - 44);
       c.addChild(b);
-      refs[`${f.id}:${o.material}:${tipo}`] = { c: b, w: bw, h: 32 };
+      refs[`${f.id}:${o.material}:${tipo}`] = { c: b, w: bw, h: 38 };
     });
     return { c, h: ROW_H };
   }
@@ -222,6 +223,10 @@ export function createMercadoScreen({ game, toast, modal }) {
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
+      nomes: () => Object.keys(refs),
+      retangulo: (nome) => retanguloGlobal(refs[nome]),
+      irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },
+
       botaoCentro: (fornecedor, material, tipo) => global(refs[`${fornecedor}:${material}:${tipo}`]),
       centro: (nome) => global(refs[nome]),
       renderAgora: render,

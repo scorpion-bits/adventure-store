@@ -21,6 +21,7 @@ import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
 import { initAssets, carregarAtlas, carregarGui, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
+import { ABAS_COM_TUTORIAL } from './data/tutorial.js';
 import { createEventos } from './ui/eventos.js';
 import { pendencias } from './core/daily.js';
 import { createLendas } from './ui/lendas.js';
@@ -71,7 +72,7 @@ async function start() {
   // jogo novo com data fixa: o dia de início e a sequência já nascem nessa data
   if (hoje && origem !== 'carregado') { state.criadoEm = clock.now(); state.dia.data = dayKey(clock.now()); }
   const game = createGame({ state, clock });
-  if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) game.state.tutorial.feito = true;
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) { game.state.tutorial.feito = true; for (const a of ABAS_COM_TUTORIAL) game.state.tutorial.abas[a] = true; }
   // em desenvolvimento, ?semconquistas desliga os prêmios de conquista (os testes contam o ouro exato)
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semconquistas')) game.semConquistas = true;
   game.verificarDia();
@@ -96,12 +97,17 @@ async function start() {
   const modal = createModal();
   app.stage.addChild(screensLayer, topbar.root, tabbar.root, toasts.root, modal.root);
 
-  const tutorial = createTutorial({ game, tabbar, onFinish: () => guardar() });
+  // `screens` é criado logo abaixo; o tutorial só o usa depois (para destacar botões e mudar de aba)
+  let screens = [];
+  const tutorial = createTutorial({
+    game, tabbar, onFinish: () => guardar(),
+    telas: () => Object.fromEntries(TABS.map((t, i) => [t.id, screens[i]?.hooks])),
+  });
   app.stage.addChild(tutorial.root);
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  const screens = createScreens({ toast: toasts.show, game, modal });
+  screens = createScreens({ toast: toasts.show, game, modal });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
@@ -176,6 +182,7 @@ async function start() {
     avisarConquistas();
     eventos.update();
     lendas.update();
+    tutorial.update(t.deltaMS);
     screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);

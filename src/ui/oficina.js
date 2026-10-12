@@ -1,7 +1,7 @@
 // Tela da Oficina: escolha do ofício, fila de produção com barras de progresso em tempo real, receitas e coleta.
 // A lógica está em core/craft.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { drawIcon } from './icons.js';
 import { iconSprite } from '../assets.js';
 import {
@@ -240,7 +240,8 @@ export function createOficinaScreen({ game, toast }) {
     for (const [m, q] of Object.entries(r.materiais)) {
       if (x + chip > tw + 12 && x > 12) { x = 12; y += 24; }
       const tem = game.state.materiais[m] ?? 0;
-      const ic2 = iconSprite('material', m, 20);
+      const nomeM = game.data.materiais[m]?.nome ?? m;
+      const ic2 = iconeComNome('material', m, 20, () => toast(`${nomeM}: você tem ${fmt(tem)}, a receita usa ${q}`, tem >= q ? C.dim : C.warn), { w: chip - 4, h: 24 });
       ic2.position.set(x, y);
       const tt = txt(`${fmt(tem)}/${q}`, tem >= q ? C.dim : C.bad, 12, tem < q);
       tt.position.set(x + 24, y + 2);
@@ -376,6 +377,8 @@ export function createOficinaScreen({ game, toast }) {
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
+      nomes: () => Object.keys(refs),
+      retangulo: (nome) => retanguloGlobal(refs[nome]),
       selecionar: (id) => { sel = id; marcar(); },
       oficioSelecionado: () => sel,
       centro: (nome) => global(refs[nome]),

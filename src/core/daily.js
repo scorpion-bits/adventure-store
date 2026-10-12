@@ -1,5 +1,6 @@
 // Retenção: encomendas diárias, aventureiro especial do dia, sequência de dias, bônus de login, metas e baú da semana.
 // Tudo sorteado pela DATA (e pela faixa de reputação): quem está na mesma faixa vê as mesmas encomendas. Lógica pura (recebe `game`).
+import { obtivel } from './obtivel.js';
 import { createRng } from './rng.js';
 import { daysBetween, weekKey } from './time.js';
 import { itensPedidos } from './shop.js';
@@ -12,11 +13,6 @@ const S = (game) => game.data.semanal;
 export const faixaDe = (game) => D(game).faixas.filter((n) => game.nivel() >= n).length;
 // nível de referência da faixa (o menor dela): o sorteio usa este, não o nível exato, para quem está na mesma faixa ver o mesmo conteúdo
 export const nivelDaFaixa = (game) => D(game).faixas[Math.max(0, faixaDe(game) - 1)];
-
-// o item pode ser obtido? (tem receita ou algum fornecedor vende)
-function obtivel(game, id) {
-  return game.data.listas.receitas.some((r) => r.item === id) || game.data.listas.fornecedores.some((f) => f.vende.some((v) => v.material === id));
-}
 
 const qtdPor = (valor) => (valor < 30 ? 4 : valor < 100 ? 3 : valor < 400 ? 2 : 1);
 

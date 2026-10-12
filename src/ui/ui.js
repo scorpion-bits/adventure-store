@@ -2,7 +2,7 @@
 // interruptores. Cartões e barras são desenhados por código; botões e molduras usam a arte do Cryo's Mini GUI (assets.js) quando carregada.
 import { Container, Graphics, Text, Rectangle } from 'pixi.js';
 import { C, FONT_BODY, FONT_DISPLAY, darken } from './theme.js';
-import { guiPronto, guiPainel } from '../assets.js';
+import { guiPronto, guiPainel, iconSprite } from '../assets.js';
 import { tween, ease } from './anim.js';
 
 export { C, T, hex, darken, lighten } from './theme.js';
@@ -270,4 +270,24 @@ export function createScroll(width) {
 // chamar uma vez por quadro (inércia das listas)
 export function updateScrolls(dt) {
   for (const s of scrolls) s.update(dt);
+}
+
+// Ícone que mostra o nome ao ser tocado (os ícones sozinhos não dizem o que são). `zona` = área tocável { w, h }.
+export function iconeComNome(tipo, id, tamanho, aoTocar, zona = { w: tamanho, h: tamanho }) {
+  const c = new Container();
+  const ic = iconSprite(tipo, id, tamanho);
+  c.addChild(ic);
+  c.eventMode = 'static';
+  c.cursor = 'pointer';
+  c.hitArea = new Rectangle(0, 0, zona.w, zona.h);
+  c.on('pointertap', () => { if (!dragged) aoTocar(); });
+  return c;
+}
+
+// Retângulo (em coordenadas da tela) de um elemento registrado em `refs` { c, w, h }; usado para destacar botões no tutorial.
+export function retanguloGlobal(ref) {
+  if (!ref || ref.c.destroyed) return null;
+  const a = ref.c.toGlobal({ x: 0, y: 0 });
+  const b = ref.c.toGlobal({ x: ref.w, y: ref.h });
+  return { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };
 }

@@ -1,5 +1,6 @@
 // A loja: clientes chegam, fazem um pedido, o jogador escolhe o item e o preço.
 // Lógica pura: todas as funções recebem `game` (veja game.js); sem Pixi.
+import { obtivel } from './obtivel.js';
 import { lerChave } from '../data/index.js';
 import { precoPedido } from './economy.js';
 import { proximaLenda, capituloAtual, qualidadeMinima } from './legends.js';
@@ -31,7 +32,7 @@ export function intervaloChegada(game) {
 // faixa de valor da região dele (novatos não pedem lendários; heróis não pedem pão). Sem nada na faixa, vale qualquer um liberado.
 export const itensPedidos = (game, adv, nivelRef = game.nivel()) => {
   const nivel = nivelRef;
-  const doTipo = game.data.listas.itens.filter((it) => adv.prefere.includes(it.cat) && (it.nivelRep ?? 1) <= nivel);
+  const doTipo = game.data.listas.itens.filter((it) => adv.prefere.includes(it.cat) && (it.nivelRep ?? 1) <= nivel && obtivel(game, it.id));
   const regiao = game.data.regioes[adv.regiao];
   const naFaixa = doTipo.filter((it) => it.valor >= (regiao?.valorMin ?? 0) && it.valor <= (regiao?.valorMax ?? Infinity));
   return naFaixa.length ? naFaixa : doTipo;
