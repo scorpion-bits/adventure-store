@@ -21,7 +21,12 @@ export function defaultState(now = Date.now()) {
     materiais: {},                   // materiais no depósito: { barra_ferro: 4 }
 
     fila: [],                        // clientes esperando (veja core/shop.js)
-    loja: { proximaChegada: 1500, uid: 0 },   // relógio de chegadas (ms) e contador de clientes
+    loja: { proximaChegada: 1500, uid: 0, tema: 'rustico' },   // relógio de chegadas (ms), contador de clientes, decoração em uso
+    melhorias: {},                   // compradas: { id: true }
+    equipe: { atendente: { nivel: 0 }, artesao: { nivel: 0 }, vendedor: { nivel: 0 } },   // 0 = não contratado
+    decoracoes: { rustico: true },   // decorações compradas
+    repetir: {},                     // receita que cada ofício repete sozinho: { ofício: idDaReceita }
+    relogioEquipe: { atendente: 0 }, // acumuladores de tempo (ms) da equipe
     dia: { data: dayKey(now) },      // dia do calendário em que o jogo estava
 
     oficios: { ferraria: { nivel: 1, xp: 0 } },   // ofícios abertos: { id: { nivel, xp } }

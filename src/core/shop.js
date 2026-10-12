@@ -139,37 +139,54 @@ const tirarDoEstoque = (game, chave) => {
   game.emit('estoque', game.state.estoque);
 };
 
-// Tenta vender. Devolve { ok, preco, rep, fala, motivo }.
-export function vender(game, uid, chave, nivelPreco) {
-  const cli = game.state.fila.find((c) => c.uid === uid);
-  if (!cli) return { ok: false, motivo: 'cliente-ausente' };
-  const entrada = opcoes(game, cli).find((o) => o.chave === chave);
-  if (!entrada) return { ok: false, motivo: 'sem-estoque' };
+const sorteia = (game, lista) => (lista?.length ? game.rng.pick(lista) : '');
 
+// Resolve uma venda já escolhida (o cliente já foi tirado da fila, ou nunca esteve nela: vendas offline e do atendente).
+// Sorteia se ele aceita; se sim, tira do estoque e paga; se não, ele sai e a reputação cai.
+export function fecharVenda(game, cli, entrada, nivelPreco) {
   const av = avaliar(game, cli, entrada, nivelPreco);
   const adv = adventureiro(game, cli);
   const temp = temperamentoDe(game, cli);
-  const escolher = (lista) => (lista?.length ? game.rng.pick(lista) : '');
-  removerCliente(game, uid);
 
   if (game.rng.chance(av.chance)) {
-    tirarDoEstoque(game, chave);
+    tirarDoEstoque(game, entrada.chave);
     game.ganharOuro(av.preco);
     game.state.stats.vendas += 1;
-    game.ganharRep(av.rep);
+    const rep = av.rep > 0 ? av.rep * (game.mods.repGanho ?? 1) : av.rep;
+    game.ganharRep(rep);
     const falaCompra = nivelPreco === 'barato' && adv.falas.barato?.length ? adv.falas.barato : adv.falas.compra;
-    const fala = escolher(falaCompra);
-    const r = { ok: true, preco: av.preco, rep: av.rep, fala, cli, item: entrada.item, qualidade: entrada.qualidade, nivelPreco };
+    const r = { ok: true, preco: av.preco, rep, fala: sorteia(game, falaCompra), cli, item: entrada.item, qualidade: entrada.qualidade, nivelPreco };
     game.emit('venda', r);
     return r;
   }
   game.state.stats.recusas += 1;
   game.ganharRep(temp.rep.recusa);
   const falaRecusa = nivelPreco === 'caro' && adv.falas.caro?.length ? adv.falas.caro : adv.falas.recusa;
-  const fala = escolher(falaRecusa);
-  const r = { ok: false, motivo: 'recusou', preco: av.preco, rep: temp.rep.recusa, fala, cli, item: entrada.item, nivelPreco };
+  const r = { ok: false, motivo: 'recusou', preco: av.preco, rep: temp.rep.recusa, fala: sorteia(game, falaRecusa), cli, item: entrada.item, nivelPreco };
   game.emit('recusa', r);
   return r;
+}
+
+// Tenta vender ao cliente da fila. Devolve { ok, preco, rep, fala, motivo }.
+export function vender(game, uid, chave, nivelPreco) {
+  const cli = game.state.fila.find((c) => c.uid === uid);
+  if (!cli) return { ok: false, motivo: 'cliente-ausente' };
+  const entrada = opcoes(game, cli).find((o) => o.chave === chave);
+  if (!entrada) return { ok: false, motivo: 'sem-estoque' };
+  removerCliente(game, uid);
+  return fecharVenda(game, cli, entrada, nivelPreco);
+}
+
+// A melhor oferta para um cliente a preço justo: maximiza o ouro esperado (quem não tem nada devolve null).
+// Usada pelo atendente e pelas vendas com o jogo fechado.
+export function melhorOpcao(game, cli, nivelPreco = 'justo') {
+  let melhor = null;
+  for (const o of opcoes(game, cli)) {
+    const av = avaliar(game, cli, o, nivelPreco);
+    const valor = av.chance * av.preco;
+    if (!melhor || valor > melhor.valor) melhor = { entrada: o, valor };
+  }
+  return melhor?.entrada ?? null;
 }
 
 // Manda o cliente embora sem oferecer nada (a penalidade é metade da de uma recusa por preço).

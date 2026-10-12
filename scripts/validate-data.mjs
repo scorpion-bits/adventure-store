@@ -2,6 +2,7 @@
 // Uso:  npm run validate            -> só erros (referência quebrada, id repetido...)
 //       npm run validate -- --metas -> também falha se alguma meta de conteúdo não foi atingida
 import { DATA } from '../src/data/index.js';
+import { EFEITOS } from '../src/core/mods.js';
 
 export function validar(data = DATA) {
   const erros = [];
@@ -71,6 +72,31 @@ export function validar(data = DATA) {
   for (const id of Object.keys(data.icones)) {
     exige(itens.has(id) || materiais.has(id), `icones: "${id}" não é item nem material`);
   }
+
+  // melhorias, equipe e decoração: efeitos conhecidos, requisitos existentes e custos válidos
+  const melhorias = ids(listas.melhorias);
+  const conferirEfeitos = (dono, efeitos) => {
+    for (const e of efeitos ?? []) {
+      exige(EFEITOS[e.tipo], `${dono}: efeito desconhecido "${e.tipo}"`);
+      if (['slots', 'velocidade', 'filaOficina'].includes(e.tipo)) exige(oficios.has(e.oficio), `${dono}: efeito "${e.tipo}" com ofício inválido "${e.oficio}"`);
+    }
+  };
+  for (const m of listas.melhorias) {
+    exige(m.custo > 0, `melhoria ${m.id}: custo deve ser > 0`);
+    exige(m.grupo === 'loja' || oficios.has(m.grupo), `melhoria ${m.id}: grupo inválido "${m.grupo}"`);
+    exige((m.efeitos ?? []).length > 0, `melhoria ${m.id}: sem efeitos`);
+    for (const r of m.requer ?? []) exige(melhorias.has(r) && r !== m.id, `melhoria ${m.id}: requer "${r}" que não existe`);
+    conferirEfeitos(`melhoria ${m.id}`, m.efeitos);
+  }
+  for (const f of listas.equipe) {
+    exige(f.niveis?.length > 0, `equipe ${f.id}: sem níveis`);
+    f.niveis.forEach((n, i) => { exige(n.custo > 0, `equipe ${f.id} nível ${i + 1}: custo deve ser > 0`); conferirEfeitos(`equipe ${f.id} nível ${i + 1}`, n.efeitos); });
+  }
+  for (const d of listas.decoracoes) {
+    for (const c of ['parede', 'piso', 'balcao', 'prateleira']) exige(Number.isInteger(d.cores?.[c]), `decoração ${d.id}: falta a cor "${c}"`);
+    conferirEfeitos(`decoração ${d.id}`, d.efeitos);
+  }
+  exige(data.decoracoes.rustico?.custo === 0, 'a decoração "rustico" (padrão, grátis) precisa existir');
 
   // ofícios: o primeiro vem aberto de graça (senão o jogo começa sem como produzir) e todos têm custo e reputação
   exige(meta.oficios[0].custo === 0, 'o primeiro ofício precisa ser grátis (vem aberto no início)');

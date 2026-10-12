@@ -114,6 +114,7 @@ export const META = {
   // ---------- fluxo de clientes (tempos em milissegundos) ----------
   loja: {
     filaBase: 3,                // quantos clientes cabem na fila (melhorias aumentam)
+    capacidadeBase: 24,         // quantos itens cabem nas prateleiras (melhorias aumentam)
     intervaloBase: 14000,       // tempo médio entre chegadas no nível 1 de reputação...
     intervaloPorNivel: 250,     // ...e quanto diminui por nível
     intervaloMin: 5000,

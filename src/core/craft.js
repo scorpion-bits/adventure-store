@@ -2,6 +2,8 @@
 // então continua com o jogo fechado: ao abrir, `avancarProducao` termina o que já deu o tempo.
 // Lógica pura: as funções recebem `game` (veja game.js).
 
+import { espacoLivre } from './estoque.js';
+
 const O = (game) => game.data.meta.oficina;
 
 // ---------- ofícios ----------
@@ -71,11 +73,8 @@ export function podeProduzir(game, receitaId) {
   return { ok: true };
 }
 
-// Põe uma produção na fila (gasta os materiais agora). Começa já se houver slot livre.
-export function produzir(game, receitaId) {
-  const chk = podeProduzir(game, receitaId);
-  if (!chk.ok) return chk;
-  const r = game.data.receitas[receitaId];
+// Gasta os materiais e põe a produção no fim da fila (sem começar). Quem chama já conferiu `podeProduzir`.
+function enfileirar(game, r) {
   for (const [m, q] of Object.entries(r.materiais)) {
     game.state.materiais[m] -= q;
     if (game.state.materiais[m] <= 0) delete game.state.materiais[m];
@@ -84,9 +83,29 @@ export function produzir(game, receitaId) {
   const job = { uid: game.state.producaoUid, receita: r.id, oficio: r.oficio, qtd: r.qtd ?? 1, duracao: duracaoDe(game, r), inicio: null, fim: null };
   game.state.producao.push(job);
   game.emit('materiais', game.state.materiais);
+  return job;
+}
+
+// Põe uma produção na fila (gasta os materiais agora). Começa já se houver slot livre.
+export function produzir(game, receitaId) {
+  const chk = podeProduzir(game, receitaId);
+  if (!chk.ok) return chk;
+  const job = enfileirar(game, game.data.receitas[receitaId]);
   avancarProducao(game);
   game.emit('producao', job);
   return { ok: true, job };
+}
+
+// O artesão pode repetir uma receita por ofício: quando uma produção termina, entra outra igual (se houver material e fila).
+export function alternarRepetir(game, receitaId) {
+  const r = game.data.receitas[receitaId];
+  if (!r) return { ok: false, motivo: 'inexistente' };
+  if (!game.mods.repetir) return { ok: false, motivo: 'sem-artesao' };
+  const atual = game.state.repetir[r.oficio];
+  if (atual === receitaId) delete game.state.repetir[r.oficio];
+  else game.state.repetir[r.oficio] = receitaId;
+  game.emit('producao');
+  return { ok: true, ligado: game.state.repetir[r.oficio] === receitaId };
 }
 
 // ---------- tempo ----------
@@ -152,6 +171,9 @@ export function avancarProducao(game, agora = game.clock.now()) {
         s.producao.splice(s.producao.indexOf(acabou), 1);
         concluir(game, acabou);
         mudou = achou = true;
+        // repetir: entra outra produção igual no fim da fila (o tempo do slot livre vale a partir de `acabou.fim`)
+        const rep = game.mods.repetir ? s.repetir[oficio] : null;
+        if (rep && rep === acabou.receita && podeProduzir(game, rep).ok) enfileirar(game, game.data.receitas[rep]);
         // o próximo da fila começa quando este terminou
         const proximo = s.producao.find((j) => j.oficio === oficio && j.inicio === null);
         if (proximo) { proximo.inicio = acabou.fim; proximo.fim = acabou.fim + proximo.duracao; }
@@ -172,27 +194,40 @@ export function avancarProducao(game, agora = game.clock.now()) {
 }
 
 // ---------- coleta ----------
-// Leva o que está pronto para as prateleiras. Sem `uid`, leva tudo. Devolve { itens: [{ item, qualidade, qtd }] }.
+// Leva o que está pronto para as prateleiras, até onde couber. Sem `uid`, leva tudo.
+// O que não coube continua pronto. Devolve { itens: [{ item, qualidade, qtd }], cheio }.
 export function coletar(game, uid = null) {
   const s = game.state;
   const levados = [];
+  let cheio = false;
+  let espaco = espacoLivre(game);
   const resto = [];
   for (const p of s.prontos) {
     if (uid !== null && p.uid !== uid) { resto.push(p); continue; }
     const receita = game.data.receitas[p.receita];
-    for (const [q, n] of Object.entries(p.resultado)) {
-      const chave = `${receita.item}:${q}`;
-      s.estoque[chave] = (s.estoque[chave] ?? 0) + n;
-      levados.push({ item: receita.item, qualidade: Number(q), qtd: n });
+    for (const q of Object.keys(p.resultado)) {
+      const quer = p.resultado[q];
+      const leva = Math.min(quer, espaco);
+      if (leva < quer) cheio = true;
+      if (leva > 0) {
+        const chave = `${receita.item}:${q}`;
+        s.estoque[chave] = (s.estoque[chave] ?? 0) + leva;
+        levados.push({ item: receita.item, qualidade: Number(q), qtd: leva });
+        espaco -= leva;
+      }
+      if (quer - leva > 0) p.resultado[q] = quer - leva;
+      else delete p.resultado[q];
     }
+    if (Object.keys(p.resultado).length) resto.push(p);
   }
   s.prontos = resto;
   if (levados.length) {
     game.emit('estoque', s.estoque);
-    game.emit('producao');
     game.emit('coletou', levados);
   }
-  return { itens: levados };
+  if (levados.length || cheio) game.emit('producao');
+  if (cheio) game.emit('cheio');
+  return { itens: levados, cheio };
 }
 
 export const totalProntos = (game) => game.state.prontos.reduce((n, p) => n + Object.values(p.resultado).reduce((a, b) => a + b, 0), 0);

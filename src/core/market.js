@@ -2,6 +2,7 @@
 // fornecedor, então são iguais para todo mundo e não mudam se o jogador recarregar a página.
 // Lógica pura: as funções recebem `game` (veja game.js).
 import { createRng } from './rng.js';
+import { espacoLivre } from './estoque.js';
 
 export function fornecedorDisponivel(game, f) {
   const nivel = game.nivel();
@@ -51,8 +52,9 @@ export function comprar(game, fornecedorId, material, qtd = 1) {
   if (!f || !fornecedorDisponivel(game, f)) return { ok: false, motivo: 'indisponivel' };
   const o = ofertas(game, f).find((x) => x.material === material);
   if (!o) return { ok: false, motivo: 'nao-vende' };
-  const n = Math.min(Math.floor(qtd), o.restante);
-  if (!(n > 0)) return { ok: false, motivo: 'sem-estoque' };
+  const ehItem = !!game.data.itens[material];
+  const n = Math.min(Math.floor(qtd), o.restante, ehItem ? espacoLivre(game) : Infinity);
+  if (!(n > 0)) return { ok: false, motivo: ehItem && espacoLivre(game) <= 0 ? 'prateleiras-cheias' : 'sem-estoque' };
   const custo = n * o.preco;
   if (!game.gastarOuro(custo)) return { ok: false, motivo: 'sem-ouro', custo };
 
