@@ -4,7 +4,7 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M11 (arte e polimento)**: botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
+> Estado atual: **M12 (balanceamento)**: simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
 > 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
 > aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
@@ -90,6 +90,26 @@ rendimento) mais um nó final por ofício a partir de tabelas no topo do arquivo
 Melhorias avulsas (da loja, ou especiais) entram como objetos nas listas, usando os efeitos de `src/core/mods.js`.
 
 `npm run validate -- --metas` confere as metas de quantidade (hoje todas atingidas).
+
+### Balanceamento e ritmo de jogo
+
+`npm run sim` joga o jogo inteiro sem interface com um bot (só `src/core` e `src/data`) e mostra a economia ao longo do tempo.
+Opções: `--perfil casual|regular|dedicado` (3x5, 2x20 ou 4x30 minutos de jogo por dia, o resto do tempo o jogo fica fechado),
+`--dias N`, `--semente N`, `--prestigio` (expande de novo sempre que rende 3+ de Herança) e `--json`. No fim ele mostra
+o que aconteceu com os clientes e a reputação ganha e perdida, que ajuda a achar gargalos.
+
+Ritmo que o jogo mira hoje (perfil regular, o bot é um pouco pior que uma pessoa atenta):
+
+| Quando | Reputação | O que acontece |
+| --- | --- | --- |
+| Primeira hora | 2 a 3 | 3 ofícios abertos, primeiras melhorias, primeiro funcionário |
+| Fim do dia 1 | 5 a 7 | segundo e terceiro ofícios, equipe completa |
+| Fim da semana 1 | 11 a 12 | 7 ofícios, 60+ melhorias |
+| Dia 13 a 14 | 15 a 16 | primeira expansão (rende 3 de Herança); a seguinte sai em ~9 dias |
+
+O perfil casual (15 min por dia) chega à reputação 20 em um mês; o dedicado faz a primeira expansão em ~8 dias.
+Os números que mais mexem no ritmo: `reputacao` e `prestigio` em `src/data/meta.js`, as chegadas de clientes (`loja`) e os custos
+das melhorias. `tests/unit/balance.test.mjs` guarda o ritmo dos dois primeiros dias para um ajuste não quebrar o começo sem aviso.
 
 ### Save
 

@@ -50,5 +50,7 @@ export function simularOffline(game, ausenteMs) {
     if (!entrada) { perdidas += 1; continue; }
     if (fecharVenda(game, cli, entrada, 'justo').ok) vendas += 1;
   }
+  // com o jogo fechado a reputação só pode subir: as recusas de quem passou enquanto você estava fora não contam
+  if (game.state.rep < repAntes) game.state.rep = repAntes;
   return { vendas, perdidas, ouro: game.state.ouro - ouroAntes, rep: game.state.rep - repAntes, horas };
 }

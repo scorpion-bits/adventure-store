@@ -39,7 +39,7 @@ test.describe('prestígio (retrato)', () => {
     await page.evaluate(() => {
       const L = window.__loja;
       L.addRep(1e6);
-      L.state().stats.ouroTotal = 200000;
+      L.state().stats.ouroTotal = 48000;
       L.state().ouro = 9999;
       L.state().melhorias.loja_ampliar_1 = true;
     });
@@ -67,7 +67,7 @@ test.describe('prestígio (retrato)', () => {
 
   test('"Agora não" fecha sem expandir', async ({ page }) => {
     const errors = await openGame(page);
-    await page.evaluate(() => { window.__loja.addRep(1e6); window.__loja.state().stats.ouroTotal = 200000; });
+    await page.evaluate(() => { window.__loja.addRep(1e6); window.__loja.state().stats.ouroTotal = 48000; });
     await irParaExpandir(page);
     await tocar(page, 'expandir');
     await page.keyboard.press('Escape');

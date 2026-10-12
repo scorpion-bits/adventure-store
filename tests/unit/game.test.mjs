@@ -24,7 +24,7 @@ test('ouro: ganhar, gastar e recusar gasto sem saldo', () => {
   assert.deepEqual(visto, [150, 0]);
 });
 
-test('reputação sobe de nível e avisa; nunca fica negativa', () => {
+test('reputação sobe de nível e avisa; o nível nunca cai', () => {
   const g = createGame({ state: defaultState(0) });
   const niveis = [];
   g.on('nivel', (n) => niveis.push(n));
@@ -32,8 +32,11 @@ test('reputação sobe de nível e avisa; nunca fica negativa', () => {
   assert.equal(g.nivel(), 3);
   assert.deepEqual(niveis, [3]);
   g.ganharRep(-1e6);
-  assert.equal(g.state.rep, 0);
-  assert.equal(g.nivel(), 1);
+  assert.equal(g.state.rep, repParaNivel(3), 'perde o progresso do nível, não o nível');
+  assert.equal(g.nivel(), 3);
+  const d = createGame({ state: defaultState(0) });
+  d.ganharRep(-50);
+  assert.equal(d.state.rep, 0, 'no nível 1 nunca fica negativa');
 });
 
 test('virada do dia de calendário dispara "dia" e conta o dia de jogo', () => {

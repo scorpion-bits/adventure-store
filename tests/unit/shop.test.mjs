@@ -155,14 +155,15 @@ test('vender: casos inválidos não mexem em nada', () => {
   assert.equal(g.state.estoque['pao_aventureiro:1'], 1);
 });
 
-test('dispensar: penalidade é metade da recusa e cliente sai da fila', () => {
+test('dispensar: não custa reputação, o cliente sai da fila e conta como recusa', () => {
   const g = novo(1, (s) => { s.rep = 20; });
-  const imp = cliente(g, 'cacador_lobos', { tipo: 'surpresa' });      // impaciente: recusa -2 -> dispensar -1
-  assert.equal(dispensar(g, imp.uid).rep, -1);
-  assert.equal(g.state.rep, 19);
-  const pech = cliente(g, 'aprendiz_guerreiro', { tipo: 'surpresa' }); // recusa -1 -> dispensar 0
+  const imp = cliente(g, 'cacador_lobos', { tipo: 'surpresa' });      // impaciente (recusa -2): dispensar é escolha do jogador
+  assert.equal(dispensar(g, imp.uid).rep, 0);
+  assert.equal(g.state.rep, 20);
+  assert.equal(g.state.stats.recusas, 1);
+  const pech = cliente(g, 'aprendiz_guerreiro', { tipo: 'surpresa' });
   assert.equal(dispensar(g, pech.uid).rep, 0);
-  assert.equal(g.state.rep, 19);
+  assert.equal(g.state.rep, 20);
   assert.equal(dispensar(g, 12345), null);
 });
 
@@ -186,7 +187,7 @@ test('tick: o primeiro cliente chega logo e a fila respeita a capacidade', () =>
   assert.equal(capacidadeFila(g), 5);
 });
 
-test('tick: cliente que espera demais vai embora e a reputação cai', () => {
+test('tick: cliente que espera demais vai embora e a reputação cai (metade da recusa)', () => {
   const g = novo(1, (s) => { s.rep = 50; s.loja.proximaChegada = 1e9; });
   cliente(g, 'cacador_lobos', { tipo: 'surpresa' });           // impaciente
   const saidas = [];
@@ -196,7 +197,7 @@ test('tick: cliente que espera demais vai embora e a reputação cai', () => {
   tickLoja(g, 40000);                                           // passou de 75s * 0,55
   assert.equal(g.state.fila.length, 0);
   assert.equal(saidas.length, 1);
-  assert.equal(g.state.rep, 48);
+  assert.equal(g.state.rep, 49);       // recusa -2, metade = -1
   assert.equal(g.state.stats.recusas, 1);
 });
 

@@ -269,12 +269,10 @@ export function melhorOpcao(game, cli, nivelPreco = 'justo') {
 export function dispensar(game, uid) {
   const cli = removerCliente(game, uid);
   if (!cli) return null;
-  const temp = temperamentoDe(game, cli);
-  const rep = cli.lenda ? 0 : Math.trunc((temp?.rep.recusa ?? 0) / 2) || 0;
+  // dispensar é uma escolha do jogador (ex.: sem estoque para o pedido): não custa reputação
   if (!cli.lenda) game.state.stats.recusas += 1;
-  if (rep) game.ganharRep(rep);
-  game.emit('dispensou', { cli, rep });
-  return { cli, rep };
+  game.emit('dispensou', { cli, rep: 0 });
+  return { cli, rep: 0 };
 }
 
 // "Quem atender primeiro": põe o cliente no começo da fila.
@@ -299,7 +297,8 @@ export function tickLoja(game, dtMs) {
       s.fila.splice(i, 1);
       const temp = temperamentoDe(game, cli);
       if (!cli.lenda) s.stats.recusas += 1;
-      const rep = cli.lenda ? 0 : temp?.rep.recusa ?? 0;
+      // quem cansa de esperar custa metade da reputação de uma recusa (os temperamentos de recusa -1 não perdem nada)
+      const rep = cli.lenda ? 0 : Math.trunc((temp?.rep.recusa ?? 0) / 2) || 0;
       if (rep) game.ganharRep(rep);
       game.emit('saiu', { cli, rep });
       game.emit('fila', s.fila);

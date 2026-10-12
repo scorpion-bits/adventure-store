@@ -3,7 +3,7 @@
 import { DATA } from '../data/index.js';
 import { createRng } from './rng.js';
 import { createClock, dayKey, daysBetween } from './time.js';
-import { repNivel, repProgresso } from './economy.js';
+import { repNivel, repProgresso, repParaNivel } from './economy.js';
 import { tickLoja } from './shop.js';
 import { avancarProducao } from './craft.js';
 import { tickEquipe } from './staff.js';
@@ -55,7 +55,8 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
     },
     ganharRep(n) {
       const antes = repNivel(state.rep);
-      state.rep = Math.max(0, state.rep + n);
+      // o nível nunca cai: recusas e clientes que desistem só gastam o progresso dentro do nível atual
+      state.rep = n < 0 ? Math.max(state.rep + n, repParaNivel(antes)) : state.rep + n;
       const depois = repNivel(state.rep);
       game.emit('rep', state.rep);
       if (depois > antes) game.emit('nivel', depois);
