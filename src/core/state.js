@@ -17,10 +17,11 @@ export function defaultState(now = Date.now()) {
     ouro: META.inicio.ouro,
     rep: 0,                          // pontos de reputação (o nível vem de repNivel)
 
-    estoque: {},                     // itens nas prateleiras: { "espada_ferro:1": 3 }
+    estoque: { ...META.inicio.estoque },   // itens nas prateleiras: { "espada_ferro:1": 3 }
     materiais: {},                   // materiais no depósito: { barra_ferro: 4 }
 
-    fila: [],                        // clientes esperando (M2)
+    fila: [],                        // clientes esperando (veja core/shop.js)
+    loja: { proximaChegada: 1500, uid: 0 },   // relógio de chegadas (ms) e contador de clientes
     dia: { data: dayKey(now) },      // dia do calendário em que o jogo estava
 
     stats: { vendas: 0, recusas: 0, ouroTotal: 0 },

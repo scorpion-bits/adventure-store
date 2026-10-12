@@ -36,7 +36,7 @@ test('save antigo, sem campos novos, é completado com os padrões', () => {
   assert.equal(origem, 'carregado');
   assert.equal(state.ouro, 42);
   assert.equal(state.rep, 10);
-  assert.deepEqual(state.estoque, {});
+  assert.deepEqual(state.estoque, defaultState(5000).estoque);   // sem o campo: recebe o estoque inicial
   assert.equal(state.stats.vendas, 0);
   assert.equal(state.tutorial.feito, false);
   assert.ok(typeof state.dia.data === 'string');
@@ -79,4 +79,19 @@ test('withDefaults não altera os padrões recebidos', () => {
   const r = withDefaults({ d: { k: 1 } }, padrao);
   r.n.x = 99;
   assert.deepEqual(padrao, copia);
+});
+
+test('o estoque inicial só vale para jogo novo: itens vendidos não "voltam" ao carregar', () => {
+  const st = memoria();
+  const s = defaultState(0);
+  assert.ok(s.estoque['pao_aventureiro:1'] > 0, 'jogo novo começa com estoque');
+  delete s.estoque['pao_aventureiro:1'];            // o jogador vendeu tudo
+  s.estoque['pocao_cura:1'] = 0;
+  saveState(st, s);
+  const { state } = loadState(st);
+  assert.ok(!('pao_aventureiro:1' in state.estoque));
+  assert.equal(state.estoque['pocao_cura:1'], 0);
+  // save antigo sem o campo estoque recebe o estoque inicial
+  const { state: antigo } = loadState(memoria({ [SAVE_KEY]: JSON.stringify({ ouro: 5 }) }));
+  assert.ok(antigo.estoque['pao_aventureiro:1'] > 0);
 });

@@ -2,9 +2,10 @@
 // (tipo, id); o manifesto devolve a arte do atlas se existir, ou um ícone provisório desenhado
 // por código. Para trocar a arte, basta registrar o atlas (registerAtlas) e preencher data/icones.js:
 // nenhuma tela muda.
-import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { DATA, raridade } from './data/index.js';
 import { FONT_DISPLAY } from './ui/theme.js';
+import { portraitPixels } from './ui/portrait-art.js';
 
 let renderer = null;
 const cache = new Map();
@@ -69,6 +70,35 @@ export function textureFor(tipo, id) {
 // Sprite quadrado de `size` pixels (o ícone de 16/32/64 do pack é escolhido pelo atlas, não aqui).
 export function iconSprite(tipo, id, size = 32) {
   const s = new Sprite(textureFor(tipo, id));
+  s.width = size;
+  s.height = size;
+  return s;
+}
+
+// ---------- retratos de aventureiros ----------
+const ESCALA_RETRATO = 4;
+
+// Textura do retrato (pixel-art, "nearest"). Usa a arte do atlas se houver um quadro `retrato_<id>` em data/icones.js.
+export function portraitTexture(advId) {
+  const key = `retrato:${advId}`;
+  if (cache.has(key)) return cache.get(key);
+  const quadro = DATA.icones[`retrato_${advId}`];
+  if (quadro && atlas.has(quadro)) { cache.set(key, atlas.get(quadro)); return atlas.get(quadro); }
+  if (!renderer) return Texture.EMPTY;
+  const adv = DATA.aventureiros[advId];
+  const cor = DATA.meta.classes.find((c) => c.id === adv?.classe)?.cor;
+  const { grade, pixels } = portraitPixels(advId, adv?.classe, cor);
+  const g = new Graphics();
+  for (const [x, y, c] of pixels) g.rect(x * ESCALA_RETRATO, y * ESCALA_RETRATO, ESCALA_RETRATO, ESCALA_RETRATO).fill(c);
+  const tex = renderer.generateTexture({ target: g, resolution: 1, frame: new Rectangle(0, 0, grade * ESCALA_RETRATO, grade * ESCALA_RETRATO) });
+  tex.source.scaleMode = 'nearest';
+  g.destroy();
+  cache.set(key, tex);
+  return tex;
+}
+
+export function portraitSprite(advId, size = 64) {
+  const s = new Sprite(portraitTexture(advId));
   s.width = size;
   s.height = size;
   return s;

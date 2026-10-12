@@ -4,6 +4,7 @@ import { DATA } from '../data/index.js';
 import { createRng } from './rng.js';
 import { createClock, dayKey, daysBetween } from './time.js';
 import { repNivel, repProgresso } from './economy.js';
+import { tickLoja } from './shop.js';
 
 // número do dia de jogo (1 no primeiro dia), contado em dias de calendário
 export const diaDeJogo = (state) => daysBetween(dayKey(state.criadoEm), state.dia.data) + 1;
@@ -11,8 +12,14 @@ export const diaDeJogo = (state) => daysBetween(dayKey(state.criadoEm), state.di
 export function createGame({ state, data = DATA, clock = createClock(), rng = createRng() }) {
   const handlers = new Map();
 
+  // clientes que estavam na fila ao fechar o jogo voltam com a paciência cheia (e os de aventureiros que não existem mais somem)
+  state.fila = state.fila.filter((c) => data.aventureiros[c.adv]);
+  for (const c of state.fila) c.paciencia = c.pacienciaMax ?? c.paciencia;
+
   const game = {
     state, data, clock, rng,
+    // modificadores vindos das melhorias, equipe, decoração... (recalculados por quem os concede; ver M5)
+    mods: { fila: 0, paciencia: 1, chegada: 1, preco: 1 },
 
     // ---------- eventos ----------
     on(type, fn) {
@@ -63,6 +70,7 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
     // chamado a cada quadro pela interface (dtMs em milissegundos)
     tick(dtMs) {
       game.verificarDia();
+      tickLoja(game, dtMs);
       game.emit('tick', dtMs);
     },
   };

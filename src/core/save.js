@@ -18,7 +18,8 @@ export function withDefaults(raw, defaults, caminho = '') {
     const val = raw[key];
     if (isObj(def)) {
       if (!isObj(val)) out[key] = structuredClone(def);
-      else if (Object.keys(def).length === 0) out[key] = limparDicionario(val, !caminho && DICIONARIOS_NUMERICOS.includes(key));
+      else if (!caminho && DICIONARIOS_NUMERICOS.includes(key)) out[key] = limparDicionario(val, true);   // o padrão só vale se o campo não existir
+      else if (Object.keys(def).length === 0) out[key] = limparDicionario(val, false);
       else out[key] = withDefaults(val, def, `${caminho}${key}.`);
     } else if (Array.isArray(def)) {
       out[key] = Array.isArray(val) ? val : structuredClone(def);

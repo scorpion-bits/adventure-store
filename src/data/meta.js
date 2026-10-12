@@ -84,7 +84,31 @@ export const META = {
   reputacao: { base: 30, expoente: 1.6, nivelMax: 50 },
 
   // ---------- início do jogo ----------
-  inicio: { ouro: 100 },
+  // estoque inicial: o jogo começa jogável antes de o jogador ter materiais e oficina ("item:qualidade": quantidade)
+  inicio: {
+    ouro: 100,
+    estoque: {
+      'pao_aventureiro:1': 4, 'pocao_cura:1': 3, 'adaga_bronze:1': 2, 'escudo_madeira:1': 1,
+      'ensopado:1': 2, 'anel_cobre:1': 1, 'arco_curto:1': 1,
+    },
+  },
+
+  // ---------- fluxo de clientes (tempos em milissegundos) ----------
+  loja: {
+    filaBase: 3,                // quantos clientes cabem na fila (melhorias aumentam)
+    intervaloBase: 14000,       // tempo médio entre chegadas no nível 1 de reputação...
+    intervaloPorNivel: 250,     // ...e quanto diminui por nível
+    intervaloMin: 5000,
+    jitter: 0.35,               // variação sorteada (±35%)
+    pacienciaBase: 75000,       // quanto um cliente espera na fila antes de ir embora
+    // chance de cada tipo de pedido
+    pedido: { item: 0.55, categoria: 0.3, surpresa: 0.15 },
+    // ajustes na chance de compra
+    substituto: 0.7,            // ofereceu outro item que não o pedido
+    preferido: 1.1,             // item de uma categoria que ele prefere
+    naoPreferido: 0.85,
+    semOrcamento: 0.04,         // o preço passa do orçamento: quase nunca compra
+  },
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {

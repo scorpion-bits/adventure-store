@@ -1,12 +1,10 @@
 // Telas das 5 abas. Por enquanto são provisórias (M0): mostram o que a tela vai ter.
 // Cada tela é `{ root, resize(rect), show() }`; as telas reais vão substituindo as provisórias.
 import { Container, Graphics } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton } from './ui.js';
+import { C, txt, para, drawCard, createScroll } from './ui.js';
 import { TELAS } from '../data/strings.js';
 import { TABS } from './tabbar.js';
-import { sfx } from '../audio/sfx.js';
-import { iconSprite } from '../assets.js';
-import { DATA } from '../data/index.js';
+import { createLojaScreen } from './loja.js';
 
 function stubScreen(id, { toast }) {
   const info = TELAS[id];
@@ -43,30 +41,6 @@ function stubScreen(id, { toast }) {
       scroll.add(row, rh);
     }
 
-    if (id === 'loja') {
-      // prova de que os dados e o manifesto de sprites funcionam (a prateleira de verdade vem no M2)
-      const shelf = new Container();
-      const sb = new Graphics();
-      const lista = DATA.listas.itens;
-      const cell = 40;
-      const per = Math.max(1, Math.floor((w - 24) / cell));
-      const rows = Math.ceil(lista.length / per);
-      const sh = 34 + rows * cell;
-      drawCard(sb, w, sh, { fill: C.card });
-      const st = txt(`${lista.length} itens carregados dos dados`, C.dim, 12, true);
-      st.position.set(12, 10);
-      shelf.addChild(sb, st);
-      lista.forEach((it, i) => {
-        const ic = iconSprite('item', it.id, 32);
-        ic.position.set(12 + (i % per) * cell, 32 + Math.floor(i / per) * cell);
-        shelf.addChild(ic);
-      });
-      scroll.add(shelf, sh);
-
-      const b = labelButton('Testar sons', w, 48);
-      b.tap(() => { sfx.bell(); setTimeout(() => sfx.sell(), 250); toast('Moedas!', C.gold); });
-      scroll.add(b, 48);
-    }
     scroll.relayout();
   };
 
@@ -84,5 +58,5 @@ function stubScreen(id, { toast }) {
 }
 
 export function createScreens(ctx) {
-  return TABS.map((tab) => stubScreen(tab.id, ctx));
+  return TABS.map((tab) => (tab.id === 'loja' ? createLojaScreen(ctx) : stubScreen(tab.id, ctx)));
 }

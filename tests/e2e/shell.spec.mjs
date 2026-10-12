@@ -56,12 +56,14 @@ test.describe('toque no celular', () => {
 });
 
 test('lista rola com a roda do mouse quando o conteúdo é maior que a tela', async ({ page }) => {
-  await page.setViewportSize({ width: 844, height: 300 });   // bem baixa: a lista precisa rolar
+  await page.setViewportSize({ width: 844, height: 300 });   // bem baixa: o atendimento precisa rolar
   const errors = await openGame(page);
+  await page.evaluate(() => { window.__loja.clearQueue(); window.__loja.addClient('clerigo_viajante'); window.__loja.loja.renderAgora(); });
+  await page.waitForFunction(() => window.__loja.loja.pronta());
   const before = await page.evaluate(() => window.__loja.scroll());
   expect(before.contentH).toBeGreaterThan(before.viewH);
   const c = await page.evaluate(() => window.__loja.layout().content);
-  await page.mouse.move(c.x + c.w / 2, c.y + c.h / 2);
+  await page.mouse.move(c.x + c.w * 0.8, c.y + c.h / 2);   // coluna da direita (o atendimento)
   await page.mouse.wheel(0, 120);
   await page.waitForTimeout(150);
   expect((await page.evaluate(() => window.__loja.scroll())).y).toBeGreaterThan(0);

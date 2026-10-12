@@ -69,7 +69,7 @@ async function start() {
   const modal = createModal();
   app.stage.addChild(screensLayer, topbar.root, tabbar.root, toasts.root, modal.root);
 
-  const screens = createScreens({ toast: toasts.show });
+  const screens = createScreens({ toast: toasts.show, game });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
@@ -125,6 +125,7 @@ async function start() {
 
   app.ticker.add((t) => {
     game.tick(t.deltaMS);
+    screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);
   });
@@ -168,6 +169,10 @@ async function start() {
       closeModal: () => modal.close(),
       modalOpen: () => modal.isOpen(),
       toast: (text) => toasts.show(text),
+      loja: screens[0].hooks,
+      giveItem: (id, q = 1, n = 1) => { const k = `${id}:${q}`; game.state.estoque[k] = (game.state.estoque[k] ?? 0) + n; game.emit('estoque'); },
+      clearQueue: () => { game.state.fila.length = 0; game.state.loja.proximaChegada = 1e9; game.emit('fila'); },
+      addClient: (adv, pedido = { tipo: 'surpresa' }) => { game.state.loja.uid += 1; const e = game.data.aventureiros[adv]; game.state.fila.push({ uid: game.state.loja.uid, adv, pedido, paciencia: 75000, pacienciaMax: 75000, fala: e?.falas?.chega?.[0] ?? '' }); game.emit('fila'); },
       scroll: () => { const sc = screens[active].scroll; return { y: sc.scrollY, contentH: sc.contentH, viewH: sc.viewH }; },
     };
   }
