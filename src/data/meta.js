@@ -69,16 +69,34 @@ export const META = {
   ],
 
   // ---------- ofícios da oficina ----------
+  // custo: ouro para abrir o ofício; nivelRep: reputação mínima da loja (o primeiro já vem aberto)
   oficios: [
-    { id: 'ferraria', nome: 'Ferraria', desc: 'Armas, armaduras e ferramentas de metal.' },
-    { id: 'alquimia', nome: 'Alquimia', desc: 'Poções e elixires.' },
-    { id: 'encantamento', nome: 'Encantamento', desc: 'Pergaminhos, runas e itens mágicos.' },
-    { id: 'costura', nome: 'Costura', desc: 'Roupas, capas e armaduras de tecido e couro.' },
-    { id: 'culinaria', nome: 'Culinária', desc: 'Refeições para quem vai à aventura.' },
-    { id: 'joalheria', nome: 'Joalheria', desc: 'Anéis, amuletos e gemas lapidadas.' },
-    { id: 'carpintaria', nome: 'Carpintaria', desc: 'Arcos, cajados, escudos e ferramentas de madeira.' },
-    { id: 'artefatos', nome: 'Artefatos', desc: 'Curiosidades e relíquias raras.' },
+    { id: 'ferraria', nome: 'Ferraria', desc: 'Armas, armaduras e ferramentas de metal.', custo: 0, nivelRep: 1 },
+    { id: 'culinaria', nome: 'Culinária', desc: 'Refeições para quem vai à aventura.', custo: 60, nivelRep: 1 },
+    { id: 'alquimia', nome: 'Alquimia', desc: 'Poções e elixires.', custo: 150, nivelRep: 2 },
+    { id: 'carpintaria', nome: 'Carpintaria', desc: 'Arcos, cajados, escudos e ferramentas de madeira.', custo: 250, nivelRep: 3 },
+    { id: 'costura', nome: 'Costura', desc: 'Roupas, capas e armaduras de tecido e couro.', custo: 400, nivelRep: 4 },
+    { id: 'encantamento', nome: 'Encantamento', desc: 'Pergaminhos, runas e itens mágicos.', custo: 700, nivelRep: 6 },
+    { id: 'joalheria', nome: 'Joalheria', desc: 'Anéis, amuletos e gemas lapidadas.', custo: 1000, nivelRep: 8 },
+    { id: 'artefatos', nome: 'Artefatos', desc: 'Curiosidades e relíquias raras.', custo: 2000, nivelRep: 12 },
   ],
+
+  // ---------- oficina ----------
+  oficina: {
+    slotsBase: 1,               // produções simultâneas por ofício (melhorias aumentam)
+    filaBase: 2,                // quantas produções podem esperar na fila de cada ofício
+    xpPorSegundo: 1 / 6,        // experiência do ofício por segundo de receita (mínimo 5 por produção)
+    nivelMax: 10,
+    xpNivel: { base: 60, expoente: 1.5 },     // xp acumulado para o nível n = base * (n-1)^expoente
+    // chance de cada qualidade [tosco, comum, fino, primoroso] a partir do nível do ofício
+    qualidade: [
+      { nivel: 1, p: [0.25, 0.75, 0, 0] },
+      { nivel: 3, p: [0.1, 0.7, 0.2, 0] },
+      { nivel: 5, p: [0, 0.6, 0.35, 0.05] },
+      { nivel: 7, p: [0, 0.4, 0.45, 0.15] },
+      { nivel: 10, p: [0, 0.2, 0.5, 0.3] },
+    ],
+  },
 
   // ---------- reputação: pontos para o nível n = base * (n-1)^expoente ----------
   reputacao: { base: 30, expoente: 1.6, nivelMax: 50 },

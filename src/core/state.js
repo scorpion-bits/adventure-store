@@ -24,6 +24,11 @@ export function defaultState(now = Date.now()) {
     loja: { proximaChegada: 1500, uid: 0 },   // relógio de chegadas (ms) e contador de clientes
     dia: { data: dayKey(now) },      // dia do calendário em que o jogo estava
 
+    oficios: { ferraria: { nivel: 1, xp: 0 } },   // ofícios abertos: { id: { nivel, xp } }
+    producao: [],                    // fila da oficina: { uid, receita, oficio, qtd, duracao, inicio, fim } (inicio/fim em ms; null enquanto espera)
+    prontos: [],                     // produções terminadas esperando coleta: { uid, receita, oficio, resultado: { qualidade: qtd } }
+    producaoUid: 0,
+
     mercado: { data: '', comprado: {} },   // compras de hoje por fornecedor: { "fornecedor:material": qtd }
 
     stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0 },

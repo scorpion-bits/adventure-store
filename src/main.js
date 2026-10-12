@@ -15,6 +15,9 @@ import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
 import { loadState, saveState, clearSave } from './core/save.js';
 import { createClock } from './core/time.js';
+import { avancarProducao, totalProntos } from './core/craft.js';
+import { fmtTime } from './format.js';
+import { para, labelButton } from './ui/ui.js';
 import { initAssets } from './assets.js';
 
 const BACK_INSET = 46;   // espaço do botão "voltar ao site" no canto superior esquerdo
@@ -56,6 +59,13 @@ async function start() {
   const clock = createClock();
   const game = createGame({ state, clock });
   game.verificarDia();
+
+  // tempo com o jogo fechado: a oficina termina o que deu tempo (antes de criar as telas, para não disparar avisos de cada item)
+  const ausenteMs = origem === 'carregado' ? Math.max(0, clock.now() - (state.salvoEm ?? clock.now())) : 0;
+  const prontosAntes = totalProntos(game);
+  avancarProducao(game);
+  const relatorio = { ausenteMs, prontos: totalProntos(game) - prontosAntes };
+
   // ao apagar o progresso o salvamento é bloqueado: senão o `pagehide` da recarga gravaria tudo de novo
   let apagando = false;
   const guardar = () => (apagando ? false : saveState(storage, game.state, clock.now()));
@@ -146,6 +156,20 @@ async function start() {
     setTimeout(() => boot.remove(), 700);
   }
 
+  // "Enquanto você esteve fora": só aparece se ficou fora um tempo e algo aconteceu
+  if (relatorio.ausenteMs > 60_000 && relatorio.prontos > 0) {
+    modal.open({
+      title: 'Bem-vindo de volta!',
+      build: (scroll, w) => {
+        const t = para(`Você ficou fora por ${fmtTime(relatorio.ausenteMs / 1000)}. Enquanto isso, ${relatorio.prontos} ${relatorio.prontos === 1 ? 'item ficou pronto' : 'itens ficaram prontos'} na Oficina.`, C.text, 15, w);
+        scroll.add(t, t.height);
+        const b = labelButton('Ir para a Oficina', w, 46, { tint: C.good });
+        b.tap(() => { modal.close(); selectTab(1); });
+        scroll.add(b, 46);
+      },
+    });
+  }
+
   if (import.meta.env.DEV) {
     window.__loja = {
       ready: true,
@@ -171,6 +195,8 @@ async function start() {
       toast: (text) => toasts.show(text),
       loja: screens[0].hooks,
       mercado: screens[2].hooks,
+      oficina: screens[1].hooks,
+      skip: (ms) => { clock.advance(ms); game.tick(0); },
       giveMaterial: (id, n = 1) => { game.state.materiais[id] = (game.state.materiais[id] ?? 0) + n; game.emit('materiais'); },
       giveItem: (id, q = 1, n = 1) => { const k = `${id}:${q}`; game.state.estoque[k] = (game.state.estoque[k] ?? 0) + n; game.emit('estoque'); },
       clearQueue: () => { game.state.fila.length = 0; game.state.loja.proximaChegada = 1e9; game.emit('fila'); },

@@ -57,6 +57,11 @@ const draw = {
       g.moveTo(Math.cos(a) * s * 0.32, Math.sin(a) * s * 0.32).lineTo(Math.cos(a) * s * 0.46, Math.sin(a) * s * 0.46).stroke({ width: 2, color: col });
     }
   },
+  cadeado(g, s, col) {
+    g.roundRect(-s * 0.3, -s * 0.04, s * 0.6, s * 0.46, 3).fill(col);
+    g.moveTo(-s * 0.18, -s * 0.04).lineTo(-s * 0.18, -s * 0.2).quadraticCurveTo(0, -s * 0.5, s * 0.18, -s * 0.2).lineTo(s * 0.18, -s * 0.04)
+      .stroke({ width: 3, color: col });
+  },
   fechar(g, s, col) {
     g.moveTo(-s * 0.3, -s * 0.3).lineTo(s * 0.3, s * 0.3).moveTo(s * 0.3, -s * 0.3).lineTo(-s * 0.3, s * 0.3).stroke({ width: 3, color: col, cap: 'round' });
   },

@@ -5,6 +5,7 @@ import { createRng } from './rng.js';
 import { createClock, dayKey, daysBetween } from './time.js';
 import { repNivel, repProgresso } from './economy.js';
 import { tickLoja } from './shop.js';
+import { avancarProducao } from './craft.js';
 
 // número do dia de jogo (1 no primeiro dia), contado em dias de calendário
 export const diaDeJogo = (state) => daysBetween(dayKey(state.criadoEm), state.dia.data) + 1;
@@ -19,7 +20,7 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
   const game = {
     state, data, clock, rng,
     // modificadores vindos das melhorias, equipe, decoração... (recalculados por quem os concede; ver M5)
-    mods: { fila: 0, paciencia: 1, chegada: 1, preco: 1 },
+    mods: { fila: 0, paciencia: 1, chegada: 1, preco: 1, compra: 1, qualidade: 0, autoColetar: false },
 
     // ---------- eventos ----------
     on(type, fn) {
@@ -70,6 +71,7 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
     // chamado a cada quadro pela interface (dtMs em milissegundos)
     tick(dtMs) {
       game.verificarDia();
+      avancarProducao(game);
       tickLoja(game, dtMs);
       game.emit('tick', dtMs);
     },

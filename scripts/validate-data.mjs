@@ -43,7 +43,7 @@ export function validar(data = DATA) {
     exige(itens.has(r.item), `receita ${r.id}: item inexistente "${r.item}"`);
     exige(oficios.has(r.oficio), `receita ${r.id}: ofício inválido "${r.oficio}"`);
     exige(r.tempo > 0, `receita ${r.id}: tempo deve ser > 0`);
-    exige(r.nivel >= 1, `receita ${r.id}: nivel deve ser >= 1`);
+    exige(r.nivel >= 1 && r.nivel <= meta.oficina.nivelMax, `receita ${r.id}: nivel deve ficar entre 1 e ${meta.oficina.nivelMax}`);
     const mats = Object.entries(r.materiais ?? {});
     exige(mats.length > 0, `receita ${r.id}: sem materiais`);
     for (const [m, q] of mats) {
@@ -71,6 +71,10 @@ export function validar(data = DATA) {
   for (const id of Object.keys(data.icones)) {
     exige(itens.has(id) || materiais.has(id), `icones: "${id}" não é item nem material`);
   }
+
+  // ofícios: o primeiro vem aberto de graça (senão o jogo começa sem como produzir) e todos têm custo e reputação
+  exige(meta.oficios[0].custo === 0, 'o primeiro ofício precisa ser grátis (vem aberto no início)');
+  for (const o of meta.oficios) exige(o.custo >= 0 && o.nivelRep >= 1, `ofício ${o.id}: custo e nivelRep inválidos`);
 
   // cada categoria precisa ter ao menos um item (senão "pedido por categoria" trava)
   for (const c of meta.categorias) exige(listas.itens.some((i) => i.cat === c.id), `categoria "${c.id}" não tem nenhum item`);
