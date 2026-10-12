@@ -107,6 +107,18 @@ export const META = {
     ],
   },
 
+  // ---------- expedições (mandar batedores buscar materiais de uma região) ----------
+  // unidades: quantos materiais trazem; eficiencia: quanto valem os materiais trazidos em relação ao custo (mais tempo, mais vantagem);
+  // chanceDrop: multiplica a chance de achar as curiosidades de cada região (data/regioes.js)
+  expedicoes: {
+    slotsBase: 1,
+    tiers: [
+      { id: 'curta', nome: 'Curta', minutos: 5, unidades: 6, eficiencia: 1.25, chanceDrop: 0.5 },
+      { id: 'media', nome: 'Média', minutos: 30, unidades: 36, eficiencia: 1.6, chanceDrop: 1 },
+      { id: 'longa', nome: 'Longa', minutos: 120, unidades: 130, eficiencia: 2.0, chanceDrop: 2.5 },
+    ],
+  },
+
   // ---------- eventos aleatórios (tempos em milissegundos) ----------
   eventos: { primeiroMin: 180000, intervaloMin: 240000, intervaloMax: 540000, cooldownPadraoMin: 45 },
 
@@ -143,7 +155,7 @@ export const META = {
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
-    itens: 100, eventos: 30, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
+    itens: 100, eventos: 30, expedicoes: 1, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
     regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80,
   },
 };

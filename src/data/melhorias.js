@@ -33,6 +33,13 @@ export const MELHORIAS_LOJA = [
     efeitos: [{ tipo: 'chegada', valor: 1.1 }] },
   { id: 'cartaz_praca', grupo: 'loja', nome: 'Cartaz na praça', desc: 'Mais aventureiros ficam sabendo da loja.', custo: 500, nivelRep: 3, requer: ['sino_porta'],
     efeitos: [{ tipo: 'chegada', valor: 1.15 }] },
+  // ---- expedições ----
+  { id: 'mapa_regiao', grupo: 'loja', nome: 'Mapa da região', desc: 'Dá para mandar mais um grupo de batedores ao mesmo tempo.', custo: 900, nivelRep: 8,
+    efeitos: [{ tipo: 'expedicoes', valor: 1 }] },
+  { id: 'guia_batedores', grupo: 'loja', nome: 'Guia de batedores', desc: 'Quem conhece o caminho volta com a mochila mais cheia.', custo: 1900, nivelRep: 10, requer: ['mapa_regiao'],
+    efeitos: [{ tipo: 'expedicaoRendimento', valor: 1.2 }] },
+  { id: 'caravana_propria', grupo: 'loja', nome: 'Caravana própria', desc: 'Mais uma expedição ao mesmo tempo e carga maior.', custo: 7500, nivelRep: 18, requer: ['guia_batedores'],
+    efeitos: [{ tipo: 'expedicoes', valor: 1 }, { tipo: 'expedicaoRendimento', valor: 1.15 }] },
   { id: 'fornecedor_fiel', grupo: 'loja', nome: 'Contrato com fornecedores', desc: 'Compras em volume: materiais mais baratos.', custo: 700, nivelRep: 4,
     efeitos: [{ tipo: 'compra', valor: 0.93 }] },
 ];

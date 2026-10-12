@@ -90,7 +90,7 @@ async function start() {
   app.stage.addChild(tutorial.root);
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
-  const screens = createScreens({ toast: toasts.show, game });
+  const screens = createScreens({ toast: toasts.show, game, modal });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;

@@ -1,7 +1,8 @@
 // Tela do Mercado: o depósito (o que você tem) e os fornecedores do dia, com preço e estoque que mudam à meia-noite.
 // A lógica está em core/market.js; aqui só desenho e toques.
-import { Container, Graphics } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton } from './ui.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { montarMapa, pintarMapa } from './mapa.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '../core/market.js';
 import { fmt } from '../format.js';
@@ -9,7 +10,7 @@ import { sfx, haptic } from '../audio/sfx.js';
 
 const ROW_H = 78;
 
-export function createMercadoScreen({ game, toast }) {
+export function createMercadoScreen({ game, toast, modal }) {
   const root = new Container();
   const scroll = createScroll(300);
   root.addChild(scroll.root);
@@ -18,8 +19,42 @@ export function createMercadoScreen({ game, toast }) {
   let dirty = true;
   let quadros = 0;
   const refs = {};     // `${fornecedor}:${material}:${tipo}` -> { c, w, h }
+  let sub = 'fornecedores';
+  let barras = [];     // progresso das expedições
+  let tempos = [];
+  let relogio = 0;
   const marcar = () => { dirty = true; };
-  for (const ev of ['ouro', 'materiais', 'estoque', 'dia', 'rep']) game.on(ev, marcar);
+  for (const ev of ['ouro', 'materiais', 'estoque', 'dia', 'rep', 'expedicao', 'expedicaoColetada', 'mods']) game.on(ev, marcar);
+  game.on('expedicaoPronta', (e) => {
+    sfx.ready();
+    toast(`Os batedores voltaram de ${game.data.regioes[e.regiao]?.nome ?? 'viagem'}!`, C.good);
+    marcar();
+  });
+
+  // abas internas: Fornecedores | Mapa
+  function barraSub(w) {
+    const c = new Container();
+    const gap = 6;
+    const itens = [{ id: 'fornecedores', nome: 'Fornecedores' }, { id: 'mapa', nome: 'Mapa e expedições' }];
+    const cw = (w - gap) / itens.length;
+    itens.forEach((it, i) => {
+      const b = new Container();
+      const bg = new Graphics();
+      const on = it.id === sub;
+      bg.roundRect(0, 0, cw, 38, 12).fill({ color: on ? C.accent : C.card, alpha: on ? 0.22 : 1 }).stroke({ width: 1, color: on ? C.accent : 0xffffff, alpha: on ? 0.8 : 0.1 });
+      const t = txt(it.nome, on ? C.text : C.dim, 12, true);
+      t.position.set((cw - t.width) / 2, (38 - t.height) / 2);
+      b.addChild(bg, t);
+      b.position.set(i * (cw + gap), 0);
+      b.eventMode = 'static';
+      b.cursor = 'pointer';
+      b.hitArea = new Rectangle(0, 0, cw, 38);
+      b.on('pointertap', () => { if (!wasDragged() && sub !== it.id) { sub = it.id; sfx.tap(); marcar(); } });
+      refs[`sub:${it.id}`] = { c: b, w: cw, h: 38 };
+      c.addChild(b);
+    });
+    return { c, h: 38 };
+  }
 
   function cartaoDeposito(w) {
     const c = new Container();
@@ -137,23 +172,33 @@ export function createMercadoScreen({ game, toast }) {
     scroll.clear();
     const w = R.w;
 
-    const dep = cartaoDeposito(w);
-    scroll.add(dep.c, dep.h);
-    const aviso = txt('Preços e estoques mudam à meia-noite (horário do seu aparelho).', C.faint, 11);
-    scroll.add(aviso, aviso.height);
+    barras = [];
+    tempos = [];
+    const sb = barraSub(w);
+    scroll.add(sb.c, sb.h);
 
-    const todos = game.data.listas.fornecedores;
-    for (const f of todos.filter((x) => fornecedorDisponivel(game, x))) {
-      for (const it of cartaoFornecedor(w, f)) scroll.add(it.c, it.h);
-    }
-    const trancados = todos.filter((x) => !fornecedorDisponivel(game, x));
-    if (trancados.length) {
-      const h = txt('Em breve', C.dim, 12, true);
-      scroll.add(h, h.height);
-      for (const f of trancados) { const b = cartaoBloqueado(w, f); scroll.add(b.c, b.h); }
+    if (sub === 'mapa') {
+      montarMapa(scroll, { game, w, reg: (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; }, toast, modal, tempos, barras });
+    } else {
+      const dep = cartaoDeposito(w);
+      scroll.add(dep.c, dep.h);
+      const aviso = txt('Preços e estoques mudam à meia-noite (horário do seu aparelho).', C.faint, 11);
+      scroll.add(aviso, aviso.height);
+
+      const todos = game.data.listas.fornecedores;
+      for (const f of todos.filter((x) => fornecedorDisponivel(game, x))) {
+        for (const it of cartaoFornecedor(w, f)) scroll.add(it.c, it.h);
+      }
+      const trancados = todos.filter((x) => !fornecedorDisponivel(game, x));
+      if (trancados.length) {
+        const h = txt('Em breve', C.dim, 12, true);
+        scroll.add(h, h.height);
+        for (const f of trancados) { const b = cartaoBloqueado(w, f); scroll.add(b.c, b.h); }
+      }
     }
     scroll.resize(R.h, w);
     scroll.scrollBy(keepY);
+    pintarMapa(game, barras, tempos);
   }
 
   const global = (ref) => (ref ? ref.c.toGlobal({ x: ref.w / 2, y: ref.h / 2 }) : null);
@@ -167,14 +212,18 @@ export function createMercadoScreen({ game, toast }) {
       render();
     },
     show() { marcar(); },
-    update() {
+    update(dt = 16) {
       if (!root.visible) return;
-      if (dirty) render();
-      else quadros += 1;
+      if (dirty) { render(); return; }
+      quadros += 1;
+      relogio += dt;
+      if (relogio >= 250) { relogio = 0; if (barras.length || tempos.length) pintarMapa(game, barras, tempos); }
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
+      sub: () => sub,
       botaoCentro: (fornecedor, material, tipo) => global(refs[`${fornecedor}:${material}:${tipo}`]),
+      centro: (nome) => global(refs[nome]),
       renderAgora: render,
       // rola a lista até o item ficar à vista (usado pelos testes: com muito conteúdo, nem tudo cabe na tela)
       ver: (nome) => {

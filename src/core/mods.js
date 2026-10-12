@@ -27,6 +27,8 @@ export const modsBase = () => ({
   offlineHoras: 0,         // quanto tempo de vendas offline conta (horas)
   vendasOffline: 0,        // fração da chegada normal de clientes que o vendedor atende com o jogo fechado
   atendente: 0,            // segundos entre atendimentos automáticos (0 = sem atendente)
+  expedicoes: 0,           // expedições simultâneas extras
+  expedicaoRendimento: 1,  // multiplica o material que as expedições trazem
 });
 
 const soma = (m, k, e) => { m[k] += e.valor; };
@@ -56,6 +58,8 @@ export const EFEITOS = {
   repetir: { aplicar: (m) => { m.repetir = true; }, texto: () => 'A oficina pode repetir uma receita sozinha' },
   offlineHoras: { aplicar: (m, e) => { m.offlineHoras = Math.max(m.offlineHoras, e.valor); }, texto: (e) => `Vendas com o jogo fechado por até ${e.valor} h` },
   vendasOffline: { aplicar: (m, e) => { m.vendasOffline = Math.max(m.vendasOffline, e.valor); }, texto: (e) => `Atende ${Math.round(e.valor * 100)}% dos clientes com o jogo fechado` },
+  expedicoes: { aplicar: (m, e) => soma(m, 'expedicoes', e), texto: (e) => `+${e.valor} expedição ao mesmo tempo` },
+  expedicaoRendimento: { aplicar: (m, e) => mult(m, 'expedicaoRendimento', e), texto: (e) => `Expedições trazem ${pct(e.valor)} mais material` },
   atendente: { aplicar: (m, e) => { m.atendente = m.atendente ? Math.min(m.atendente, e.valor) : e.valor; }, texto: (e) => `Atende um cliente que espera a cada ${e.valor} s` },
 };
 

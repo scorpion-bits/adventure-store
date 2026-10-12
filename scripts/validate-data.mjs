@@ -67,7 +67,12 @@ export function validar(data = DATA) {
   }
   // cada temperamento precisa das quatro listas de frases genéricas (a base de quem não tem as suas)
   for (const t of meta.temperamentos) for (const k of ['compra', 'recusa', 'barato', 'caro']) exige(t.falas?.[k]?.length >= 2, `temperamento ${t.id}: faltam falas "${k}" (pelo menos 2)`);
-  for (const r of listas.regioes) exige(r.valorMin >= 0 && r.valorMax > r.valorMin, `região ${r.id}: faixa de valor inválida`);
+  for (const r of listas.regioes) {
+    exige(r.valorMin >= 0 && r.valorMax > r.valorMin, `região ${r.id}: faixa de valor inválida`);
+    exige(listas.materiais.some((x) => x.regiao === r.id), `região ${r.id}: nenhum material nela (as expedições não trariam nada)`);
+    for (const d of r.drops ?? []) exige(itens.has(d.item) && d.chance > 0 && d.chance <= 1, `região ${r.id}: drop inválido "${d.item}"`);
+  }
+  for (const t of meta.expedicoes.tiers) exige(t.minutos > 0 && t.unidades > 0 && t.eficiencia > 1, `expedição ${t.id}: valores inválidos (eficiência deve ser > 1 para valer a pena)`);
 
   for (const f of listas.fornecedores) {
     exige(regioes.has(f.regiao), `fornecedor ${f.id}: região inválida "${f.regiao}"`);
@@ -160,6 +165,7 @@ export function validar(data = DATA) {
   const contagens = {
     itens: [listas.itens.length, m.itens],
     eventos: [listas.eventos.length, m.eventos],
+    expedicoes: [meta.expedicoes.tiers.length, m.expedicoes],
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)

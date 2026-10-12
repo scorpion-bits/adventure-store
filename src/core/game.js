@@ -8,6 +8,7 @@ import { tickLoja } from './shop.js';
 import { avancarProducao } from './craft.js';
 import { tickEquipe } from './staff.js';
 import { tickEventos } from './events.js';
+import { tickExpedicoes } from './expeditions.js';
 import { modsBase, recalcularMods } from './mods.js';
 
 // número do dia de jogo (1 no primeiro dia), contado em dias de calendário
@@ -78,6 +79,7 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
       tickLoja(game, dtMs);
       tickEquipe(game, dtMs);
       tickEventos(game, dtMs);
+      tickExpedicoes(game);
       game.emit('tick', dtMs);
     },
   };
