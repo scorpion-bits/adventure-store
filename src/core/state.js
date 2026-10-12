@@ -34,6 +34,9 @@ export function defaultState(now = Date.now()) {
     prontos: [],                     // produções terminadas esperando coleta: { uid, receita, oficio, resultado: { qualidade: qtd } }
     producaoUid: 0,
 
+    eventos: { proximo: META.eventos.primeiroMin, ultimo: {}, pendente: null },   // relógio (ms), quando cada evento foi visto, evento esperando resposta
+    bonus: [],                       // efeitos temporários: { rotulo, efeito, ate (ms) }
+
     mercado: { data: '', comprado: {} },   // compras de hoje por fornecedor: { "fornecedor:material": qtd }
 
     stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0 },

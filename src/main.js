@@ -20,6 +20,8 @@ import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
 import { initAssets, carregarAtlas, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
+import { createEventos } from './ui/eventos.js';
+import { disparar as dispararEvento } from './core/events.js';
 import { simularOffline } from './core/staff.js';
 
 const BACK_INSET = 46;   // espaço do botão "voltar ao site" no canto superior esquerdo
@@ -87,6 +89,7 @@ async function start() {
   const tutorial = createTutorial({ game, tabbar, onFinish: () => guardar() });
   app.stage.addChild(tutorial.root);
   app.stage.addChild(modal.root);
+  const eventos = createEventos({ game, modal, toast: toasts.show });
   const screens = createScreens({ toast: toasts.show, game });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
@@ -145,11 +148,13 @@ async function start() {
 
   app.ticker.add((t) => {
     game.tick(t.deltaMS);
+    eventos.update();
     screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);
   });
 
+  // Esc fecha a janela aberta (janelas de evento, que exigem uma escolha, ignoram)
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.isOpen()) modal.close(); });
 
   // áudio só depois do primeiro gesto
@@ -213,6 +218,7 @@ async function start() {
       mercado: screens[2].hooks,
       oficina: screens[1].hooks,
       tutorial: tutorial.hooks,
+      eventos: { ...eventos.hooks, disparar: (id) => dispararEvento(game, id) },
       melhorias: screens[4].hooks,
       skip: (ms) => { clock.advance(ms); game.tick(0); },
       giveMaterial: (id, n = 1) => { game.state.materiais[id] = (game.state.materiais[id] ?? 0) + n; game.emit('materiais'); },

@@ -107,6 +107,9 @@ export const META = {
     ],
   },
 
+  // ---------- eventos aleatórios (tempos em milissegundos) ----------
+  eventos: { primeiroMin: 180000, intervaloMin: 240000, intervaloMax: 540000, cooldownPadraoMin: 45 },
+
   // ---------- reputação: pontos para o nível n = base * (n-1)^expoente ----------
   reputacao: { base: 30, expoente: 1.6, nivelMax: 50 },
 
@@ -140,7 +143,7 @@ export const META = {
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
-    itens: 100, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
+    itens: 100, eventos: 30, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
     regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80,
   },
 };

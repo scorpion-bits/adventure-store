@@ -77,6 +77,8 @@ export function recalcularMods(game) {
     if (nivel > 0) aplicarEfeitos(m, f.niveis[nivel - 1]?.efeitos);
   }
   aplicarEfeitos(m, game.data.decoracoes[s.loja.tema]?.efeitos);
+  const agora = game.clock.now();
+  for (const b of s.bonus ?? []) if (b.ate > agora) aplicarEfeitos(m, [b.efeito]);      // bônus temporários (eventos)
   Object.assign(game.mods, m);        // mantém a mesma referência que o resto do jogo já guarda
   game.emit('mods', game.mods);
   return game.mods;

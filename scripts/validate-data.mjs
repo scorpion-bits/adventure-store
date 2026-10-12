@@ -3,6 +3,7 @@
 //       npm run validate -- --metas -> também falha se alguma meta de conteúdo não foi atingida
 import { DATA } from '../src/data/index.js';
 import { EFEITOS } from '../src/core/mods.js';
+import { TIPOS_DE_EFEITO } from '../src/core/events.js';
 
 export function validar(data = DATA) {
   const erros = [];
@@ -120,6 +121,33 @@ export function validar(data = DATA) {
   }
   exige(data.decoracoes.rustico?.custo === 0, 'a decoração "rustico" (padrão, grátis) precisa existir');
 
+  // eventos: textos, requisitos, escolhas e efeitos válidos
+  for (const ev of listas.eventos) {
+    const dono = `evento ${ev.id}`;
+    exige(ev.titulo && ev.texto && ev.texto.length > 30, `${dono}: título e texto (30+ caracteres) são obrigatórios`);
+    exige(ev.peso > 0, `${dono}: peso deve ser > 0`);
+    exige(!ev.requer?.regiao || regioes.has(ev.requer.regiao), `${dono}: região inválida "${ev.requer?.regiao}"`);
+    exige(ev.escolhas?.length >= 1 && ev.escolhas.length <= 3, `${dono}: precisa de 1 a 3 escolhas`);
+    for (const [i, c] of (ev.escolhas ?? []).entries()) {
+      const onde = `${dono} escolha ${i + 1}`;
+      exige(c.rotulo && c.resultados?.length >= 1, `${onde}: rótulo e resultados são obrigatórios`);
+      exige(!c.custo || c.custo > 0, `${onde}: custo deve ser > 0`);
+      for (const r of c.resultados ?? []) {
+        exige(r.texto && r.texto.length > 8, `${onde}: resultado sem texto`);
+        for (const ef of r.efeitos ?? []) {
+          exige(TIPOS_DE_EFEITO.includes(ef.tipo), `${onde}: efeito desconhecido "${ef.tipo}"`);
+          if (ef.tipo === 'material') exige(materiais.has(ef.id), `${onde}: material inexistente "${ef.id}"`);
+          if (ef.tipo === 'item') exige(itens.has(ef.id), `${onde}: item inexistente "${ef.id}"`);
+          if (ef.tipo === 'itemAleatorio') exige(cats.has(ef.cat), `${onde}: categoria inválida "${ef.cat}"`);
+          if (ef.tipo === 'materialAleatorio') exige(regioes.has(ef.regiao), `${onde}: região inválida "${ef.regiao}"`);
+          if (ef.tipo === 'xpOficio') exige(oficios.has(ef.oficio), `${onde}: ofício inválido "${ef.oficio}"`);
+          if (ef.tipo === 'cliente') exige(listas.aventureiros.some((a) => a.id === ef.adv), `${onde}: aventureiro inexistente "${ef.adv}"`);
+          if (ef.tipo === 'bonus') { exige(EFEITOS[ef.efeito?.tipo] && ef.minutos > 0 && ef.rotulo, `${onde}: bônus inválido`); }
+        }
+      }
+    }
+  }
+
   // ofícios: o primeiro vem aberto de graça (senão o jogo começa sem como produzir) e todos têm custo e reputação
   exige(meta.oficios[0].custo === 0, 'o primeiro ofício precisa ser grátis (vem aberto no início)');
   for (const o of meta.oficios) exige(o.custo >= 0 && o.nivelRep >= 1, `ofício ${o.id}: custo e nivelRep inválidos`);
@@ -131,6 +159,7 @@ export function validar(data = DATA) {
   const m = meta.metas;
   const contagens = {
     itens: [listas.itens.length, m.itens],
+    eventos: [listas.eventos.length, m.eventos],
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)

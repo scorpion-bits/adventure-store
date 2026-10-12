@@ -9,6 +9,7 @@ import { REGIOES } from './regioes.js';
 import { MELHORIAS } from './melhorias.js';
 import { EQUIPE } from './equipe.js';
 import { DECORACOES } from './decoracoes.js';
+import { EVENTOS } from './eventos.js';
 import { ICONES } from './icones.js';
 
 const indexar = (lista) => Object.fromEntries(lista.map((x) => [x.id, x]));
@@ -24,12 +25,13 @@ export const DATA = {
   melhorias: indexar(MELHORIAS),
   equipe: indexar(EQUIPE),
   decoracoes: indexar(DECORACOES),
+  eventos: indexar(EVENTOS),
   icones: ICONES,
   // listas na ordem em que foram escritas (para sorteios e telas)
   listas: {
     materiais: MATERIAIS, itens: ITENS, receitas: RECEITAS,
     aventureiros: AVENTUREIROS, fornecedores: FORNECEDORES, regioes: REGIOES,
-    melhorias: MELHORIAS, equipe: EQUIPE, decoracoes: DECORACOES,
+    melhorias: MELHORIAS, equipe: EQUIPE, decoracoes: DECORACOES, eventos: EVENTOS,
   },
 };
 

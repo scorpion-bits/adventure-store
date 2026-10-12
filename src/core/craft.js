@@ -137,6 +137,26 @@ function sortearQualidade(game, nivel, oficio) {
   return ultimo;        // sobra de arredondamento: a melhor qualidade possível
 }
 
+// Experiência de um ofício (só ofícios abertos). Sobe de nível sozinha.
+export function ganharXp(game, oficio, xp) {
+  const e = game.state.oficios[oficio];
+  if (!e || !(xp > 0)) return false;
+  const antes = e.nivel;
+  e.xp += xp;
+  while (e.nivel < O(game).nivelMax && e.xp >= xpParaNivel(game, e.nivel + 1)) e.nivel += 1;
+  if (e.nivel > antes) game.emit('nivelOficio', { id: oficio, nivel: e.nivel });
+  game.emit('producao');
+  return true;
+}
+
+// Adianta o relógio de tudo que está em produção (efeito de eventos: ajudante, forja emprestada...).
+export function adiantarProducao(game, segundos) {
+  const ms = segundos * 1000;
+  for (const j of game.state.producao) if (j.inicio !== null) { j.inicio -= ms; j.fim -= ms; }
+  avancarProducao(game);
+  game.emit('producao');
+}
+
 function concluir(game, job) {
   const receita = game.data.receitas[job.receita];
   const e = game.state.oficios[job.oficio];
@@ -148,12 +168,7 @@ function concluir(game, job) {
     resultado[q] = (resultado[q] ?? 0) + 1;
   }
   game.state.prontos.push({ uid: job.uid, receita: job.receita, oficio: job.oficio, resultado, fim: job.fim });
-  if (e) {
-    const antes = e.nivel;
-    e.xp += Math.max(5, Math.round((receita?.tempo ?? 0) * O(game).xpPorSegundo)) * job.qtd;
-    while (e.nivel < O(game).nivelMax && e.xp >= xpParaNivel(game, e.nivel + 1)) e.nivel += 1;
-    if (e.nivel > antes) game.emit('nivelOficio', { id: job.oficio, nivel: e.nivel });
-  }
+  if (e) ganharXp(game, job.oficio, Math.max(5, Math.round((receita?.tempo ?? 0) * O(game).xpPorSegundo)) * job.qtd);
   game.state.stats.produzidos = (game.state.stats.produzidos ?? 0) + total;
   game.emit('pronto', { job, receita });
 }

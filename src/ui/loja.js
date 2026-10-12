@@ -8,6 +8,8 @@ import { classe } from '../data/index.js';
 import { fmt } from '../format.js';
 import { temaAtual } from '../core/upgrades.js';
 import { capacidadeEstoque, totalEstoque } from '../core/estoque.js';
+import { descreverEfeito } from '../core/mods.js';
+import { fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
 const NIVEIS = [
@@ -30,10 +32,11 @@ export function createLojaScreen({ game, toast }) {
   let dirty = true;
   let quadros = 0;           // quadros desenhados desde o último render() (o Pixi só atualiza as posições de toque ao desenhar)
   let bars = [];             // barras de paciência atualizadas a cada quadro
+  let tempos = [];           // textos de tempo restante dos bônus
   const refs = { precos: {}, fila: [], opcoes: [], frente: null, dispensar: null };
   const marcar = () => { dirty = true; };
 
-  for (const ev of ['fila', 'estoque', 'venda', 'recusa', 'dispensou', 'saiu']) game.on(ev, marcar);
+  for (const ev of ['fila', 'estoque', 'venda', 'recusa', 'dispensou', 'saiu', 'bonus']) game.on(ev, marcar);
   game.on('chegou', () => { sfx.bell(); marcar(); });
   game.on('atendente', (r) => {
     const nome = adventureiro(game, r.cli).nome;
@@ -314,8 +317,31 @@ export function createLojaScreen({ game, toast }) {
     marcar();
   }
 
+  // faixa de efeitos ativos (bônus de eventos): nome, o que faz e quanto tempo falta
+  function faixaBonus(w) {
+    const lista = game.state.bonus.filter((b) => b.ate > game.clock.now());
+    if (!lista.length) return null;
+    const c = new Container();
+    const bg = new Graphics();
+    let y = 8;
+    for (const b of lista.slice(0, 4)) {
+      const t = txt(`${b.rotulo}: ${descreverEfeito(b.efeito, game)}`, C.accent, 12, true);
+      t.position.set(12, y);
+      const r = txt('', C.dim, 11);
+      c.addChild(t, r);
+      tempos.push({ r, b, x: w - 12, y: y + 1 });
+      y += 20;
+    }
+    const h = y + 4;
+    drawCard(bg, w, h, { fill: C.card, accent: C.accent, radius: 10 });
+    c.addChildAt(bg, 0);
+    return { c, h };
+  }
+
   function atendimento(w) {
     const itens = [];
+    const faixa = faixaBonus(w);
+    if (faixa) itens.push(faixa);
     if (resultado) itens.push(cartaoResultado(w));
     const cli = game.state.fila[0];
     refs.frente = cli ?? null;
@@ -373,6 +399,7 @@ export function createLojaScreen({ game, toast }) {
     dirty = false;
     quadros = 0;
     bars = [];
+    tempos = [];
     const keepY = scroll.scrollY;
     const wide = R.w >= 640;
     sceneHolder.removeChildren().forEach((ch) => ch.destroy({ children: true }));
@@ -401,6 +428,15 @@ export function createLojaScreen({ game, toast }) {
     }
     scroll.scrollBy(keepY);
     paintBars();
+    paintTempos();
+  }
+
+  function paintTempos() {
+    const agora = game.clock.now();
+    for (const x of tempos) {
+      x.r.text = fmtTime((x.b.ate - agora) / 1000);
+      x.r.position.set(x.x - x.r.width, x.y);
+    }
   }
 
   function paintBars() {
@@ -427,7 +463,7 @@ export function createLojaScreen({ game, toast }) {
     update() {
       if (!root.visible) return;
       if (dirty) render();
-      else { quadros += 1; paintBars(); }
+      else { quadros += 1; paintBars(); if (tempos.length && (quadros % 15 === 0)) paintTempos(); }
     },
     // atalhos para os testes e para depurar
     hooks: {

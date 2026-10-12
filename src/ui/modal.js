@@ -24,15 +24,17 @@ export function createModal() {
 
   const m = { root, spec: null, scroll: null, L: null, onClose: null };
 
-  const close = () => {
+  // `force`: fecha mesmo as janelas que não podem ser dispensadas (eventos que pedem uma escolha)
+  const close = (force = false) => {
     if (!m.spec) return;
+    if (m.spec.fechavel === false && force !== true) return;
     m.spec = null;
     sfx.close();
     tween(panel, { alpha: 0, y: panel.y + 14 }, 160, { onDone: () => { if (!m.spec) root.visible = false; } });
     tween(dim, { alpha: 0 }, 160);
     m.onClose?.();
   };
-  closeBtn.tap(close);
+  closeBtn.tap(() => close());
   dim.on('pointertap', () => { if (!wasDragged()) close(); });
 
   const build = (animate) => {
@@ -55,6 +57,7 @@ export function createModal() {
     title.text = m.spec.title;
     title.position.set(20, 18);
     closeBtn.position.set(w - 52, 12);
+    closeBtn.visible = m.spec.fechavel !== false;
 
     dim.clear().rect(0, 0, L.w, L.h).fill({ color: 0x000000, alpha: 0.62 });
     dim.hitArea = new Rectangle(0, 0, L.w, L.h);
@@ -80,6 +83,7 @@ export function createModal() {
     build(true);
   };
   m.close = close;
+  m.spec_ = () => m.spec;
   m.isOpen = () => !!m.spec;
   m.layout = (L) => { m.L = L; build(false); };
   return m;

@@ -35,24 +35,25 @@ const itensPedidos = (game, adv) => {
   return naFaixa.length ? naFaixa : doTipo;
 };
 
-// Sorteia um aventureiro e o pedido dele. Devolve null se ninguém puder vir (nada a pedir).
-export function gerarCliente(game) {
-  const nivel = game.nivel();
-  const candidatos = game.data.listas.aventureiros.filter((a) => {
-    const regiao = game.data.regioes[a.regiao];
-    return (a.nivelRep ?? 1) <= nivel && (regiao?.nivelRep ?? 1) <= nivel && itensPedidos(game, a).length > 0;
-  });
-  const adv = game.rng.weighted(candidatos, (a) => a.peso ?? 1);
-  if (!adv) return null;
+const clienteElegivel = (game, a) => {
+  const regiao = game.data.regioes[a.regiao];
+  return (a.nivelRep ?? 1) <= game.nivel() && (regiao?.nivelRep ?? 1) <= game.nivel() && itensPedidos(game, a).length > 0;
+};
 
+// Monta um cliente (pedido e paciência) para um aventureiro específico. Não o coloca na fila.
+export function criarCliente(game, advId) {
+  const adv = game.data.aventureiros[advId];
+  if (!adv) return null;
   const L = game.data.meta.loja;
   const tipo = game.rng.weighted(
     [{ t: 'item', peso: L.pedido.item }, { t: 'categoria', peso: L.pedido.categoria }, { t: 'surpresa', peso: L.pedido.surpresa }],
     (x) => x.peso,
   ).t;
   const pedido = { tipo };
-  if (tipo === 'item') pedido.item = game.rng.pick(itensPedidos(game, adv)).id;
+  const possiveis = itensPedidos(game, adv);
+  if (tipo === 'item' && possiveis.length) pedido.item = game.rng.pick(possiveis).id;
   else if (tipo === 'categoria') pedido.cat = game.rng.pick(adv.prefere);
+  else if (tipo === 'item') pedido.tipo = 'surpresa';
 
   const temp = game.data.meta.temperamentos.find((t) => t.id === adv.temperamento);
   const espera = L.pacienciaBase * (temp?.paciencia ?? 1) * (game.mods.paciencia ?? 1);
@@ -63,6 +64,28 @@ export function gerarCliente(game) {
     paciencia: espera, pacienciaMax: espera,
     fala: falas.length ? game.rng.pick(falas) : '',
   };
+}
+
+// Sorteia um aventureiro (pelos pesos) e o pedido dele. Devolve null se ninguém puder vir (nada a pedir).
+export function gerarCliente(game) {
+  const adv = game.rng.weighted(game.data.listas.aventureiros.filter((a) => clienteElegivel(game, a)), (a) => a.peso ?? 1);
+  return adv ? criarCliente(game, adv.id) : null;
+}
+
+// Um dos clientes mais ricos que já podem aparecer (eventos de "cliente importante").
+export function clienteRico(game) {
+  const ricos = game.data.listas.aventureiros.filter((a) => clienteElegivel(game, a)).sort((a, b) => b.orcamento - a.orcamento).slice(0, 4);
+  const adv = ricos.length ? game.rng.pick(ricos) : null;
+  return adv ? criarCliente(game, adv.id) : null;
+}
+
+// Põe um cliente na fila ignorando a capacidade (eventos podem lotar a loja). Devolve o cliente.
+export function receberCliente(game, cli) {
+  if (!cli) return null;
+  game.state.fila.push(cli);
+  game.emit('chegou', cli);
+  game.emit('fila', game.state.fila);
+  return cli;
 }
 
 export function chegar(game) {
