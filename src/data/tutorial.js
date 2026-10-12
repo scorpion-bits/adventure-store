@@ -19,7 +19,7 @@ export const SEQUENCIAS = {
     { id: 'cliente', aba: 'loja', botao: 'Entendi',
       texto: 'Cada cliente pede um item, um tipo de item ou "me surpreenda". O pedido aparece em laranja; a barra verde é a paciência dele.' },
     { id: 'vender', aba: 'loja', espera: ['venda', 'recusa'], alvo: 'preco:justo',
-      texto: 'Escolha o preço: barato agrada e rende reputação; caro rende mais ouro, mas pode espantar o cliente. Toque em Justo.' },
+      texto: 'Escolha o preço; a % é a chance de o cliente aceitar. Barato rende reputação, caro rende mais ouro mas pode espantá-lo. Toque em Justo.' },
     { id: 'estoque', aba: 'loja', botao: 'Entendi',
       texto: 'O estoque é limitado (veja as prateleiras). Se faltar o item pedido, ofereça um parecido (ele aceita menos) ou dispense o cliente.' },
     { id: 'explorar', aba: 'loja', botao: 'Vamos explorar',

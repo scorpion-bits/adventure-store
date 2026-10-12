@@ -297,8 +297,10 @@ export function createLojaScreen({ game, toast }) {
         const av = avaliar(game, cli, entrada, nv.id);
         const t2 = txt(`${fmt(av.preco)} ouro`, C.gold, 15, true);
         t2.position.set((bw - t2.width) / 2, 30);
-        const t3 = txt(av.reacao.texto, COR_REACAO[av.reacao.id], 11, true);
-        t3.position.set((bw - t3.width) / 2, 52);
+        // chance de o cliente aceitar, em %, junto da reação (cabe no botão: o texto diminui se precisar)
+        const t3 = txt(`${Math.round(av.chance * 100)}% · ${av.reacao.texto}`, COR_REACAO[av.reacao.id], 11, true);
+        for (let tam = 11; t3.width > bw - 8 && tam > 8; tam--) t3.style.fontSize = tam;
+        t3.position.set((bw - t3.width) / 2, 52 + (11 - t3.style.fontSize) / 2);
         const t4 = txt(`${sinal(av.rep)} reputação`, C.dim, 10);
         t4.position.set((bw - t4.width) / 2, 68);
         b.addChild(t2, t3, t4);
