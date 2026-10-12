@@ -203,6 +203,17 @@ export function validar(data = DATA) {
   exige(data.semanal.quantas <= data.semanal.metas.length, 'metas semanais: "quantas" passa do tamanho do pool');
   exige(data.diario.faixas[0] === 1 && data.diario.faixas.every((n, i, a) => i === 0 || n > a[i - 1]), 'diário: as faixas precisam começar em 1 e crescer');
 
+  // herança (prestígio): efeitos válidos e custos que não caem de um nível para o outro
+  for (const h of listas.heranca) {
+    const dono = `herança ${h.id}`;
+    exige(h.nome && h.desc && h.niveis?.length >= 1, `${dono}: nome, descrição e pelo menos 1 nível`);
+    h.niveis.forEach((n, i) => {
+      exige(n.custo >= 1 && (i === 0 || n.custo >= h.niveis[i - 1].custo), `${dono} nível ${i + 1}: custo inválido ou menor que o do nível anterior`);
+      conferirEfeitos(`${dono} nível ${i + 1}`, n.efeitos);
+    });
+  }
+  exige(listas.heranca.length === 0 || data.cidades.length >= 3, 'cidades: precisa de pelo menos 3 nomes');
+
   // conquistas: medida conhecida, argumento válido, meta e prêmio sensatos
   const argumentos = {
     categoria: new Set(meta.categorias.map((c) => c.id)), classe: new Set(meta.classes.map((c) => c.id)), raridade: new Set(meta.raridades.map((r) => r.id)),
@@ -238,6 +249,7 @@ export function validar(data = DATA) {
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
     conquistas: [listas.conquistas.length, m.conquistas],
+    heranca: [listas.heranca.length, m.heranca],
     // a menor quantidade de melhorias entre os ofícios
     melhoriasPorOficio: [Math.min(...meta.oficios.map((o) => listas.melhorias.filter((x) => x.grupo === o.id).length)), m.melhoriasPorOficio],
   };

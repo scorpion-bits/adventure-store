@@ -49,6 +49,7 @@ export function defaultState(now = Date.now()) {
     stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0, encomendas: 0, produzidos: 0, expedicoes: 0, capitulos: 0, caros: 0, baratos: 0, maiorVenda: 0, qualidadeMax: 0, eventos: 0, melhorSequencia: 0 },
     conquistas: {},                  // conquistas ganhas: { id: quando (ms) }
     colecao: { itens: {}, aventureiros: {}, categorias: {}, classes: {}, raridades: {} },   // o que já apareceu / quanto já vendeu
+    prestigio: { cidade: 1, heranca: 0, herancaTotal: 0, base: 0, bonus: {} },   // cidade atual (1 = a primeira), Herança sobrando e gasta, ouro ganho antes desta cidade, níveis dos bônus
     tutorial: { passo: 0, feito: false },
   };
 }

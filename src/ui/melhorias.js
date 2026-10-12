@@ -8,6 +8,9 @@ import {
   comprarDecoracao, usarDecoracao,
 } from '../core/upgrades.js';
 import { progressoConquista, ganha, totalGanhas } from '../core/achievements.js';
+import {
+  estadoExpansao, expandir, comprarHeranca, nivelHeranca, custoHeranca, nomeDaCidade, ouroDestaCidade,
+} from '../core/prestige.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -24,7 +27,7 @@ const MOTIVOS = {
   'ja-comprada': 'Você já tem esta melhoria',
 };
 
-export function createMelhoriasScreen({ game, toast }) {
+export function createMelhoriasScreen({ game, toast, modal }) {
   const root = new Container();
   const scroll = createScroll(300);
   root.addChild(scroll.root);
@@ -36,7 +39,7 @@ export function createMelhoriasScreen({ game, toast }) {
   let quadros = 0;
   const refs = {};
   const marcar = () => { dirty = true; };
-  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao', 'conquista']) game.on(ev, marcar);
+  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao', 'conquista', 'heranca', 'expandiu']) game.on(ev, marcar);
   game.on('melhoria', (m) => toast(`${m.nome} comprada!`, C.accent));
   game.on('equipe', ({ id, nivel }) => toast(`${game.data.equipe[id].nome}: nível ${nivel}`, C.accent));
 
@@ -285,21 +288,6 @@ export function createMelhoriasScreen({ game, toast }) {
     return { c: out, h: linhas * ch + (linhas - 1) * gap };
   }
 
-  function cartaEmBreve(w, titulo, texto, etapa) {
-    const c = new Container();
-    const bg = new Graphics();
-    const t = txt(titulo, C.text, 17, true);
-    t.position.set(14, 12);
-    const p = para(texto, C.dim, 13, w - 28);
-    p.position.set(14, t.y + t.height + 4);
-    const e = txt(`chega na etapa ${etapa}`, C.accent, 12, true);
-    e.position.set(14, p.y + p.height + 8);
-    const h = e.y + e.height + 14;
-    drawCard(bg, w, h, { fill: C.card, accent: C.faint });
-    c.addChild(bg, t, p, e);
-    return { c, h };
-  }
-
   // ---------- conquistas ----------
   function barra(w, frac, cor) {
     const g = new Graphics();
@@ -363,6 +351,142 @@ export function createMelhoriasScreen({ game, toast }) {
     return itens;
   }
 
+  // ---------- expandir (prestígio) ----------
+  function cartaoCidade(w) {
+    const p = game.state.prestigio;
+    const c = new Container();
+    const bg = new Graphics();
+    c.addChild(bg);
+    const t = txt(nomeDaCidade(game), C.text, 18, true);
+    t.position.set(14, 12);
+    const n = txt(`Cidade nº ${p.cidade}`, C.dim, 12, true);
+    n.position.set(w - 14 - n.width, 16);
+    const l1 = txt(`Ouro ganho nesta cidade: ${fmt(ouroDestaCidade(game))}`, C.dim, 13);
+    l1.position.set(14, t.y + t.height + 6);
+    const l2 = txt(`Herança: ${fmt(p.heranca)} para gastar · ${fmt(p.herancaTotal)} já ganha`, C.gold, 13, true);
+    l2.position.set(14, l1.y + l1.height + 4);
+    c.addChild(t, n, l1, l2);
+    const h = l2.y + l2.height + 14;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: C.gold });
+    return { c, h };
+  }
+
+  function confirmarExpansao() {
+    const ganho = estadoExpansao(game).ganho;
+    const proxima = nomeDaCidade(game, game.state.prestigio.cidade + 1);
+    modal.open({
+      title: 'Nova cidade',
+      build: (sc, w) => {
+        const a = para(`Você vai fundar a loja em ${proxima} e ganhar ${fmt(ganho)} de Herança.`, C.text, 15, w, { bold: true });
+        sc.add(a, a.height);
+        const b = para('Recomeça do zero: ouro, estoque, materiais, melhorias, equipe, decoração, ofícios, expedições e reputação.', C.bad, 13, w);
+        sc.add(b, b.height);
+        const c = para('Fica com você: Herança e seus bônus, conquistas, coleção, histórias das lendas, sequência de dias e estatísticas.', C.good, 13, w);
+        sc.add(c, c.height);
+        const ok = labelButton(`Expandir para ${proxima}`, w, 46, { tint: C.good });
+        ok.tap(() => {
+          modal.close(true);
+          const r = expandir(game);
+          if (r.ok) {
+            sfx.achievement();
+            haptic(20);
+            toast(`Bem-vindo a ${nomeDaCidade(game)}! +${fmt(r.ganho)} Herança`, C.gold);
+          }
+        });
+        sc.add(ok, 46);
+        reg('confirmar', ok, w, 46);
+        const no = labelButton('Agora não', w, 40, { tint: C.dim });
+        no.tap(() => modal.close(true));
+        sc.add(no, 40);
+      },
+    });
+  }
+
+  function cartaoExpandir(w) {
+    const e = estadoExpansao(game);
+    const proxima = nomeDaCidade(game, game.state.prestigio.cidade + 1);
+    const c = new Container();
+    const bg = new Graphics();
+    c.addChild(bg);
+    const t = txt(`Expandir para ${proxima}`, C.text, 16, true);
+    t.position.set(14, 12);
+    const d = para('Recomece em uma cidade nova. A loja volta ao começo, mas a Herança que você ganha fica para sempre e deixa as próximas cidades mais fáceis.', C.dim, 12, w - 28);
+    d.position.set(14, t.y + t.height + 4);
+    c.addChild(t, d);
+    let y = d.y + d.height + 8;
+    let msg;
+    if (e.ok) msg = `Rende ${fmt(e.ganho)} de Herança agora.`;
+    else if (e.motivo === 'reputacao') msg = `Chegue à reputação ${e.nivelMin} para poder expandir.`;
+    else msg = `Ganhe mais ${fmt(e.falta)} de ouro nesta cidade para render Herança.`;
+    const m = para(msg, e.ok ? C.good : C.warn, 13, w - 28, { bold: true });
+    m.position.set(14, y);
+    c.addChild(m);
+    y += m.height + 10;
+    const b = labelButton('Expandir', w - 28, 44, { tint: e.ok ? C.good : C.dim, size: 15 });
+    b.position.set(14, y);
+    if (!e.ok) { b.paint({ alpha: 0.05 }); b.label.style.fill = C.faint; }
+    b.tap(() => { if (e.ok) confirmarExpansao(); else { sfx.deny(); toast(msg, C.warn); } });
+    c.addChild(b);
+    reg('expandir', b, w - 28, 44);
+    const h = y + 44 + 14;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: e.ok ? C.good : C.faint });
+    return { c, h };
+  }
+
+  function cartaoHeranca(w, def) {
+    const nivel = nivelHeranca(game, def.id);
+    const max = def.niveis.length;
+    const custo = custoHeranca(game, def.id);
+    const c = new Container();
+    const bg = new Graphics();
+    const bw = 84;
+    const tw = w - bw - 36;
+    const nome = txt(def.nome, C.text, 14, true);
+    nome.position.set(14, 10);
+    const desc = para(def.desc, C.dim, 12, tw);
+    desc.position.set(14, nome.y + nome.height + 1);
+    c.addChild(bg, nome, desc);
+    let y = desc.y + desc.height + 4;
+    if (nivel > 0) {
+      const t = para(`Agora: ${def.niveis[nivel - 1].efeitos.map((e) => descreverEfeito(e, game)).join(' · ')}`, C.good, 12, tw, { bold: true });
+      t.position.set(14, y);
+      c.addChild(t);
+      y += t.height + 2;
+    }
+    if (custo !== null) {
+      const t = para(`Próximo: ${def.niveis[nivel].efeitos.map((e) => descreverEfeito(e, game)).join(' · ')}`, C.accent, 12, tw, { bold: true });
+      t.position.set(14, y);
+      c.addChild(t);
+      y += t.height + 2;
+    }
+    const pips = new Graphics();
+    for (let i = 0; i < max; i++) pips.circle(i * 14, 0, 4.5).fill(i < nivel ? C.gold : 0x000000).stroke({ width: 1, color: C.gold, alpha: i < nivel ? 1 : 0.4 });
+    pips.position.set(19, y + 8);
+    c.addChild(pips);
+    const h = Math.max(y + 22, 70);
+    if (custo === null) {
+      const ok = txt('Máximo', C.good, 12, true);
+      ok.position.set(w - ok.width - 14, 12);
+      c.addChild(ok);
+    } else {
+      const pode = game.state.prestigio.heranca >= custo;
+      const b = labelButton(`${custo}`, bw, 40, { tint: pode ? C.gold : C.dim, size: 15 });
+      b.position.set(w - bw - 12, 12);
+      if (!pode) { b.paint({ alpha: 0.05 }); b.label.style.fill = C.faint; }
+      b.tap(() => {
+        const r = comprarHeranca(game, def.id);
+        if (r.ok) { sfx.levelUp(); haptic(10); } else { sfx.deny(); toast('Herança insuficiente', C.bad); }
+      });
+      c.addChild(b);
+      reg(`heranca:${def.id}`, b, bw, 40);
+      const rot = txt('Herança', C.dim, 10);
+      rot.position.set(w - bw - 12 + (bw - rot.width) / 2, 54);
+      c.addChild(rot);
+    }
+    drawCard(bg, w, h, { fill: nivel >= max ? C.card : C.cardHi, fillAlpha: nivel >= max ? 0.6 : 1, accent: nivel >= max ? C.good : custo !== null && game.state.prestigio.heranca >= custo ? C.gold : null });
+    return { c, h };
+  }
+
   const secao = (texto) => { const t = txt(texto, C.dim, 12, true); return { c: t, h: t.height }; };
 
   // ---------- montagem ----------
@@ -389,7 +513,10 @@ export function createMelhoriasScreen({ game, toast }) {
     } else if (sub === 'conquistas') {
       listaConquistas(w).forEach(add);
     } else {
-      add(cartaEmBreve(w, 'Expandir para uma nova cidade', 'Recomece em outra cidade com bônus permanentes herdados desta loja.', 'M10'));
+      add(cartaoCidade(w));
+      add(cartaoExpandir(w));
+      add(secao('Bônus de Herança (valem em todas as cidades)'));
+      game.data.listas.heranca.forEach((h) => add(cartaoHeranca(w, h)));
     }
     scroll.resize(R.h, w);
     scroll.scrollBy(keepY);

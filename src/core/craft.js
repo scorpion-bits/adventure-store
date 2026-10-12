@@ -142,7 +142,7 @@ export function ganharXp(game, oficio, xp) {
   const e = game.state.oficios[oficio];
   if (!e || !(xp > 0)) return false;
   const antes = e.nivel;
-  e.xp += xp;
+  e.xp += xp * game.mods.xpOficio;
   while (e.nivel < O(game).nivelMax && e.xp >= xpParaNivel(game, e.nivel + 1)) e.nivel += 1;
   if (e.nivel > antes) game.emit('nivelOficio', { id: oficio, nivel: e.nivel });
   game.emit('producao');

@@ -14,6 +14,7 @@ import { LENDARIOS } from './lendarios.js';
 import { SAZONAIS } from './sazonais.js';
 import { DIARIO, SEMANAL } from './retencao.js';
 import { CONQUISTAS } from './conquistas.js';
+import { HERANCA, CIDADES } from './heranca.js';
 import { ICONES } from './icones.js';
 
 const indexar = (lista) => Object.fromEntries(lista.map((x) => [x.id, x]));
@@ -33,6 +34,8 @@ export const DATA = {
   lendarios: indexar(LENDARIOS),
   sazonais: indexar(SAZONAIS),
   conquistas: indexar(CONQUISTAS),
+  heranca: indexar(HERANCA),
+  cidades: CIDADES,
   diario: DIARIO,
   semanal: SEMANAL,
   icones: ICONES,
@@ -40,7 +43,7 @@ export const DATA = {
   listas: {
     materiais: MATERIAIS, itens: ITENS, receitas: RECEITAS,
     aventureiros: AVENTUREIROS, fornecedores: FORNECEDORES, regioes: REGIOES,
-    melhorias: MELHORIAS, equipe: EQUIPE, decoracoes: DECORACOES, eventos: EVENTOS, lendarios: LENDARIOS, sazonais: SAZONAIS, conquistas: CONQUISTAS,
+    melhorias: MELHORIAS, equipe: EQUIPE, decoracoes: DECORACOES, eventos: EVENTOS, lendarios: LENDARIOS, sazonais: SAZONAIS, conquistas: CONQUISTAS, heranca: HERANCA,
   },
 };
 

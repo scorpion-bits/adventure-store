@@ -4,7 +4,7 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M9 (conquistas e coleção)**. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
+> Estado atual: **M10 (prestígio)**: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
 > 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
 > aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,

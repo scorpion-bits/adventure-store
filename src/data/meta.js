@@ -157,9 +157,13 @@ export const META = {
     semOrcamento: 0.04,         // o preço passa do orçamento: quase nunca compra
   },
 
+  // ---------- prestígio: expandir para uma nova cidade ----------
+  // herança ganha = coef × raiz((ouro ganho nesta cidade) / ouroBase), arredondada para baixo; só vale com a reputação mínima
+  prestigio: { nivelMin: 20, ouroBase: 50000, coef: 1 },
+
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
     itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
-    regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80,
+    regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80, heranca: 10,
   },
 };

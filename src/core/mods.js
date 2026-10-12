@@ -31,6 +31,8 @@ export const modsBase = () => ({
   atendente: 0,            // segundos entre atendimentos automáticos (0 = sem atendente)
   expedicoes: 0,           // expedições simultâneas extras
   expedicaoRendimento: 1,  // multiplica o material que as expedições trazem
+  xpOficio: 1,             // multiplica a experiência dos ofícios
+  ouroInicial: 0,          // ouro extra ao fundar uma nova cidade
 });
 
 const soma = (m, k, e) => { m[k] += e.valor; };
@@ -62,6 +64,8 @@ export const EFEITOS = {
   vendasOffline: { aplicar: (m, e) => { m.vendasOffline = Math.max(m.vendasOffline, e.valor); }, texto: (e) => `Atende ${Math.round(e.valor * 100)}% dos clientes com o jogo fechado` },
   expedicoes: { aplicar: (m, e) => soma(m, 'expedicoes', e), texto: (e) => `+${e.valor} expedição ao mesmo tempo` },
   expedicaoRendimento: { aplicar: (m, e) => mult(m, 'expedicaoRendimento', e), texto: (e) => `Expedições trazem ${pct(e.valor)} mais material` },
+  xpOficio: { aplicar: (m, e) => mult(m, 'xpOficio', e), texto: (e) => `Ofícios ganham ${pct(e.valor)} mais experiência` },
+  ouroInicial: { aplicar: (m, e) => soma(m, 'ouroInicial', e), texto: (e) => `Cada nova cidade começa com +${e.valor} de ouro` },
   atendente: { aplicar: (m, e) => { m.atendente = m.atendente ? Math.min(m.atendente, e.valor) : e.valor; }, texto: (e) => `Atende um cliente que espera a cada ${e.valor} s` },
 };
 
@@ -83,6 +87,10 @@ export function recalcularMods(game) {
     if (nivel > 0) aplicarEfeitos(m, f.niveis[nivel - 1]?.efeitos);
   }
   aplicarEfeitos(m, game.data.decoracoes[s.loja.tema]?.efeitos);
+  for (const h of game.data.listas.heranca) {
+    const nivel = s.prestigio.bonus[h.id] ?? 0;
+    if (nivel > 0) aplicarEfeitos(m, h.niveis[Math.min(nivel, h.niveis.length) - 1]?.efeitos);
+  }
   const agora = game.clock.now();
   for (const b of s.bonus ?? []) if (b.ate > agora) aplicarEfeitos(m, [b.efeito]);      // bônus temporários (eventos)
   for (const sz of sazonaisAtivos(game)) aplicarEfeitos(m, sz.efeitos);                 // eventos sazonais (pela data)
