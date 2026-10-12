@@ -1,7 +1,7 @@
 // Plugin do Vite para o app instalável (PWA) na versão "standalone": depois do build, escreve dist/sw.js com a lista de
 // todos os arquivos do jogo. O service worker guarda tudo na instalação, então o jogo abre e roda sem internet.
 // A versão muda sozinha quando qualquer arquivo muda (hash da lista com tamanhos), e o cache antigo é apagado.
-import { readdirSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, relative, resolve } from 'node:path';
 
@@ -42,19 +42,27 @@ self.addEventListener('fetch', (e) => {
 });
 `;
 
-export function pwaPlugin() {
+// extras: arquivos fora da pasta do jogo que ele usa (caminhos relativos ao sw.js), ex.: o PixiJS do site
+// copiarPublico: itens de `public/` a copiar para o build (na versão do site a pasta public não vai inteira)
+export function pwaPlugin({ extras = [], copiarPublico = [] } = {}) {
   let outDir = 'dist';
+  let raiz = '.';
   return {
     name: 'pwa-service-worker',
     apply: 'build',
-    configResolved(cfg) { outDir = resolve(cfg.root, cfg.build.outDir); },
+    configResolved(cfg) { outDir = resolve(cfg.root, cfg.build.outDir); raiz = cfg.root; },
     closeBundle() {
+      for (const item of copiarPublico) {
+        const origem = resolve(raiz, 'public', item);
+        if (existsSync(origem)) cpSync(origem, join(outDir, item), { recursive: true });
+      }
       const arquivos = listar(outDir).filter((f) => f !== 'sw.js').sort();
       const hash = createHash('sha1');
       for (const f of arquivos) hash.update(`${f}:${statSync(join(outDir, f)).size};`);
+      for (const e of extras) hash.update(`${e};`);
       const versao = hash.digest('hex').slice(0, 10);
       // './' (a página) mais cada arquivo, relativos à pasta do sw.js
-      writeFileSync(join(outDir, 'sw.js'), SW(versao, ['./', ...arquivos.map((f) => `./${f}`)]));
+      writeFileSync(join(outDir, 'sw.js'), SW(versao, ['./', ...arquivos.map((f) => `./${f}`), ...extras]));
     },
   };
 }

@@ -36,17 +36,14 @@ const pageShell = (variant) => ({
         { tag: 'meta', attrs: { property: 'og:title', content: TITLE }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:description', content: DESC }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:locale', content: 'pt_BR' }, injectTo: 'head' },
-        ...(v.sharedPixi ? [] : [
-          // app instalável (PWA): só na versão autossuficiente
-          { tag: 'link', attrs: { rel: 'manifest', href: './manifest.webmanifest' }, injectTo: 'head' },
-          { tag: 'link', attrs: { rel: 'apple-touch-icon', href: './icons/apple-touch-icon.png' }, injectTo: 'head' },
-          { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
-          { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
-          { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: 'Loja do Aventureiro' }, injectTo: 'head' },
-          { tag: 'meta', attrs: { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }, injectTo: 'head' },
-        ]),
+        // app instalável (PWA): manifesto, ícone do iOS e modo de tela cheia
+        { tag: 'link', attrs: { rel: 'manifest', href: './manifest.webmanifest' }, injectTo: 'head' },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: './icons/apple-touch-icon.png' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: 'Loja do Aventureiro' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }, injectTo: 'head' },
         { tag: 'link', attrs: { rel: 'icon', href: v.icon, type: 'image/png' }, injectTo: 'head' },
-        ...(v.sharedPixi ? [{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: v.icon }, injectTo: 'head' }] : []),
         { tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `${v.fonts}/grotesk-latin.woff2`, crossorigin: '' }, injectTo: 'head' },
         { tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `${v.fonts}/inter-latin.woff2`, crossorigin: '' }, injectTo: 'head' },
         {
@@ -107,11 +104,17 @@ export default defineConfig(({ mode }) => {
   const site = mode === 'site';
   return {
     base: './',
-    define: { __APP_VERSION__: JSON.stringify(pkg.version), __PWA__: JSON.stringify(!site) },
+    define: { __APP_VERSION__: JSON.stringify(pkg.version), __PWA__: 'true' },
     resolve: site
       ? { alias: { 'pixi.js': fileURLToPath(new URL('./src/pixi-global.js', import.meta.url)) } }
       : {},
-    plugins: [pageShell(site ? 'site' : 'standalone'), ...(site ? [] : [pwaPlugin()])],
+    plugins: [
+      pageShell(site ? 'site' : 'standalone'),
+      // no site o PixiJS, as fontes e o logo vêm de ../assets (mesma origem, fora da pasta /loja/): entram no cache também
+      pwaPlugin(site
+        ? { extras: ['../assets/vendor/pixi.min.js?v=8.22.0', '../assets/fonts/grotesk-latin.woff2', '../assets/fonts/inter-latin.woff2', '../assets/logo-glyph.png', '../assets/favicon.png'], copiarPublico: ['manifest.webmanifest', 'icons'] }
+        : {}),
+    ],
     // no site, fontes e logo vêm de assets/ do próprio site, então não copia a pasta public
     publicDir: site ? false : 'public',
     build: { outDir: site ? 'dist-site' : 'dist' },

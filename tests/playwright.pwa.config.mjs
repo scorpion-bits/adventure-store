@@ -13,17 +13,14 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:5198',
     launchOptions: {
       executablePath,
       args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
     },
   },
-  webServer: {
-    command: 'npm run build && npx vite preview --port 5198 --strictPort',
-    url: 'http://localhost:5198',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    cwd: '..',
-  },
+  // dois servidores: a versão autossuficiente (5198, npm run build) e uma cópia do site com o jogo em /loja/ (5197)
+  webServer: [
+    { command: 'npm run build && npx vite preview --port 5198 --strictPort', url: 'http://localhost:5198', reuseExistingServer: !process.env.CI, timeout: 120_000, cwd: '..' },
+    { command: 'node tests/pwa/servidor-site.mjs', url: 'http://localhost:5197/loja/', reuseExistingServer: !process.env.CI, timeout: 120_000, cwd: '..' },
+  ],
 });
