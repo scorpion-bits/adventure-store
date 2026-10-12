@@ -110,3 +110,9 @@ Sem arquivos, não há música e nada quebra.
 
 Veja [`CREDITS.md`](CREDITS.md). Os pacotes de arte originais ficam em `assets-src/` (ignorado pelo git,
 por causa das licenças); só o atlas gerado a partir deles entra no repositório.
+
+### Jogar pelo GitHub Pages
+
+O workflow `.github/workflows/pages.yml` compila (`npm run build`) e publica a cada push na `main` **e** na branch de desenvolvimento, para jogar antes de subir para o site.
+Uso único: *Settings → Pages → Source = GitHub Actions*. O endereço fica em `https://<organização>.github.io/adventure-store/` (ou no domínio próprio da organização).
+Se o deploy for recusado por regra de ambiente: *Settings → Environments → github-pages → Deployment branches* e permita a branch.
