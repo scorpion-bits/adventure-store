@@ -37,8 +37,8 @@ export const ICONES = {
   runa_protecao: 'fb326', grimorio_aprendiz: 'fb289', cajado_carvalho: 'fb1573', varinha_cristal: 'fb295', orbe_arcano: 'fb293',
   cajado_tempestade: 'fb1576', tomo_proibido: 'fb290', pergaminho_meteoro: 'fb1001', cajado_arcano_supremo: 'fb1578',
   // ---------- ferramentas ----------
-  pa: 'fb1469', vara_pescar: 'fb337', foice: 'fb1451', corda_gancho: 'fb1474', martelo: 'fb126', machado_lenhador: 'fb1464',
-  picareta_ferro: 'fb1457', lanterna: 'fb85', chave_mestra: 'fb71', kit_acampamento: 'fb93', picareta_aco: 'fb1537', balanca_precisao: 'fb124',
+  pa: 'fb1469', vara_pescar: 'fb337', foice: 'fb1457', corda_gancho: 'fb1474', martelo: 'fb126', machado_lenhador: 'fb1464',
+  picareta_ferro: 'fb1458', lanterna: 'fb85', chave_mestra: 'fb71', kit_acampamento: 'fb93', picareta_aco: 'fb1538', balanca_precisao: 'fb124',
   // ---------- acessórios ----------
   pulseira_couro: 'fb2068', colar_contas: 'fb2066', anel_cobre: 'fb1844', anel_prata: 'fb2061', amuleto_sorte: 'fb2182',
   brincos_ouro: 'fb1848', amuleto_protecao: 'fb2178', anel_rubi: 'fb1845', colar_esmeralda: 'fb2065', broche_estelar: 'fb2188',
