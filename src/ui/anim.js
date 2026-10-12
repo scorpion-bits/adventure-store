@@ -1,5 +1,7 @@
 // Motor de animações simples: interpola propriedades numéricas de objetos Pixi.
 // Propriedades aceitas: x, y, alpha, rotation e "scale" (uniforme).
+// Com "Animações" desligadas nas configurações (ou prefers-reduced-motion), tudo chega ao valor final no quadro seguinte.
+import { settings } from '../settings.js';
 
 export const ease = {
   out: (t) => 1 - (1 - t) ** 3,
@@ -24,6 +26,7 @@ const write = (target, key, value) => {
 // propriedade no mesmo objeto cancela a anterior.
 export function tween(target, to, ms = 300, { ease: fn = ease.out, delay = 0, onDone } = {}) {
   const keys = Object.keys(to);
+  if (!settings.motion) { ms = 1; delay = 0; }
   for (let i = running.length - 1; i >= 0; i--) {
     if (running[i].target === target && keys.includes(running[i].key)) running.splice(i, 1);
   }

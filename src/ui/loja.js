@@ -2,7 +2,8 @@
 // (cliente, o que oferecer, os três preços). A lógica está em core/shop.js; aqui só desenho e toques.
 import { Container, Graphics } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten } from './ui.js';
-import { iconSprite, portraitSprite } from '../assets.js';
+import { iconSprite, portraitSprite, guiPronto, guiSprite } from '../assets.js';
+import { tween, ease } from './anim.js';
 import { opcoes, avaliar, vender, dispensar, passarNaFrente, pedidoTexto, adventureiro, temperamentoDe } from '../core/shop.js';
 import { classe } from '../data/index.js';
 import { fmt } from '../format.js';
@@ -25,7 +26,9 @@ export function createLojaScreen({ game, toast }) {
   const root = new Container();
   const sceneHolder = new Container();
   const scroll = createScroll(300);
-  root.addChild(sceneHolder, scroll.root);
+  const fx = new Container();         // efeitos que sobem da cena (ouro ganho); sobrevive às reconstruções da tela
+  fx.eventMode = 'none';
+  root.addChild(sceneHolder, scroll.root, fx);
 
   let R = { x: 0, y: 0, w: 360, h: 600 };
   let sel = null;            // chave do estoque escolhida para oferecer
@@ -51,9 +54,27 @@ export function createLojaScreen({ game, toast }) {
     sfx.deny();
   });
 
+  // "+N" que sobe do balcão quando uma venda fecha
+  function flutuar(texto, cor) {
+    const cena = refs.cena;
+    if (!cena || cena.c.destroyed || !root.visible) return;
+    const p = root.toLocal(cena.c.toGlobal({ x: cena.w / 2, y: cena.h * 0.62 }));
+    const f = new Container();
+    const t = txt(texto, cor, 16, true);
+    let x = 0;
+    if (guiPronto()) { const m = guiSprite('moeda', 2); m.position.set(0, 0); f.addChild(m); x = m.width + 4; }
+    t.position.set(x, 0);
+    f.addChild(t);
+    f.position.set(p.x - f.width / 2, p.y);
+    fx.addChild(f);
+    tween(f, { y: p.y - 46, alpha: 0 }, 900, { ease: ease.out, onDone: () => f.destroy({ children: true }) });
+  }
+  game.on('venda', (v) => { if (v.preco > 0) flutuar(`+${fmt(v.preco)}`, C.gold); });
+
   // ---------- cena ----------
   function buildScene(w, h) {
     const c = new Container();
+    refs.cena = { c, w, h };
     const bg = new Graphics();
     const cor = temaAtual(game).cores;
     const floorY = Math.round(h * 0.5);

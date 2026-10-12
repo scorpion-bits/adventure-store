@@ -3,6 +3,7 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, drawCard, createScroll, makeButton, wasDragged } from './ui.js';
 import { drawIcon } from './icons.js';
+import { guiPronto, guiPainel } from '../assets.js';
 import { tween, ease } from './anim.js';
 import { sfx } from '../audio/sfx.js';
 
@@ -13,6 +14,7 @@ export function createModal() {
   dim.eventMode = 'static';
   const panel = new Container();
   const panelBg = new Graphics();
+  let moldura = null;        // moldura de madeira (Cryo's), recriada a cada tamanho
   const title = txt('', C.text, 20, true);
   const closeBtn = makeButton(40, 40, { tint: C.dim, radius: 20, alpha: 0.08 });
   const closeIcon = new Graphics();
@@ -42,21 +44,30 @@ export function createModal() {
     if (!L || !m.spec) return;
     if (m.scroll) { m.scroll.root.destroy({ children: true }); m.scroll = null; }
     const w = Math.min(L.w - 24, 460);
-    const innerW = w - 40;
+    const pad = guiPronto() ? 30 : 20;       // a moldura de madeira ocupa a borda
+    const innerW = w - pad * 2;
     const scroll = createScroll(innerW);
     m.spec.build(scroll, innerW);
     scroll.relayout();
-    const head = 64;
-    const h = Math.min(L.h - 32, head + scroll.contentH + 24);
-    scroll.resize(h - head - 20, innerW);
-    scroll.root.position.set(20, head);
+    const head = guiPronto() ? 70 : 64;
+    const h = Math.min(L.h - 32, head + scroll.contentH + pad + 4);
+    scroll.resize(h - head - pad, innerW);
+    scroll.root.position.set(pad, head);
     panel.addChild(scroll.root);
     m.scroll = scroll;
 
-    drawCard(panelBg, w, h, { fill: C.panel, radius: 20, borderAlpha: 0.14 });
+    if (guiPronto()) {
+      moldura?.destroy();
+      panelBg.clear().rect(6, 6, w - 12, h - 12).fill(C.panel);
+      moldura = guiPainel('moldura', w, h, 2, { repetir: true });
+      moldura.tint = 0xd9bfa6;      // madeira um pouco mais escura, para combinar com o tema
+      panel.addChildAt(moldura, 1);
+    } else {
+      drawCard(panelBg, w, h, { fill: C.panel, radius: 20, borderAlpha: 0.14 });
+    }
     title.text = m.spec.title;
-    title.position.set(20, 18);
-    closeBtn.position.set(w - 52, 12);
+    title.position.set(pad, guiPronto() ? 24 : 18);
+    closeBtn.position.set(w - (guiPronto() ? 62 : 52), guiPronto() ? 18 : 12);
     closeBtn.visible = m.spec.fechavel !== false;
 
     dim.clear().rect(0, 0, L.w, L.h).fill({ color: 0x000000, alpha: 0.62 });

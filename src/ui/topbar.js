@@ -4,6 +4,7 @@ import { C, txt, drawCard, wasDragged } from './ui.js';
 import { drawIcon } from './icons.js';
 import { fmt } from '../format.js';
 import { tween } from './anim.js';
+import { guiPronto, guiSprite } from '../assets.js';
 
 export function createTopBar({ onSettings }) {
   const root = new Container();
@@ -13,7 +14,9 @@ export function createTopBar({ onSettings }) {
   const goldBg = new Graphics();
   const goldIcon = new Graphics();
   const goldTxt = txt('0', C.gold, 16, true);
+  const goldArte = guiPronto() ? guiSprite('moeda', 2) : null;      // moeda do pack, se carregado
   goldBox.addChild(goldBg, goldIcon, goldTxt);
+  if (goldArte) goldBox.addChild(goldArte);
 
   const repBox = new Container();
   const repBg = new Graphics();
@@ -66,8 +69,10 @@ export function createTopBar({ onSettings }) {
     const goldW = compact ? 104 : 124;
     goldBox.position.set(L.x, y);
     pill(goldBg, goldW, h);
-    drawIcon(goldIcon, 'moeda', 20, C.gold);
-    goldIcon.position.set(20, h / 2);
+    if (goldArte) { goldIcon.clear(); goldArte.position.set(20 - goldArte.width / 2, (h - goldArte.height) / 2); } else {
+      drawIcon(goldIcon, 'moeda', 20, C.gold);
+      goldIcon.position.set(20, h / 2);
+    }
     goldTxt.text = fmt(v.gold);
     goldTxt.position.set(36, (h - goldTxt.height) / 2);
 

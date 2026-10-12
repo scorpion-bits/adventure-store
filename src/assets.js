@@ -9,6 +9,8 @@ import { portraitPixels } from './ui/portrait-art.js';
 import ATLAS from './assets/atlas/icones.json';
 import ATLAS_32_URL from './assets/atlas/icones-32.png';
 import ATLAS_64_URL from './assets/atlas/icones-64.png';
+import GUI from './assets/gui/gui.json';
+import GUI_URL from './assets/gui/gui.png';
 
 let renderer = null;
 const cache = new Map();
@@ -45,6 +47,82 @@ export async function carregarAtlas() {
     console.warn('Atlas de ícones indisponível; usando ícones provisórios.', err);
     return false;
   }
+}
+
+// ---------- peças da interface (Cryo's Mini GUI: botão, moldura de madeira, pergaminho, moedas...) ----------
+// Atlas pequeno gerado por `npm run pack:gui`. Sem ele, a interface usa formas desenhadas por código (guiPronto() = false).
+const gui = new Map();
+export const guiPronto = () => gui.size > 0;
+
+export async function carregarGui() {
+  try {
+    const tex = await Assets.load(GUI_URL);
+    tex.source.scaleMode = 'nearest';
+    for (const [nome, q] of Object.entries(GUI.quadros)) gui.set(nome, { tex: new Texture({ source: tex.source, frame: new Rectangle(q.x, q.y, q.w, q.h) }), margens: q.margens });
+    return true;
+  } catch (err) {
+    console.warn('Peças da interface indisponíveis; usando formas desenhadas por código.', err);
+    return false;
+  }
+}
+
+// Sprite simples de uma peça (moeda, troféu...), ampliada `escala` vezes sem suavizar.
+export function guiSprite(nome, escala = 2) {
+  const p = gui.get(nome);
+  const s = new Sprite(p?.tex ?? Texture.EMPTY);
+  s.scale.set(escala);
+  return s;
+}
+
+// Painel esticável (9-slice) de `w` x `h` pixels de tela; `escala` é o tamanho de cada pixel da arte.
+// Feito com sprites (cantos fixos; bordas e miolo esticados, ou repetidos com `repetir: true`, que combina com texturas
+// como a madeira). Funciona com peças recortadas de um atlas. `painel.setSize(w, h)` refaz o tamanho.
+export function guiPainel(nome, w, h, escala = 2, { repetir = false } = {}) {
+  const p = gui.get(nome);
+  const [e, c, d, b] = p.margens;
+  const { frame } = p.tex;
+  const cont = new Container();
+  const xs = [0, e, frame.width - d, frame.width];          // cortes na arte (pixels da peça)
+  const ys = [0, c, frame.height - b, frame.height];
+  const recorte = (x0, y0, x1, y1) => new Texture({ source: p.tex.source, frame: new Rectangle(frame.x + x0, frame.y + y0, x1 - x0, y1 - y0) });
+  const pecas = [];
+  for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) pecas.push({ i, j, tex: recorte(xs[i], ys[j], xs[i + 1], ys[j + 1]) });
+
+  cont.setSize = (nw, nh) => {
+    for (const ch of cont.removeChildren()) ch.destroy();
+    const col = [e * escala, Math.max(0, nw - (e + d) * escala), d * escala];
+    const lin = [c * escala, Math.max(0, nh - (c + b) * escala), b * escala];
+    const colX = [0, col[0], col[0] + col[1]];
+    const rowY = [0, lin[0], lin[0] + lin[1]];
+    for (const { i, j, tex } of pecas) {
+      const meio = i === 1 || j === 1;
+      if (repetir && meio && !(i === 1 && j === 1)) {
+        // borda repetida: ladrilhos do tamanho original da arte, o último cortado
+        const horizontal = j !== 1;
+        const passo = (horizontal ? tex.frame.width : tex.frame.height) * escala;
+        const total = horizontal ? col[1] : lin[1];
+        for (let o = 0; o < total; o += passo) {
+          const resto = Math.min(passo, total - o);
+          const t = resto === passo ? tex : recorte(
+            horizontal ? xs[1] : xs[i], horizontal ? ys[j] : ys[1],
+            horizontal ? xs[1] + resto / escala : xs[i + 1], horizontal ? ys[j + 1] : ys[1] + resto / escala,
+          );
+          const sp = new Sprite(t);
+          sp.scale.set(escala);
+          sp.position.set(horizontal ? colX[1] + o : colX[i], horizontal ? rowY[j] : rowY[1] + o);
+          cont.addChild(sp);
+        }
+      } else if (!(repetir && i === 1 && j === 1)) {
+        const sp = new Sprite(tex);
+        sp.position.set(colX[i], rowY[j]);
+        sp.width = col[i];
+        sp.height = lin[j];
+        cont.addChild(sp);
+      }
+    }
+  };
+  cont.setSize(w, h);
+  return cont;
 }
 
 // De onde vem a imagem de um item/material: 'atlas' (arte do pack) ou 'provisorio' (desenhada por código).

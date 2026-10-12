@@ -19,7 +19,7 @@ import { createClock, dayKey } from './core/time.js';
 import { avancarProducao, totalProntos } from './core/craft.js';
 import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
-import { initAssets, carregarAtlas, origemTextura, quadrosNoAtlas } from './assets.js';
+import { initAssets, carregarAtlas, carregarGui, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
 import { createEventos } from './ui/eventos.js';
 import { pendencias } from './core/daily.js';
@@ -60,7 +60,7 @@ async function start() {
   });
   document.body.appendChild(app.canvas);
   initAssets(app);
-  await carregarAtlas();
+  await Promise.all([carregarAtlas(), carregarGui()]);
 
   // jogo: carrega o save (ou começa um novo) e liga o relógio
   const storage = (() => { try { return window.localStorage; } catch { return null; } })();
