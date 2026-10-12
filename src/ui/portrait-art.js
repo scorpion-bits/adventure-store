@@ -49,13 +49,14 @@ const ACESSORIOS = {
 
 // Devolve { grade, pixels: [[x, y, cor], ...] } (coordenadas já com o deslocamento do contorno).
 export function portraitPixels(advId, classe, corClasse = 0x8a7660) {
-  const h = hashString(advId);
-  const pele = PELES[h % PELES.length];
-  const cabelo = CABELOS[(h >>> 3) % CABELOS.length];
-  const estilo = (h >>> 6) % 4;
-  const olho = OLHOS[(h >>> 9) % OLHOS.length];
-  const boca = (h >>> 12) % 3;           // 0 sorriso, 1 reta, 2 aberta
-  const sardas = (h >>> 14) % 4 === 0;
+  // cada traço sorteia a partir do seu próprio hash (assim os traços não ficam correlacionados)
+  const traco = (nome, n) => hashString(`${advId}:${nome}`) % n;
+  const pele = PELES[traco('pele', PELES.length)];
+  const cabelo = CABELOS[traco('cabelo', CABELOS.length)];
+  const estilo = traco('estilo', 4);
+  const olho = OLHOS[traco('olho', OLHOS.length)];
+  const boca = traco('boca', 3);          // 0 sorriso, 1 reta, 2 aberta
+  const sardas = traco('sardas', 4) === 0;
 
   const mapa = new Map();
   const put = (x, y, cor) => { if (x >= 0 && y >= 0 && x < 16 && y < 16) mapa.set(`${x},${y}`, cor); };

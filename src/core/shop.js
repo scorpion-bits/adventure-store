@@ -2,6 +2,7 @@
 // Lógica pura: todas as funções recebem `game` (veja game.js); sem Pixi.
 import { lerChave } from '../data/index.js';
 import { precoPedido } from './economy.js';
+import { proximaLenda, capituloAtual, qualidadeMinima } from './legends.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -36,6 +37,7 @@ const itensPedidos = (game, adv) => {
 };
 
 const clienteElegivel = (game, a) => {
+  if (a.lendario) return false;                      // lendários só aparecem pela regra própria (legends.js)
   const regiao = game.data.regioes[a.regiao];
   return (a.nivelRep ?? 1) <= game.nivel() && (regiao?.nivelRep ?? 1) <= game.nivel() && itensPedidos(game, a).length > 0;
 };
@@ -44,6 +46,7 @@ const clienteElegivel = (game, a) => {
 export function criarCliente(game, advId) {
   const adv = game.data.aventureiros[advId];
   if (!adv) return null;
+  if (adv.lendario) return criarLenda(game, adv);
   const L = game.data.meta.loja;
   const tipo = game.rng.weighted(
     [{ t: 'item', peso: L.pedido.item }, { t: 'categoria', peso: L.pedido.categoria }, { t: 'surpresa', peso: L.pedido.surpresa }],
@@ -66,8 +69,31 @@ export function criarCliente(game, advId) {
   };
 }
 
+// Um lendário: pede o item do capítulo atual, espera mais tempo e não perde reputação por ir embora.
+function criarLenda(game, adv) {
+  const cap = capituloAtual(game, adv.id);
+  if (!cap) return null;
+  const L = game.data.meta.lendarios;
+  const temp = game.data.meta.temperamentos.find((t) => t.id === adv.temperamento);
+  const espera = game.data.meta.loja.pacienciaBase * L.pacienciaMult * (temp?.paciencia ?? 1) * (game.mods.paciencia ?? 1);
+  const falas = falasDe(game, adv, 'chega');
+  const prog = game.state.lendarios[adv.id] ?? { cap: 0, visita: 0 };
+  game.state.lendarios[adv.id] = { ...prog, visita: game.clock.now() };
+  game.state.loja.uid += 1;
+  return {
+    uid: game.state.loja.uid, adv: adv.id, pedido: { tipo: 'item', item: cap.pedido.item },
+    paciencia: espera, pacienciaMax: espera, fala: falas.length ? game.rng.pick(falas) : '',
+    lenda: { id: adv.id, cap: prog.cap },
+  };
+}
+
 // Sorteia um aventureiro (pelos pesos) e o pedido dele. Devolve null se ninguém puder vir (nada a pedir).
-export function gerarCliente(game) {
+// `semLendas`: vendas com o jogo fechado não chamam lendários (a história precisa do jogador por perto).
+export function gerarCliente(game, { semLendas = false } = {}) {
+  if (!semLendas) {
+    const lenda = proximaLenda(game);
+    if (lenda) { const c = criarCliente(game, lenda); if (c) return c; }
+  }
   const adv = game.rng.weighted(game.data.listas.aventureiros.filter((a) => clienteElegivel(game, a)), (a) => a.peso ?? 1);
   return adv ? criarCliente(game, adv.id) : null;
 }
@@ -102,7 +128,10 @@ export function chegar(game) {
 
 export function pedidoTexto(game, cli) {
   const p = cli.pedido;
-  if (p.tipo === 'item') return `Procura: ${game.data.itens[p.item]?.nome ?? 'um item'}`;
+  if (p.tipo === 'item') {
+    const min = cli.lenda ? qualidadeMinima(capituloAtual(game, cli.lenda.id)) : 0;
+    return `Procura: ${game.data.itens[p.item]?.nome ?? 'um item'}${min > 0 ? ` (${game.data.meta.qualidades[min].nome} ou melhor)` : ''}`;
+  }
   if (p.tipo === 'categoria') {
     const c = game.data.meta.categorias.find((x) => x.id === p.cat);
     return `Procura: algo de ${c?.nome ?? p.cat}`;
@@ -127,7 +156,10 @@ export function opcoes(game, cli) {
         substituto = true;
       }
     } else if (p.tipo === 'categoria' && item.cat !== p.cat) continue;
-    lista.push({ chave, item, qualidade, qtd, substituto });
+    // lendário que exige qualidade mínima: o item de qualidade menor serve de substituto, mas não conclui o capítulo
+    const min = cli.lenda && p.tipo === 'item' && id === p.item ? qualidadeMinima(capituloAtual(game, cli.lenda.id)) : 0;
+    const fraco = qualidade < min;
+    lista.push({ chave, item, qualidade, qtd, substituto: substituto || fraco, fraco });
   }
   lista.sort((a, b) => (a.substituto - b.substituto) || a.item.nome.localeCompare(b.item.nome, 'pt-BR') || b.qualidade - a.qualidade);
   return lista;
@@ -194,8 +226,7 @@ export function fecharVenda(game, cli, entrada, nivelPreco) {
     game.emit('venda', r);
     return r;
   }
-  game.state.stats.recusas += 1;
-  game.ganharRep(temp.rep.recusa);
+  if (!cli.lenda) { game.state.stats.recusas += 1; game.ganharRep(temp.rep.recusa); }
   const r = { ok: false, motivo: 'recusou', preco: av.preco, rep: temp.rep.recusa, fala: sorteia(game, falasDe(game, adv, nivelPreco === 'caro' ? 'caro' : 'recusa')), cli, item: entrada.item, nivelPreco };
   game.emit('recusa', r);
   return r;
@@ -228,8 +259,8 @@ export function dispensar(game, uid) {
   const cli = removerCliente(game, uid);
   if (!cli) return null;
   const temp = temperamentoDe(game, cli);
-  const rep = Math.trunc((temp?.rep.recusa ?? 0) / 2) || 0;
-  game.state.stats.recusas += 1;
+  const rep = cli.lenda ? 0 : Math.trunc((temp?.rep.recusa ?? 0) / 2) || 0;
+  if (!cli.lenda) game.state.stats.recusas += 1;
   if (rep) game.ganharRep(rep);
   game.emit('dispensou', { cli, rep });
   return { cli, rep };
@@ -256,8 +287,8 @@ export function tickLoja(game, dtMs) {
     if (cli.paciencia <= 0) {
       s.fila.splice(i, 1);
       const temp = temperamentoDe(game, cli);
-      s.stats.recusas += 1;
-      const rep = temp?.rep.recusa ?? 0;
+      if (!cli.lenda) s.stats.recusas += 1;
+      const rep = cli.lenda ? 0 : temp?.rep.recusa ?? 0;
       if (rep) game.ganharRep(rep);
       game.emit('saiu', { cli, rep });
       game.emit('fila', s.fila);

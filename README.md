@@ -4,7 +4,8 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M6 (conteúdo I)**: 112 itens, 50 materiais, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
+> Estado atual: **M7 (conteúdo II)**: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
+> aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
@@ -80,7 +81,7 @@ fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai 
 rendimento) mais um nó final por ofício a partir de tabelas no topo do arquivo; é só mexer nelas para rebalancear.
 Melhorias avulsas (da loja, ou especiais) entram como objetos nas listas, usando os efeitos de `src/core/mods.js`.
 
-`npm run validate -- --metas` confere as metas de quantidade; hoje só falta o conteúdo de aventureiros (M7).
+`npm run validate -- --metas` confere as metas de quantidade (hoje todas atingidas, menos as conquistas, que chegam no M9).
 
 ### Save
 

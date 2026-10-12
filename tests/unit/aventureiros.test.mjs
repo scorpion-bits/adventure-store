@@ -15,7 +15,7 @@ const jogoNoNivel = (nivel, seed = 1) => {
 };
 
 test('são 40+ tipos em 8 classes e 6 regiões, com variedade mínima', () => {
-  const lista = DATA.listas.aventureiros;
+  const lista = DATA.listas.aventureiros.filter((a) => !a.lendario);
   assert.ok(lista.length >= 40);
   for (const c of DATA.meta.classes) assert.ok(lista.filter((a) => a.classe === c.id).length >= 5, c.id);
   for (const r of DATA.listas.regioes) assert.ok(lista.filter((a) => a.regiao === r.id).length >= 6, r.id);
@@ -47,8 +47,8 @@ test('o orçamento e o nível de reputação crescem de região em região', () 
   }
 });
 
-test('todo aventureiro consegue pedir algo no nível em que aparece', () => {
-  for (const a of DATA.listas.aventureiros) {
+test('todo aventureiro comum consegue pedir algo no nível em que aparece', () => {
+  for (const a of DATA.listas.aventureiros.filter((x) => !x.lendario)) {
     const g = jogoNoNivel(Math.max(a.nivelRep, DATA.regioes[a.regiao].nivelRep));
     let pediu = false;
     for (let i = 0; i < 400 && !pediu; i++) {

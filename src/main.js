@@ -21,7 +21,9 @@ import { para, labelButton } from './ui/ui.js';
 import { initAssets, carregarAtlas, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
 import { createEventos } from './ui/eventos.js';
+import { createLendas } from './ui/lendas.js';
 import { disparar as dispararEvento } from './core/events.js';
+import { criarCliente, receberCliente } from './core/shop.js';
 import { simularOffline } from './core/staff.js';
 
 const BACK_INSET = 46;   // espaço do botão "voltar ao site" no canto superior esquerdo
@@ -90,6 +92,7 @@ async function start() {
   app.stage.addChild(tutorial.root);
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
+  const lendas = createLendas({ game, modal, toast: toasts.show });
   const screens = createScreens({ toast: toasts.show, game, modal });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
@@ -149,6 +152,7 @@ async function start() {
   app.ticker.add((t) => {
     game.tick(t.deltaMS);
     eventos.update();
+    lendas.update();
     screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);
@@ -220,6 +224,9 @@ async function start() {
       tutorial: tutorial.hooks,
       eventos: { ...eventos.hooks, disparar: (id) => dispararEvento(game, id) },
       melhorias: screens[4].hooks,
+      aventureiros: screens[3].hooks,
+      lendas: lendas.hooks,
+      chamarLenda: (id) => { game.state.fila.length = 0; const c = criarCliente(game, id); if (c) receberCliente(game, c); return !!c; },
       skip: (ms) => { clock.advance(ms); game.tick(0); },
       giveMaterial: (id, n = 1) => { game.state.materiais[id] = (game.state.materiais[id] ?? 0) + n; game.emit('materiais'); },
       giveItem: (id, q = 1, n = 1) => { const k = `${id}:${q}`; game.state.estoque[k] = (game.state.estoque[k] ?? 0) + n; game.emit('estoque'); },

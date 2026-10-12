@@ -44,7 +44,7 @@ export function simularOffline(game, ausenteMs) {
   let vendas = 0;
   let perdidas = 0;
   for (let i = 0; i < n; i++) {
-    const cli = gerarCliente(game);
+    const cli = gerarCliente(game, { semLendas: true });
     if (!cli) continue;
     const entrada = melhorOpcao(game, cli);
     if (!entrada) { perdidas += 1; continue; }

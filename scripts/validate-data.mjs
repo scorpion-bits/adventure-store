@@ -126,6 +126,18 @@ export function validar(data = DATA) {
   }
   exige(data.decoracoes.rustico?.custo === 0, 'a decoração "rustico" (padrão, grátis) precisa existir');
 
+  // um efeito de evento/recompensa (veja core/events.js): tipo conhecido e referências existentes
+  const conferirEfeitoEvento = (onde, ef) => {
+    exige(TIPOS_DE_EFEITO.includes(ef.tipo), `${onde}: efeito desconhecido "${ef.tipo}"`);
+    if (ef.tipo === 'material') exige(materiais.has(ef.id), `${onde}: material inexistente "${ef.id}"`);
+    if (ef.tipo === 'item') exige(itens.has(ef.id), `${onde}: item inexistente "${ef.id}"`);
+    if (ef.tipo === 'itemAleatorio') exige(cats.has(ef.cat), `${onde}: categoria inválida "${ef.cat}"`);
+    if (ef.tipo === 'materialAleatorio') exige(regioes.has(ef.regiao), `${onde}: região inválida "${ef.regiao}"`);
+    if (ef.tipo === 'xpOficio') exige(oficios.has(ef.oficio), `${onde}: ofício inválido "${ef.oficio}"`);
+    if (ef.tipo === 'cliente') exige(listas.aventureiros.some((a) => a.id === ef.adv), `${onde}: aventureiro inexistente "${ef.adv}"`);
+    if (ef.tipo === 'bonus') { exige(EFEITOS[ef.efeito?.tipo] && ef.minutos > 0 && ef.rotulo, `${onde}: bônus inválido`); }
+  };
+
   // eventos: textos, requisitos, escolhas e efeitos válidos
   for (const ev of listas.eventos) {
     const dono = `evento ${ev.id}`;
@@ -140,16 +152,36 @@ export function validar(data = DATA) {
       for (const r of c.resultados ?? []) {
         exige(r.texto && r.texto.length > 8, `${onde}: resultado sem texto`);
         for (const ef of r.efeitos ?? []) {
-          exige(TIPOS_DE_EFEITO.includes(ef.tipo), `${onde}: efeito desconhecido "${ef.tipo}"`);
-          if (ef.tipo === 'material') exige(materiais.has(ef.id), `${onde}: material inexistente "${ef.id}"`);
-          if (ef.tipo === 'item') exige(itens.has(ef.id), `${onde}: item inexistente "${ef.id}"`);
-          if (ef.tipo === 'itemAleatorio') exige(cats.has(ef.cat), `${onde}: categoria inválida "${ef.cat}"`);
-          if (ef.tipo === 'materialAleatorio') exige(regioes.has(ef.regiao), `${onde}: região inválida "${ef.regiao}"`);
-          if (ef.tipo === 'xpOficio') exige(oficios.has(ef.oficio), `${onde}: ofício inválido "${ef.oficio}"`);
-          if (ef.tipo === 'cliente') exige(listas.aventureiros.some((a) => a.id === ef.adv), `${onde}: aventureiro inexistente "${ef.adv}"`);
-          if (ef.tipo === 'bonus') { exige(EFEITOS[ef.efeito?.tipo] && ef.minutos > 0 && ef.rotulo, `${onde}: bônus inválido`); }
+          conferirEfeitoEvento(onde, ef);
         }
       }
+    }
+  }
+
+  // lendários: cada um é um aventureiro (peso 0, lendario: true) com 3+ capítulos que pedem itens que dá para obter
+  const lendas = new Set(listas.lendarios.map((l) => l.id));
+  for (const a of listas.aventureiros) {
+    if (a.lendario) exige(lendas.has(a.id) && a.peso === 0, `aventureiro lendário ${a.id}: precisa de peso 0 e de uma entrada em data/lendarios.js`);
+    else exige(a.peso > 0, `aventureiro ${a.id}: peso deve ser > 0 (só lendários têm peso 0)`);
+  }
+  for (const l of listas.lendarios) {
+    const dono = `lendário ${l.id}`;
+    exige(listas.aventureiros.some((a) => a.id === l.id && a.lendario), `${dono}: falta o aventureiro com lendario: true`);
+    exige(l.titulo && l.resumo, `${dono}: título e resumo são obrigatórios`);
+    const nomeAdv = listas.aventureiros.find((a) => a.id === l.id)?.nome ?? '';
+    exige(!nomeAdv || !l.titulo?.includes(nomeAdv), `${dono}: o título não pode repetir o nome ("${l.titulo}")`);
+    exige(l.capitulos?.length >= 3, `${dono}: precisa de pelo menos 3 capítulos`);
+    let nivelAnterior = 0;
+    for (const [i, c] of (l.capitulos ?? []).entries()) {
+      const onde = `${dono} capítulo ${i + 1}`;
+      exige(c.titulo && c.texto?.length >= 80, `${onde}: título e texto (80+ caracteres) são obrigatórios`);
+      exige(itens.has(c.pedido?.item), `${onde}: item pedido inexistente "${c.pedido?.item}"`);
+      exige(craftaveis.has(c.pedido?.item) || vendidos.has(c.pedido?.item), `${onde}: o item pedido "${c.pedido?.item}" não dá para obter`);
+      exige((c.pedido?.qualidadeMin ?? 0) >= 0 && (c.pedido?.qualidadeMin ?? 0) < meta.qualidades.length, `${onde}: qualidadeMin inválida`);
+      exige(c.nivelRep >= nivelAnterior, `${onde}: a reputação exigida não pode cair`);
+      nivelAnterior = c.nivelRep ?? 0;
+      exige(c.recompensa?.length > 0, `${onde}: sem recompensa`);
+      for (const ef of c.recompensa ?? []) conferirEfeitoEvento(onde, ef);
     }
   }
 
@@ -165,9 +197,10 @@ export function validar(data = DATA) {
   const contagens = {
     itens: [listas.itens.length, m.itens],
     eventos: [listas.eventos.length, m.eventos],
+    lendarios: [listas.lendarios.length, m.lendarios],
     expedicoes: [meta.expedicoes.tiers.length, m.expedicoes],
     receitas: [listas.receitas.length, m.receitas],
-    aventureiros: [listas.aventureiros.length, m.aventureiros],
+    aventureiros: [listas.aventureiros.filter((a) => !a.lendario).length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)
     porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 5],
     porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 6],

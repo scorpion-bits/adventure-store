@@ -34,6 +34,7 @@ export function defaultState(now = Date.now()) {
     prontos: [],                     // produções terminadas esperando coleta: { uid, receita, oficio, resultado: { qualidade: qtd } }
     producaoUid: 0,
 
+    lendarios: {},                   // progresso das lendas: { id: { cap (capítulos concluídos), visita (ms da última chegada) } }
     expedicoes: [],                  // expedições em andamento ou terminadas e não coletadas: { uid, regiao, tier, inicio, fim, custo }
     expedicaoUid: 0,
 

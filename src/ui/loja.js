@@ -207,7 +207,8 @@ export function createLojaScreen({ game, toast }) {
     p.position.set(12, 12);
     const nome = txt(adv.nome, C.text, 16, true);
     nome.position.set(88, 12);
-    const sub = txt(`${cls.nome} · ${temp.nome}`, C.dim, 12);
+    const lendaTxt = cli.lenda ? ` · Lenda, capítulo ${cli.lenda.cap + 1}` : '';
+    const sub = txt(`${cls.nome} · ${temp.nome}${lendaTxt}`, cli.lenda ? C.gold : C.dim, 12);
     sub.position.set(88, 12 + nome.height + 1);
     c.addChild(bg, p, nome, sub);
     let y = Math.max(sub.y + sub.height + 6, 12 + 64 + 6);
@@ -229,6 +230,7 @@ export function createLojaScreen({ game, toast }) {
 
   function linhasOpcoes(w, ops) {
     const out = [];
+    const cliLenda = !!game.state.fila[0]?.lenda;
     refs.opcoes = [];
     ops.forEach((o) => {
       const h = 54;
@@ -241,7 +243,8 @@ export function createLojaScreen({ game, toast }) {
       const q = game.data.meta.qualidades[o.qualidade];
       const nome = txt(o.item.nome, C.text, 14, true);
       nome.position.set(54, 9);
-      const sub = txt(`${q.nome}${o.substituto ? ' · substituto' : ''}`, o.substituto ? C.warn : C.dim, 11);
+      const motivo = o.fraco ? ' · qualidade baixa: não avança a história' : o.substituto ? (cliLenda ? ' · substituto: não avança a história' : ' · substituto') : '';
+      const sub = txt(`${q.nome}${motivo}`, o.substituto ? C.warn : C.dim, 11);
       sub.position.set(54, 9 + nome.height + 1);
       const qtd = txt(`×${o.qtd}`, C.dim, 13, true);
       qtd.position.set(w - qtd.width - 14, (h - qtd.height) / 2);

@@ -119,6 +119,10 @@ export const META = {
     ],
   },
 
+  // ---------- lendários ----------
+  // chance: probabilidade de, a cada chegada de cliente, vir um lendário elegível; cooldownMin: minutos entre visitas do mesmo lendário
+  lendarios: { chance: 0.07, cooldownMin: 8, pacienciaMult: 1.7 },
+
   // ---------- eventos aleatórios (tempos em milissegundos) ----------
   eventos: { primeiroMin: 180000, intervaloMin: 240000, intervaloMax: 540000, cooldownPadraoMin: 45 },
 
@@ -155,7 +159,7 @@ export const META = {
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
-    itens: 100, eventos: 30, expedicoes: 1, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
+    itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
     regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80,
   },
 };
