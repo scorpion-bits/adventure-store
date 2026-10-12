@@ -14,12 +14,12 @@
 
 ## 1. Pontos que precisam da sua decisão (tenho um padrão para cada)
 
-1. **Licença do pack (importante).** Os termos que você colou dizem: uso comercial permitido, mas **não pode ser distribuído ou vendido como produto separado**, e o "uso pessoal" vale para jogo **gratuito, sem microtransações e sem anúncios**.
+1. **Licença do pack (decidido: jogo gratuito, sem anúncios e sem compras dentro do jogo).** Os termos que você colou dizem: uso comercial permitido, mas **não pode ser distribuído ou vendido como produto separado**, e o "uso pessoal" vale para jogo **gratuito, sem microtransações e sem anúncios**.
    - Colocar os PNGs soltos num repositório **público** é redistribuí-los. O jogo publicado precisa carregá-los (isso é uso normal), mas a pasta original não deve ir para o git.
    - **Padrão proposto:** a pasta do pack fica fora do git (`.gitignore`); o repo guarda só o **atlas empacotado** (só os ícones que o jogo usa) + `assets.js`, e um script `npm run pack:icons -- <pasta-do-pack>` regenera o atlas. O `CREDITS.md` cita Clockwork Raven Studios e a licença.
-   - **Você confirma:** o site/jogo não terá anúncios nem compras dentro do jogo? Se isso mudar, é preciso a licença certa do pack. Se preferir, o repo pode ser privado.
+   - Se um dia houver anúncios ou compras, é preciso a licença certa do pack.
 2. **Personagens e cenário** não existem no pack. **Padrão:** aventureiros e loja desenhados por código (retratos em camadas: corpo, cabelo, cor da classe, acessório por classe) — consistente em pixel-art 16 px ampliado, trocável depois pelo manifesto. Os **itens** usam o pack desde o início do conteúdo (mapa `item.id → ícone`).
-3. **Música:** o idle usa um mp3 que não tenho. **Padrão:** música gerada por Web Audio (loop curto e calmo, liga/desliga nas configurações). Dá para trocar por arquivo depois.
+3. **Música:** decidido: a trilha será feita por você depois. O jogo toca qualquer `.mp3/.ogg/.wav` colocado em `src/assets/music/` (sem arquivo, fica em silêncio); os efeitos continuam sintetizados.
 4. **Tempo do jogo.** **Padrão:** a loja funciona em **tempo real** enquanto o jogo está aberto (um cliente a cada ~6–15 s, conforme reputação e tamanho da loja). Um **"dia"** é o dia do calendário (fuso do jogador): encomendas, fornecedores, aventureiro especial e sequência mudam à meia-noite, sorteados pela **data** (iguais para todos).
 
 ## 2. Telas e navegação
