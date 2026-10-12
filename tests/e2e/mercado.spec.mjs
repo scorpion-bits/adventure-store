@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { VIEWPORTS, openGame, shotPath, quadros } from './helpers.mjs';
+import { VIEWPORTS, openGame, shotPath, quadros, ver } from './helpers.mjs';
 
 const pronta = (page) => page.waitForFunction(() => window.__loja.mercado.pronta(), null, { timeout: 10_000 });
 
@@ -10,6 +10,10 @@ async function abrirMercado(page) {
   await pronta(page);
 }
 
+const botao = async (page, f, m, tipo) => {
+  await ver(page, 'mercado', `${f}:${m}:${tipo}`);
+  return page.evaluate(([a, b, c]) => window.__loja.mercado.botaoCentro(a, b, c), [f, m, tipo]);
+};
 const clicar = async (page, p) => { expect(p).toBeTruthy(); await page.mouse.click(p.x, p.y); await pronta(page); };
 
 test.describe('mercado (retrato)', () => {
@@ -22,8 +26,8 @@ test.describe('mercado (retrato)', () => {
     const antes = await page.evaluate(() => window.__loja.state());
     expect(Object.keys(antes.materiais)).toHaveLength(0);
 
-    await clicar(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'madeira', 'x1')));
-    await clicar(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'madeira', 'x5')));
+    await clicar(page, await botao(page, 'ferreiro_toras', 'madeira', 'x1'));
+    await clicar(page, await botao(page, 'ferreiro_toras', 'madeira', 'x5'));
     const depois = await page.evaluate(() => window.__loja.state());
     expect(depois.materiais.madeira).toBe(6);
     expect(depois.ouro).toBeLessThan(antes.ouro);
@@ -36,12 +40,12 @@ test.describe('mercado (retrato)', () => {
   test('"Máx" compra o máximo possível e sem ouro não compra nada', async ({ page }) => {
     const errors = await openGame(page);
     await abrirMercado(page);
-    await clicar(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'cobre', 'max')));
+    await clicar(page, await botao(page, 'mineradora_pedra', 'cobre', 'max'));
     const s = await page.evaluate(() => window.__loja.state());
     expect(s.materiais.cobre).toBeGreaterThan(5);
     expect(s.ouro).toBeLessThan(5);                                   // gastou quase tudo
     const ouro = s.ouro;
-    await clicar(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'cobre', 'x1')));
+    await clicar(page, await botao(page, 'mineradora_pedra', 'cobre', 'x1'));
     expect((await page.evaluate(() => window.__loja.state())).ouro).toBe(ouro);
     expect(errors).toEqual([]);
   });
@@ -50,15 +54,14 @@ test.describe('mercado (retrato)', () => {
     const errors = await openGame(page);
     await page.evaluate(() => window.__loja.give(100000));
     await abrirMercado(page);
-    await clicar(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'carvao', 'max')));
+    await clicar(page, await botao(page, 'ferreiro_toras', 'carvao', 'max'));
     const comprado = await page.evaluate(() => window.__loja.state().mercado.comprado['ferreiro_toras:carvao']);
     expect(comprado).toBeGreaterThan(5);
     await page.evaluate(() => window.__loja.setDay('2099-05-06'));
     await pronta(page);
     expect(await page.evaluate(() => window.__loja.state().mercado.data)).not.toBe('');
     // o contador de compras zera no novo dia ao consultar as ofertas
-    const botao = await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'carvao', 'x1'));
-    await clicar(page, botao);
+    await clicar(page, await botao(page, 'ferreiro_toras', 'carvao', 'x1'));
     expect(await page.evaluate(() => window.__loja.state().mercado.comprado['ferreiro_toras:carvao'])).toBe(1);
     expect(errors).toEqual([]);
   });
@@ -89,9 +92,7 @@ test.describe('mercado (desktop e paisagem)', () => {
         await abrirMercado(page);
         await page.screenshot({ path: shotPath(`${vp}-mercado`) });
         // rola até o botão (em telas baixas ele fica fora da vista) e compra
-        await page.evaluate(() => window.__loja.scrollTo(1e6));
-        await quadros(page);
-        const p = await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'cobre', 'x1'));
+        const p = await botao(page, 'mineradora_pedra', 'cobre', 'x1');
         const h = page.viewportSize().height;
         expect(p.y, 'botão visível').toBeGreaterThan(0);
         expect(p.y).toBeLessThan(h - 60);

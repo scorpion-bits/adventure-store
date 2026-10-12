@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { VIEWPORTS, openGame, shotPath, quadros } from './helpers.mjs';
+import { VIEWPORTS, openGame, shotPath, quadros, ver } from './helpers.mjs';
 
 const pronta = (page) => page.waitForFunction(() => window.__loja.oficina.pronta(), null, { timeout: 10_000 });
 
@@ -11,7 +11,7 @@ async function abrirOficina(page) {
 }
 const centro = (page, nome) => page.evaluate((n) => window.__loja.oficina.centro(n), nome);
 const clicar = async (page, nome) => {
-  await quadros(page);
+  await ver(page, 'oficina', nome);
   const p = await centro(page, nome);
   expect(p, `${nome} existe`).toBeTruthy();
   await page.mouse.click(p.x, p.y);

@@ -176,6 +176,14 @@ export function createMercadoScreen({ game, toast }) {
       pronta: () => !dirty && quadros >= 2,
       botaoCentro: (fornecedor, material, tipo) => global(refs[`${fornecedor}:${material}:${tipo}`]),
       renderAgora: render,
+      // rola a lista até o item ficar à vista (usado pelos testes: com muito conteúdo, nem tudo cabe na tela)
+      ver: (nome) => {
+        const p = global(refs[nome]);
+        if (!p) return false;
+        const topo = scroll.root.getGlobalPosition().y;
+        if (p.y < topo + 30 || p.y > topo + R.h - 30) scroll.scrollBy(p.y - (topo + R.h / 2));
+        return true;
+      },
     },
   };
 }

@@ -69,6 +69,22 @@ export function validar(data = DATA) {
       exige(v.preco > 0 && v.estoque > 0, `fornecedor ${f.id}: preco e estoque de "${v.material}" devem ser > 0`);
     }
   }
+  // toda receita precisa ser possível: cada material dela é vendido por algum fornecedor, e nenhum material fica sem uso nem sem venda
+  const vendidos = new Set(listas.fornecedores.flatMap((f) => f.vende.map((v) => v.material)));
+  const usados = new Set(listas.receitas.flatMap((r) => Object.keys(r.materiais)));
+  for (const m of usados) exige(vendidos.has(m) || !materiais.has(m), `material "${m}" é usado em receitas mas nenhum fornecedor o vende`);
+  for (const m of materiais) exige(vendidos.has(m) || usados.has(m), `material "${m}" não é vendido nem usado: sobrou`);
+  // o ofício de cada item craftável: itens sem receita só chegam por fornecedores (ou eventos)
+  const craftaveis = new Set(listas.receitas.map((r) => r.item));
+  const semOrigem = listas.itens.filter((i) => !craftaveis.has(i.id) && !vendidos.has(i.id) && i.id !== 'ovo_dragao');
+  for (const i of semOrigem) exige(false, `item "${i.id}" não tem receita nem fornecedor`);
+
+  // todo item e material tem ícone, e cada ícone é de um só (assim a prateleira não confunde um item com outro)
+  for (const id of [...itens, ...materiais]) exige(data.icones[id], `"${id}" está sem ícone em data/icones.js`);
+  const porIcone = {};
+  for (const [id, q] of Object.entries(data.icones)) (porIcone[q] ??= []).push(id);
+  for (const [q, lista] of Object.entries(porIcone)) exige(lista.length === 1, `o ícone ${q} está em uso por ${lista.join(', ')}`);
+
   for (const id of Object.keys(data.icones)) {
     exige(itens.has(id) || materiais.has(id), `icones: "${id}" não é item nem material`);
   }

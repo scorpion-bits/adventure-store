@@ -380,6 +380,14 @@ export function createOficinaScreen({ game, toast }) {
       oficioSelecionado: () => sel,
       centro: (nome) => global(refs[nome]),
       renderAgora: render,
+      // rola a lista até o item ficar à vista (usado pelos testes: com muito conteúdo, nem tudo cabe na tela)
+      ver: (nome) => {
+        const p = global(refs[nome]);
+        if (!p) return false;
+        const topo = scroll.root.getGlobalPosition().y;
+        if (p.y < topo + 30 || p.y > topo + R.h - 30) scroll.scrollBy(p.y - (topo + R.h / 2));
+        return true;
+      },
     },
   };
 }

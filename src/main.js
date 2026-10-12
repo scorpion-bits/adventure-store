@@ -18,7 +18,7 @@ import { createClock } from './core/time.js';
 import { avancarProducao, totalProntos } from './core/craft.js';
 import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
-import { initAssets } from './assets.js';
+import { initAssets, carregarAtlas, origemTextura, quadrosNoAtlas } from './assets.js';
 import { createTutorial } from './ui/tutorial.js';
 import { simularOffline } from './core/staff.js';
 
@@ -54,6 +54,7 @@ async function start() {
   });
   document.body.appendChild(app.canvas);
   initAssets(app);
+  await carregarAtlas();
 
   // jogo: carrega o save (ou começa um novo) e liga o relógio
   const storage = (() => { try { return window.localStorage; } catch { return null; } })();
@@ -188,6 +189,7 @@ async function start() {
     window.__loja = {
       ready: true,
       app,
+      icones: { origem: origemTextura, quadros: quadrosNoAtlas },
       game,
       origem,
       state: () => game.state,

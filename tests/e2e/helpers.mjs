@@ -25,3 +25,9 @@ export const quadros = (page, n = 3) => page.evaluate((k) => new Promise((resolv
   const passo = (i) => (i <= 0 ? resolve() : requestAnimationFrame(() => passo(i - 1)));
   passo(k);
 }), n);
+
+// rola a lista da tela até `nome` ficar visível e espera o Pixi desenhar (tela: 'oficina' | 'mercado' | 'melhorias')
+export async function ver(page, tela, nome) {
+  await page.evaluate(([t, n]) => window.__loja[t].ver(n), [tela, nome]);
+  await quadros(page, 3);
+}

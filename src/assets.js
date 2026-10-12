@@ -2,14 +2,22 @@
 // (tipo, id); o manifesto devolve a arte do atlas se existir, ou um ícone provisório desenhado
 // por código. Para trocar a arte, basta registrar o atlas (registerAtlas) e preencher data/icones.js:
 // nenhuma tela muda.
-import { Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { DATA, raridade } from './data/index.js';
 import { FONT_DISPLAY } from './ui/theme.js';
 import { portraitPixels } from './ui/portrait-art.js';
+import ATLAS from './assets/atlas/icones.json';
+import ATLAS_32_URL from './assets/atlas/icones-32.png';
+import ATLAS_64_URL from './assets/atlas/icones-64.png';
 
 let renderer = null;
 const cache = new Map();
-const atlas = new Map();       // nome do quadro -> Texture (arte real)
+// Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
+const atlas = { 32: new Map(), 64: new Map() };
+
+// Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
+const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
+const quadroDoAtlas = (nome) => atlas[tamanhoDaArte()].get(nome) ?? null;
 
 const CAT_COR = {
   armas: 0xb35a4a, armaduras: 0x6d86a8, pocoes: 0x4fae7a, magia: 0x8a6fd0,
@@ -21,14 +29,27 @@ export function initAssets(app) {
   renderer = app.renderer;
 }
 
-// Registra os quadros de um atlas já carregado: { 'fb123': Texture, ... }. Usa "nearest" (pixel art).
-export function registerAtlas(frames) {
-  for (const [name, tex] of Object.entries(frames)) {
-    if (tex.source) tex.source.scaleMode = 'nearest';
-    atlas.set(name, tex);
+// Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
+export async function carregarAtlas() {
+  try {
+    const [t32, t64] = await Promise.all([Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL)]);
+    for (const [tam, tex] of [[32, t32], [64, t64]]) {
+      tex.source.scaleMode = 'nearest';                     // pixel-art: sem suavizar
+      for (const [nome, [cx, cy]] of Object.entries(ATLAS.quadros)) {
+        atlas[tam].set(nome, new Texture({ source: tex.source, frame: new Rectangle(cx * tam, cy * tam, tam, tam) }));
+      }
+    }
+    cache.clear();
+    return true;
+  } catch (err) {
+    console.warn('Atlas de ícones indisponível; usando ícones provisórios.', err);
+    return false;
   }
-  cache.clear();
 }
+
+// De onde vem a imagem de um item/material: 'atlas' (arte do pack) ou 'provisorio' (desenhada por código).
+export const origemTextura = (id) => (DATA.icones[id] && quadroDoAtlas(DATA.icones[id]) ? 'atlas' : 'provisorio');
+export const quadrosNoAtlas = () => atlas[32].size;
 
 function placeholder(nome, corBase, corBorda) {
   const c = new Container();
@@ -49,8 +70,8 @@ export function textureFor(tipo, id) {
   const key = `${tipo}:${id}`;
   if (cache.has(key)) return cache.get(key);
   let tex = null;
-  const quadro = DATA.icones[id];
-  if (quadro && atlas.has(quadro)) tex = atlas.get(quadro);
+  const arte = DATA.icones[id] ? quadroDoAtlas(DATA.icones[id]) : null;
+  if (arte) tex = arte;
   else if (renderer) {
     if (tipo === 'item') {
       const it = DATA.itens[id];
@@ -82,8 +103,8 @@ const ESCALA_RETRATO = 4;
 export function portraitTexture(advId) {
   const key = `retrato:${advId}`;
   if (cache.has(key)) return cache.get(key);
-  const quadro = DATA.icones[`retrato_${advId}`];
-  if (quadro && atlas.has(quadro)) { cache.set(key, atlas.get(quadro)); return atlas.get(quadro); }
+  const arte = DATA.icones[`retrato_${advId}`] ? quadroDoAtlas(DATA.icones[`retrato_${advId}`]) : null;
+  if (arte) { cache.set(key, arte); return arte; }
   if (!renderer) return Texture.EMPTY;
   const adv = DATA.aventureiros[advId];
   const cor = DATA.meta.classes.find((c) => c.id === adv?.classe)?.cor;

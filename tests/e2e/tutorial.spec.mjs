@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { VIEWPORTS, openGame, shotPath, quadros } from './helpers.mjs';
+import { VIEWPORTS, openGame, shotPath, quadros, ver } from './helpers.mjs';
 
 test.use({ viewport: VIEWPORTS.portrait });
 
@@ -39,21 +39,26 @@ test('um jogo novo comeÃ§a com o tutorial; o jogo todo se completa fazendo as aÃ
   // 2 -> 3: comprar no mercado
   await irParaAba(page, 2, 'mercado');
   await prontaDe(page, 'mercado');
+  await ver(page, 'mercado', 'mineradora_pedra:barra_ferro:x1');
   await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'barra_ferro', 'x1')));
   await prontaDe(page, 'mercado');
   expect(await passo(page)).toBe(3);
+  await ver(page, 'mercado', 'mineradora_pedra:barra_ferro:x1');
   await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'barra_ferro', 'x1')));
+  await ver(page, 'mercado', 'ferreiro_toras:carvao:x1');
   await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'carvao', 'x1')));
 
   // 3 -> 4: produzir
   await irParaAba(page, 1, 'oficina');
   await prontaDe(page, 'oficina');
+  await ver(page, 'oficina', 'produzir:r_espada_ferro');
   await clicarEm(page, await page.evaluate(() => window.__loja.oficina.centro('produzir:r_espada_ferro')));
   expect(await passo(page)).toBe(4);
 
   // 4 -> 5: coletar
   await page.evaluate(() => window.__loja.skip(120_000));
   await prontaDe(page, 'oficina');
+  await ver(page, 'oficina', 'coletarTudo');
   await clicarEm(page, await page.evaluate(() => window.__loja.oficina.centro('coletarTudo')));
   expect(await passo(page)).toBe(5);
 
