@@ -6,6 +6,8 @@ import { iconSprite, portraitSprite } from '../assets.js';
 import { opcoes, avaliar, vender, dispensar, passarNaFrente, pedidoTexto, adventureiro, temperamentoDe } from '../core/shop.js';
 import { classe } from '../data/index.js';
 import { fmt } from '../format.js';
+import { temaAtual } from '../core/upgrades.js';
+import { capacidadeEstoque, totalEstoque } from '../core/estoque.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
 const NIVEIS = [
@@ -33,6 +35,13 @@ export function createLojaScreen({ game, toast }) {
 
   for (const ev of ['fila', 'estoque', 'venda', 'recusa', 'dispensou', 'saiu']) game.on(ev, marcar);
   game.on('chegou', () => { sfx.bell(); marcar(); });
+  game.on('atendente', (r) => {
+    const nome = adventureiro(game, r.cli).nome;
+    if (r.ok) toast(`Atendente: ${nome} comprou por ${fmt(r.preco)}`, C.good);
+    else if (r.ok === false && r.motivo === 'recusou') toast(`Atendente: ${nome} recusou`, C.warn);
+    else toast(`Atendente dispensou ${nome} (sem estoque)`, C.warn);
+    marcar();
+  });
   game.on('saiu', ({ cli }) => {
     toast(`${adventureiro(game, cli).nome} cansou de esperar`, C.bad);
     sfx.deny();
@@ -42,10 +51,11 @@ export function createLojaScreen({ game, toast }) {
   function buildScene(w, h) {
     const c = new Container();
     const bg = new Graphics();
+    const cor = temaAtual(game).cores;
     const floorY = Math.round(h * 0.5);
-    bg.roundRect(0, 0, w, h, 14).fill(0x2e2119);
-    bg.rect(0, floorY, w, h - floorY - 14).fill(0x42301f);
-    bg.roundRect(0, h - 30, w, 30, 14).fill(0x42301f);
+    bg.roundRect(0, 0, w, h, 14).fill(cor.parede);
+    bg.rect(0, floorY, w, h - floorY - 14).fill(cor.piso);
+    bg.roundRect(0, h - 30, w, 30, 14).fill(cor.piso);
     bg.roundRect(0, 0, w, h, 14).stroke({ width: 1, color: 0xffffff, alpha: 0.09 });
     c.addChild(bg);
 
@@ -59,7 +69,7 @@ export function createLojaScreen({ game, toast }) {
     for (let r = 0; r < rows; r++) {
       const boardY = 10 + rowH * (r + 1) - 4;
       const g = new Graphics();
-      g.roundRect(8, boardY, w - 16, 5, 2).fill(0x8a5a33);
+      g.roundRect(8, boardY, w - 16, 5, 2).fill(cor.prateleira);
       g.rect(8, boardY + 4, w - 16, 2).fill({ color: 0x000000, alpha: 0.25 });
       c.addChild(g);
     }
@@ -81,6 +91,9 @@ export function createLojaScreen({ game, toast }) {
       more.position.set(12 + (cap - 1) % cols * 36 + 4, 10 + rowH * rows - 4 - 22);
       c.addChild(more);
     }
+    const capTxt = txt(`Prateleiras ${totalEstoque(game)}/${capacidadeEstoque(game)}`, totalEstoque(game) >= capacidadeEstoque(game) ? C.warn : C.faint, 10, true);
+    capTxt.position.set(w - capTxt.width - 12, 4);
+    c.addChild(capTxt);
     if (!slots.length) {
       const vazio = txt('Prateleiras vazias!', C.warn, 13, true);
       vazio.position.set((w - vazio.width) / 2, floorY / 2 - vazio.height / 2);
@@ -115,8 +128,8 @@ export function createLojaScreen({ game, toast }) {
     });
     // balcão (cobre os pés dos clientes)
     const counter = new Graphics();
-    counter.roundRect(6, counterY, w - 12, 20, 4).fill(0x8a5a33);
-    counter.roundRect(6, counterY, w - 12, 4, 2).fill(lighten(0x8a5a33, 0.3));
+    counter.roundRect(6, counterY, w - 12, 20, 4).fill(cor.balcao);
+    counter.roundRect(6, counterY, w - 12, 4, 2).fill(lighten(cor.balcao, 0.3));
     c.addChild(counter);
     if (!n) {
       const vazio = txt('Nenhum cliente por enquanto…', C.dim, 13);

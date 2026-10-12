@@ -46,7 +46,7 @@ function volumeRow(w, label, key, after) {
   return row;
 }
 
-export function settingsContent(scroll, w, { onReset } = {}) {
+export function settingsContent(scroll, w, { onReset, onTutorial } = {}) {
   scroll.add(toggleRow(w, 'Efeitos sonoros', 'sound', () => applyVolume()), ROW_H);
   scroll.add(volumeRow(w, 'Volume dos efeitos', 'volume', () => applyVolume()), ROW_H);
   if (hasMusic()) {
@@ -55,6 +55,12 @@ export function settingsContent(scroll, w, { onReset } = {}) {
   }
   scroll.add(toggleRow(w, 'Animações', 'motion'), ROW_H);
   scroll.add(toggleRow(w, 'Vibração (celular)', 'haptics'), ROW_H);
+
+  if (onTutorial) {
+    const rev = labelButton('Rever o tutorial', w, 48, { tint: C.accent });
+    rev.tap(onTutorial);
+    scroll.add(rev, 48);
+  }
 
   if (onReset) {
     // apagar o progresso pede dois toques

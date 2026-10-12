@@ -6,7 +6,7 @@ import { drawIcon } from './icons.js';
 import { iconSprite } from '../assets.js';
 import {
   produzir, podeProduzir, coletar, desbloquearOficio, oficioAberto, nivelOficio, progressoOficio, xpParaNivel,
-  slotsDe, filaMaxDe, emProducao, naFila, chancesQualidade, duracaoDe, faltando, totalProntos,
+  slotsDe, filaMaxDe, emProducao, naFila, chancesQualidade, duracaoDe, faltando, totalProntos, alternarRepetir,
 } from '../core/craft.js';
 import { fmt, fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
@@ -42,6 +42,7 @@ export function createOficinaScreen({ game, toast }) {
     sfx.levelUp();
     toast(`${game.data.meta.oficios.find((o) => o.id === id).nome} chegou ao nível ${nivel}!`, C.rep);
   });
+  game.on('cheio', () => { sfx.deny(); toast('Prateleiras cheias: venda ou amplie para levar o resto', C.warn); });
   game.on('coletou', (itens) => {
     const n = itens.reduce((a, i) => a + i.qtd, 0);
     sfx.buy();
@@ -262,12 +263,24 @@ export function createOficinaScreen({ game, toast }) {
     c.addChild(b);
     if (!chk.ok && chk.motivo === 'materiais') {
       const n = Object.keys(falta).length;
-      const f = txt(`faltam ${n} material${n > 1 ? 'is' : ''}`, C.bad, 10);
-      f.position.set(w - bw - 12 + (bw - f.width) / 2, 56);
+      const f = txt(`faltam ${n} material${n > 1 ? 'is' : ''}`, C.bad, 11, true);
+      f.position.set(56 + tempo.width + 10, tempo.y);
       c.addChild(f);
     }
-    drawCard(bg, w, h, { fill: C.card, radius: 12, accent: chk.ok ? C.good : null });
-    return { c, h };
+    // repetir (só com o artesão): a oficina refaz esta receita sozinha enquanto houver material
+    let hh = h;
+    if (game.mods.repetir) {
+      const ligado = game.state.repetir[r.oficio] === r.id;
+      const rb = labelButton(ligado ? '⟳ Repetindo' : '⟳ Repetir', bw, 28, { tint: ligado ? C.accent : C.dim, size: 11 });
+      rb.position.set(w - bw - 12, 58);
+      rb.setActive(ligado);
+      rb.tap(() => { alternarRepetir(game, r.id); sfx.tap(); });
+      c.addChild(rb);
+      reg(`repetir:${r.id}`, rb, bw, 28);
+      hh = Math.max(h, 58 + 28 + 10);
+    }
+    drawCard(bg, w, hh, { fill: C.card, radius: 12, accent: chk.ok ? C.good : null });
+    return { c, h: hh };
   }
 
   // ---------- montagem ----------

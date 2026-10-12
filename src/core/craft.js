@@ -93,6 +93,7 @@ export function produzir(game, receitaId) {
   const job = enfileirar(game, game.data.receitas[receitaId]);
   avancarProducao(game);
   game.emit('producao', job);
+  game.emit('produziu', job);
   return { ok: true, job };
 }
 

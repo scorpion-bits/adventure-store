@@ -7,6 +7,7 @@ import { TABS } from './tabbar.js';
 import { createLojaScreen } from './loja.js';
 import { createMercadoScreen } from './mercado.js';
 import { createOficinaScreen } from './oficina.js';
+import { createMelhoriasScreen } from './melhorias.js';
 
 function stubScreen(id, { toast }) {
   const info = TELAS[id];
@@ -60,6 +61,6 @@ function stubScreen(id, { toast }) {
 }
 
 export function createScreens(ctx) {
-  const reais = { loja: createLojaScreen, oficina: createOficinaScreen, mercado: createMercadoScreen };
+  const reais = { loja: createLojaScreen, oficina: createOficinaScreen, mercado: createMercadoScreen, melhorias: createMelhoriasScreen };
   return TABS.map((tab) => (reais[tab.id] ?? ((c) => stubScreen(tab.id, c)))(ctx));
 }

@@ -16,9 +16,11 @@ import { createGame, diaDeJogo } from './core/game.js';
 import { loadState, saveState, clearSave } from './core/save.js';
 import { createClock } from './core/time.js';
 import { avancarProducao, totalProntos } from './core/craft.js';
-import { fmtTime } from './format.js';
+import { fmt, fmtTime } from './format.js';
 import { para, labelButton } from './ui/ui.js';
 import { initAssets } from './assets.js';
+import { createTutorial } from './ui/tutorial.js';
+import { simularOffline } from './core/staff.js';
 
 const BACK_INSET = 46;   // espaço do botão "voltar ao site" no canto superior esquerdo
 
@@ -58,13 +60,15 @@ async function start() {
   const { state, origem } = loadState(storage);
   const clock = createClock();
   const game = createGame({ state, clock });
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) game.state.tutorial.feito = true;
   game.verificarDia();
 
   // tempo com o jogo fechado: a oficina termina o que deu tempo (antes de criar as telas, para não disparar avisos de cada item)
   const ausenteMs = origem === 'carregado' ? Math.max(0, clock.now() - (state.salvoEm ?? clock.now())) : 0;
   const prontosAntes = totalProntos(game);
   avancarProducao(game);
-  const relatorio = { ausenteMs, prontos: totalProntos(game) - prontosAntes };
+  const vendasOffline = simularOffline(game, ausenteMs);
+  const relatorio = { ausenteMs, prontos: totalProntos(game) - prontosAntes, vendas: vendasOffline };
 
   // ao apagar o progresso o salvamento é bloqueado: senão o `pagehide` da recarga gravaria tudo de novo
   let apagando = false;
@@ -79,6 +83,9 @@ async function start() {
   const modal = createModal();
   app.stage.addChild(screensLayer, topbar.root, tabbar.root, toasts.root, modal.root);
 
+  const tutorial = createTutorial({ game, tabbar, onFinish: () => guardar() });
+  app.stage.addChild(tutorial.root);
+  app.stage.addChild(modal.root);
   const screens = createScreens({ toast: toasts.show, game });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
@@ -91,6 +98,7 @@ async function start() {
     if (i !== active) prev.root.visible = false;
     active = i;
     tabbar.select(i);
+    tutorial.abaAtual(TABS[i].id);
     const s = screens[i];
     s.root.visible = true;
     s.root.alpha = 0;
@@ -102,7 +110,7 @@ async function start() {
     sfx.tap();
     modal.open({
       title: 'Configurações',
-      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso }),
+      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso, onTutorial: () => { modal.close(); tutorial.reiniciar(); tutorial.abaAtual(TABS[active].id); } }),
     });
   }
 
@@ -112,6 +120,7 @@ async function start() {
     topbar.layout({ x: L.content.x - 12, y: 0, w: L.content.w + 24, h: L.topH }, L.mode === 'landscape' ? 0 : inset, L.safe.top);
     tabbar.layout(L);
     toasts.layout(L);
+    tutorial.layout(L);
     screens.forEach((s) => s.resize(L.content));
     modal.layout({ w: L.w, h: L.h });
   }
@@ -157,14 +166,19 @@ async function start() {
   }
 
   // "Enquanto você esteve fora": só aparece se ficou fora um tempo e algo aconteceu
-  if (relatorio.ausenteMs > 60_000 && relatorio.prontos > 0) {
+  const v = relatorio.vendas;
+  if (relatorio.ausenteMs > 60_000 && (relatorio.prontos > 0 || v.vendas > 0)) {
     modal.open({
       title: 'Bem-vindo de volta!',
       build: (scroll, w) => {
-        const t = para(`Você ficou fora por ${fmtTime(relatorio.ausenteMs / 1000)}. Enquanto isso, ${relatorio.prontos} ${relatorio.prontos === 1 ? 'item ficou pronto' : 'itens ficaram prontos'} na Oficina.`, C.text, 15, w);
+        const linhas = [`Você ficou fora por ${fmtTime(relatorio.ausenteMs / 1000)}.`];
+        if (relatorio.prontos > 0) linhas.push(`Na Oficina, ${relatorio.prontos} ${relatorio.prontos === 1 ? 'item ficou pronto' : 'itens ficaram prontos'}.`);
+        if (v.vendas > 0) linhas.push(`O vendedor fez ${v.vendas} ${v.vendas === 1 ? 'venda' : 'vendas'} e rendeu ${fmt(v.ouro)} de ouro.`);
+        if (v.perdidas > 0) linhas.push(`${v.perdidas} ${v.perdidas === 1 ? 'cliente foi embora' : 'clientes foram embora'} sem achar o que queria: falta estoque!`);
+        const t = para(linhas.join('\n\n'), C.text, 15, w);
         scroll.add(t, t.height);
-        const b = labelButton('Ir para a Oficina', w, 46, { tint: C.good });
-        b.tap(() => { modal.close(); selectTab(1); });
+        const b = labelButton(relatorio.prontos > 0 ? 'Ir para a Oficina' : 'Continuar', w, 46, { tint: C.good });
+        b.tap(() => { modal.close(); if (relatorio.prontos > 0) selectTab(1); });
         scroll.add(b, 46);
       },
     });
@@ -196,6 +210,8 @@ async function start() {
       loja: screens[0].hooks,
       mercado: screens[2].hooks,
       oficina: screens[1].hooks,
+      tutorial: tutorial.hooks,
+      melhorias: screens[4].hooks,
       skip: (ms) => { clock.advance(ms); game.tick(0); },
       giveMaterial: (id, n = 1) => { game.state.materiais[id] = (game.state.materiais[id] ?? 0) + n; game.emit('materiais'); },
       giveItem: (id, q = 1, n = 1) => { const k = `${id}:${q}`; game.state.estoque[k] = (game.state.estoque[k] ?? 0) + n; game.emit('estoque'); },
