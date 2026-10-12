@@ -46,7 +46,9 @@ export function defaultState(now = Date.now()) {
 
     mercado: { data: '', comprado: {} },   // compras de hoje por fornecedor: { "fornecedor:material": qtd }
 
-    stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0, encomendas: 0, produzidos: 0, expedicoes: 0, capitulos: 0 },
+    stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0, encomendas: 0, produzidos: 0, expedicoes: 0, capitulos: 0, caros: 0, baratos: 0, maiorVenda: 0, qualidadeMax: 0, eventos: 0, melhorSequencia: 0 },
+    conquistas: {},                  // conquistas ganhas: { id: quando (ms) }
+    colecao: { itens: {}, aventureiros: {}, categorias: {}, classes: {}, raridades: {} },   // o que já apareceu / quanto já vendeu
     tutorial: { passo: 0, feito: false },
   };
 }

@@ -15,7 +15,7 @@ export async function openGame(page, opcoes = {}) {
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
   // ?hoje fixa a data do jogo numa época sem evento sazonal (os números dos testes não podem depender do dia em que rodam)
-  await page.goto(`/?${opcoes.tutorial ? '' : 'semtutorial&'}hoje=${opcoes.hoje ?? '2026-08-04'}`);
+  await page.goto(`/?${opcoes.tutorial ? '' : 'semtutorial&'}${opcoes.conquistas ? '' : 'semconquistas&'}hoje=${opcoes.hoje ?? '2026-08-04'}`);
   await page.waitForFunction(() => window.__loja?.ready, null, { timeout: 20_000 });
   await page.waitForTimeout(600);   // animação de entrada
   return errors;

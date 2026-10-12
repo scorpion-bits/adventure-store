@@ -7,6 +7,7 @@ import {
   comprarMelhoria, estadoMelhoria, melhoriasDoGrupo, contratar, proximoNivel, nivelFuncionario,
   comprarDecoracao, usarDecoracao,
 } from '../core/upgrades.js';
+import { progressoConquista, ganha, totalGanhas } from '../core/achievements.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -35,7 +36,7 @@ export function createMelhoriasScreen({ game, toast }) {
   let quadros = 0;
   const refs = {};
   const marcar = () => { dirty = true; };
-  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao']) game.on(ev, marcar);
+  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao', 'conquista']) game.on(ev, marcar);
   game.on('melhoria', (m) => toast(`${m.nome} comprada!`, C.accent));
   game.on('equipe', ({ id, nivel }) => toast(`${game.data.equipe[id].nome}: nível ${nivel}`, C.accent));
 
@@ -299,6 +300,69 @@ export function createMelhoriasScreen({ game, toast }) {
     return { c, h };
   }
 
+  // ---------- conquistas ----------
+  function barra(w, frac, cor) {
+    const g = new Graphics();
+    g.roundRect(0, 0, w, 8, 4).fill({ color: 0x000000, alpha: 0.25 });
+    if (frac > 0) g.roundRect(0, 0, Math.max(8, w * frac), 8, 4).fill(cor);
+    return g;
+  }
+
+  function premioTexto(c) {
+    return [c.ouro ? `${fmt(c.ouro)} ouro` : null, c.rep ? `${c.rep} rep.` : null].filter(Boolean).join(' + ');
+  }
+
+  function cartaoConquista(w, c) {
+    const p = progressoConquista(game, c);
+    const feita = ganha(game, c.id);
+    const cont = new Container();
+    const bg = new Graphics();
+    cont.addChild(bg);
+    const nome = txt(c.nome, feita ? C.dim : C.text, 14, true);
+    nome.position.set(14, 10);
+    const premio = txt(feita ? '✓' : premioTexto(c), feita ? C.good : C.gold, feita ? 16 : 12, true);
+    premio.position.set(w - premio.width - 14, feita ? 8 : 11);
+    const desc = para(c.desc, C.dim, 12, w - 28);
+    desc.position.set(14, nome.y + nome.height + 1);
+    cont.addChild(nome, premio, desc);
+    let h = desc.y + desc.height + 10;
+    if (!feita) {
+      const b = barra(w - 28 - 70, p.atual / p.meta, C.accent);
+      b.position.set(14, h + 2);
+      const n = txt(`${fmt(p.atual)}/${fmt(p.meta)}`, C.dim, 11, true);
+      n.position.set(w - 14 - n.width, h - 2);
+      cont.addChild(b, n);
+      h += 20;
+    }
+    drawCard(bg, w, h, { fill: feita ? C.card : C.cardHi, fillAlpha: feita ? 0.6 : 1, accent: feita ? C.good : C.accent });
+    return { c: cont, h };
+  }
+
+  function listaConquistas(w) {
+    const todas = game.data.listas.conquistas;
+    const total = todas.length;
+    const ganhas = totalGanhas(game);
+    const cab = new Container();
+    const t = txt(`Conquistas: ${ganhas}/${total}`, C.text, 16, true);
+    const b = barra(w, ganhas / total, C.gold);
+    b.position.set(0, t.height + 6);
+    cab.addChild(t, b);
+    const itens = [{ c: cab, h: t.height + 6 + 8 }];
+    const pendentes = todas.filter((c) => !ganha(game, c.id))
+      .map((c) => ({ c, f: progressoConquista(game, c) }))
+      .sort((a, b2) => (b2.f.atual / b2.f.meta) - (a.f.atual / a.f.meta));
+    if (pendentes.length) {
+      itens.push(secao('Em andamento (as mais próximas primeiro)'));
+      for (const { c } of pendentes) itens.push(cartaoConquista(w, c));
+    }
+    const feitas = todas.filter((c) => ganha(game, c.id)).sort((a, b2) => game.state.conquistas[b2.id] - game.state.conquistas[a.id]);
+    if (feitas.length) {
+      itens.push(secao('Conquistadas'));
+      for (const c of feitas) itens.push(cartaoConquista(w, c));
+    }
+    return itens;
+  }
+
   const secao = (texto) => { const t = txt(texto, C.dim, 12, true); return { c: t, h: t.height }; };
 
   // ---------- montagem ----------
@@ -323,7 +387,7 @@ export function createMelhoriasScreen({ game, toast }) {
       add(gradeOficios(w));
       listaMelhorias(w, oficioSel).forEach(add);
     } else if (sub === 'conquistas') {
-      add(cartaEmBreve(w, 'Conquistas', 'Mais de 80 conquistas para completar, com a coleção de itens e de aventureiros.', 'M9'));
+      listaConquistas(w).forEach(add);
     } else {
       add(cartaEmBreve(w, 'Expandir para uma nova cidade', 'Recomece em outra cidade com bônus permanentes herdados desta loja.', 'M10'));
     }

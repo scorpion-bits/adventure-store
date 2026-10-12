@@ -14,6 +14,7 @@ import { unlockAudio, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
 import { loadState, saveState, clearSave } from './core/save.js';
+import { verificarConquistas } from './core/achievements.js';
 import { createClock, dayKey } from './core/time.js';
 import { avancarProducao, totalProntos } from './core/craft.js';
 import { fmt, fmtTime } from './format.js';
@@ -71,6 +72,8 @@ async function start() {
   if (hoje && origem !== 'carregado') { state.criadoEm = clock.now(); state.dia.data = dayKey(clock.now()); }
   const game = createGame({ state, clock });
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) game.state.tutorial.feito = true;
+  // em desenvolvimento, ?semconquistas desliga os prêmios de conquista (os testes contam o ouro exato)
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('semconquistas')) game.semConquistas = true;
   game.verificarDia();
 
   // tempo com o jogo fechado: a oficina termina o que deu tempo (antes de criar as telas, para não disparar avisos de cada item)
@@ -158,8 +161,19 @@ async function start() {
   atualizarAviso();
   game.on('nivel', (n) => { toasts.show(`Reputação nível ${n}!`, 0xc79cf0); sfx.levelUp(); });
 
+  // conquistas do mesmo quadro viram um aviso só (um save antigo pode ganhar várias de uma vez)
+  const novasConquistas = [];
+  game.on('conquista', (c) => novasConquistas.push(c));
+  const avisarConquistas = () => {
+    if (!novasConquistas.length) return;
+    const l = novasConquistas.splice(0);
+    sfx.achievement();
+    toasts.show(l.length === 1 ? `Conquista: ${l[0].nome}!` : `${l.length} conquistas novas!`, 0xffd166);
+  };
+
   app.ticker.add((t) => {
     game.tick(t.deltaMS);
+    avisarConquistas();
     eventos.update();
     lendas.update();
     screens.forEach((sc) => sc.update?.(t.deltaMS));
@@ -234,6 +248,7 @@ async function start() {
       eventos: { ...eventos.hooks, disparar: (id) => dispararEvento(game, id) },
       melhorias: screens[4].hooks,
       aventureiros: screens[3].hooks,
+      conquistas: { ganhas: () => Object.keys(game.state.conquistas).length, verificar: () => verificarConquistas(game) },
       avisoAventureiros: () => tabbar.temBadge(3),
       lendas: lendas.hooks,
       chamarLenda: (id) => { game.state.fila.length = 0; const c = criarCliente(game, id); if (c) receberCliente(game, c); return !!c; },

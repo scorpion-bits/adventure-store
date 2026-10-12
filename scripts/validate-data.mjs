@@ -5,6 +5,7 @@ import { DATA } from '../src/data/index.js';
 import { EFEITOS } from '../src/core/mods.js';
 import { TIPOS_DE_EFEITO } from '../src/core/events.js';
 import { defaultState } from '../src/core/state.js';
+import { MEDIDAS } from '../src/core/achievements.js';
 
 export function validar(data = DATA) {
   const erros = [];
@@ -202,6 +203,19 @@ export function validar(data = DATA) {
   exige(data.semanal.quantas <= data.semanal.metas.length, 'metas semanais: "quantas" passa do tamanho do pool');
   exige(data.diario.faixas[0] === 1 && data.diario.faixas.every((n, i, a) => i === 0 || n > a[i - 1]), 'diário: as faixas precisam começar em 1 e crescer');
 
+  // conquistas: medida conhecida, argumento válido, meta e prêmio sensatos
+  const argumentos = {
+    categoria: new Set(meta.categorias.map((c) => c.id)), classe: new Set(meta.classes.map((c) => c.id)), raridade: new Set(meta.raridades.map((r) => r.id)),
+  };
+  for (const c of listas.conquistas) {
+    const dono = `conquista ${c.id}`;
+    exige(c.nome && c.desc, `${dono}: nome e descrição são obrigatórios`);
+    exige(MEDIDAS[c.medida], `${dono}: medida "${c.medida}" não existe`);
+    if (argumentos[c.medida]) exige(argumentos[c.medida].has(c.arg), `${dono}: argumento "${c.arg}" inválido para ${c.medida}`);
+    exige(c.meta === 'todos' || c.meta > 0, `${dono}: meta inválida`);
+    exige(c.ouro > 0 || c.rep > 0, `${dono}: precisa de um prêmio (ouro ou rep)`);
+  }
+
   // ofícios: o primeiro vem aberto de graça (senão o jogo começa sem como produzir) e todos têm custo e reputação
   exige(meta.oficios[0].custo === 0, 'o primeiro ofício precisa ser grátis (vem aberto no início)');
   for (const o of meta.oficios) exige(o.custo >= 0 && o.nivelRep >= 1, `ofício ${o.id}: custo e nivelRep inválidos`);
@@ -223,6 +237,7 @@ export function validar(data = DATA) {
     porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 6],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
+    conquistas: [listas.conquistas.length, m.conquistas],
     // a menor quantidade de melhorias entre os ofícios
     melhoriasPorOficio: [Math.min(...meta.oficios.map((o) => listas.melhorias.filter((x) => x.grupo === o.id).length)), m.melhoriasPorOficio],
   };

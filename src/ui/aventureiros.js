@@ -7,6 +7,7 @@ import { descreverEfeito } from '../core/mods.js';
 import {
   bonusDoDia, coletarBonus, entregarEncomenda, podeEntregar, unidadesParaEncomenda, metasCumpridas, progressoMeta, metaCumprida, textoMeta, abrirBau,
 } from '../core/daily.js';
+import { raridade, categoria, temperamento, classe } from '../data/index.js';
 import { fmt } from '../format.js';
 import { progressoLenda, capituloAtual, lendaConcluida, nivelNecessario, qualidadeMinima } from '../core/legends.js';
 import { conteudoCapitulo } from './lendas.js';
@@ -29,7 +30,7 @@ export function createAventureirosScreen({ game, modal, toast }) {
   let quadros = 0;
   const refs = {};
   const marcar = () => { dirty = true; };
-  for (const ev of ['lenda', 'rep', 'chegou', 'diario', 'estoque', 'encomenda', 'bonusDiario', 'bau', 'especialAtendido', 'ouro']) game.on(ev, marcar);
+  for (const ev of ['lenda', 'rep', 'chegou', 'diario', 'estoque', 'encomenda', 'bonusDiario', 'bau', 'especialAtendido', 'ouro', 'venda']) game.on(ev, marcar);
   game.on('especialAtendido', (r) => { sfx.achievement(); toast?.(`${game.data.aventureiros[r.adv].nome} adorou! +${fmt(r.ouro)} ouro de bônus`, C.gold); });
   game.on('encomenda', ({ enc }) => { sfx.sell(); toast?.(`Encomenda entregue: +${fmt(enc.ouro)} ouro`, C.good); });
   const reg = (nome, c, w, h) => { refs[nome] = { c, w, h }; };
@@ -55,21 +56,6 @@ export function createAventureirosScreen({ game, modal, toast }) {
       c.addChild(b);
     });
     return { c, h: 38 };
-  }
-
-  function cartaEmBreve(w, titulo, texto, etapa) {
-    const c = new Container();
-    const bg = new Graphics();
-    const t = txt(titulo, C.text, 17, true);
-    t.position.set(14, 12);
-    const p = para(texto, C.dim, 13, w - 28);
-    p.position.set(14, t.y + t.height + 4);
-    const e = txt(`chega na etapa ${etapa}`, C.accent, 12, true);
-    e.position.set(14, p.y + p.height + 8);
-    const h = e.y + e.height + 14;
-    drawCard(bg, w, h, { fill: C.card, accent: C.faint });
-    c.addChild(bg, t, p, e);
-    return { c, h };
   }
 
   function lerCapitulo(def, i) {
@@ -299,6 +285,191 @@ export function createAventureirosScreen({ game, modal, toast }) {
     return { c, h };
   }
 
+  // ---------- coleção ----------
+  const CELULA = 52;
+  const espaco = 8;
+
+  function barraFina(w, frac, cor) {
+    const g = new Graphics();
+    g.roundRect(0, 0, w, 8, 4).fill({ color: 0x000000, alpha: 0.25 });
+    if (frac > 0) g.roundRect(0, 0, Math.max(8, w * frac), 8, 4).fill(cor);
+    return g;
+  }
+
+  function cartaoResumoColecao(w) {
+    const itens = game.data.listas.itens;
+    const advs = game.data.listas.aventureiros.filter((a) => !a.lendario);
+    const col = game.state.colecao;
+    const a = itens.filter((i) => col.itens[i.id] !== undefined).length;
+    const b = advs.filter((x) => col.aventureiros[x.id] !== undefined).length;
+    const c = new Container();
+    const bg = new Graphics();
+    c.addChild(bg);
+    let y = 12;
+    for (const [nome, n, total, cor] of [['Itens descobertos', a, itens.length, C.accent], ['Aventureiros conhecidos', b, advs.length, C.gold]]) {
+      const t = txt(nome, C.text, 14, true);
+      t.position.set(14, y);
+      const q = txt(`${n}/${total}`, C.dim, 13, true);
+      q.position.set(w - 14 - q.width, y + 1);
+      const barra = barraFina(w - 28, n / total, cor);
+      barra.position.set(14, y + t.height + 5);
+      c.addChild(t, q, barra);
+      y += t.height + 5 + 8 + 12;
+    }
+    drawCard(bg, w, y + 2, { fill: C.cardHi });
+    return { c, h: y + 2 };
+  }
+
+  // grade de células tocáveis: `celulas` = [{ chave, desenhar(container, tam), descoberto, ao tocar }]
+  function grade(w, celulas) {
+    const cols = Math.max(1, Math.floor((w + espaco) / (CELULA + espaco)));
+    const folga = (w - (cols * CELULA + (cols - 1) * espaco)) / 2;
+    const c = new Container();
+    celulas.forEach((cel, i) => {
+      const x = folga + (i % cols) * (CELULA + espaco);
+      const y = Math.floor(i / cols) * (CELULA + espaco);
+      const b = new Container();
+      const bg = new Graphics();
+      bg.roundRect(0, 0, CELULA, CELULA, 10).fill({ color: cel.descoberto ? C.cardHi : C.card, alpha: cel.descoberto ? 1 : 0.6 })
+        .stroke({ width: 1, color: cel.cor ?? 0xffffff, alpha: cel.descoberto ? 0.55 : 0.08 });
+      b.addChild(bg);
+      cel.desenhar(b, CELULA);
+      b.position.set(x, y);
+      b.eventMode = 'static';
+      b.cursor = 'pointer';
+      b.hitArea = new Rectangle(0, 0, CELULA, CELULA);
+      b.on('pointertap', () => { if (!wasDragged()) { sfx.tap(); cel.aoTocar(); } });
+      reg(cel.chave, b, CELULA, CELULA);
+      c.addChild(b);
+    });
+    const linhas = Math.ceil(celulas.length / cols);
+    return { c, h: linhas * CELULA + Math.max(0, linhas - 1) * espaco };
+  }
+
+  const misterio = (b, tam) => {
+    const q = txt('?', C.faint, 22, true);
+    q.position.set((tam - q.width) / 2, (tam - q.height) / 2);
+    b.addChild(q);
+  };
+
+  function detalheItem(item) {
+    const col = game.state.colecao;
+    const visto = col.itens[item.id] !== undefined;
+    const rar = raridade(item.raridade);
+    modal.open({
+      title: visto ? item.nome : '???',
+      build: (sc, w) => {
+        if (!visto) {
+          const p = para(`Ainda não descoberto. Tenha este item na loja (produzido, comprado ou recebido) para ver os detalhes. Categoria: ${categoria(item.cat).nome}.`, C.dim, 14, w);
+          sc.add(p, p.height);
+          return;
+        }
+        const topo = new Container();
+        const ic = iconSprite('item', item.id, 64);
+        const nome = txt(categoria(item.cat).nome, C.dim, 13, true);
+        nome.position.set(80, 6);
+        const rr = txt(rar.nome, rar.cor, 14, true);
+        rr.position.set(80, 6 + nome.height + 2);
+        const v = txt(`Valor de referência: ${fmt(item.valor)} ouro`, C.text, 13, true);
+        v.position.set(80, rr.y + rr.height + 4);
+        topo.addChild(ic, nome, rr, v);
+        sc.add(topo, 72);
+        const vendidos = para(`Vendido ${fmt(col.itens[item.id])} ${col.itens[item.id] === 1 ? 'vez' : 'vezes'}.`, C.dim, 13, w);
+        sc.add(vendidos, vendidos.height);
+        const receitas = game.data.listas.receitas.filter((r) => r.item === item.id);
+        for (const r of receitas) {
+          const of = game.data.meta.oficios.find((o) => o.id === r.oficio);
+          const mats = Object.entries(r.materiais).map(([m, q]) => `${q} ${game.data.materiais[m].nome}`).join(', ');
+          const p = para(`Receita (${of.nome}, nível ${r.nivel}): ${mats}`, C.text, 13, w);
+          sc.add(p, p.height);
+        }
+        if ((item.nivelRep ?? 1) > 1) {
+          const p = para(`Passa a ser pedido com reputação ${item.nivelRep}.`, C.faint, 12, w);
+          sc.add(p, p.height);
+        }
+      },
+    });
+  }
+
+  function detalheAventureiro(adv) {
+    const col = game.state.colecao;
+    const visto = col.aventureiros[adv.id] !== undefined;
+    modal.open({
+      title: visto ? adv.nome : '???',
+      build: (sc, w) => {
+        if (!visto) {
+          const p = para(`Ainda não visitou a sua loja. Ele aparece com reputação ${adv.nivelRep ?? 1}, vindo de ${game.data.regioes[adv.regiao].nome}.`, C.dim, 14, w);
+          sc.add(p, p.height);
+          return;
+        }
+        const cl = classe(adv.classe);
+        const topo = new Container();
+        const ret = portraitSprite(adv.id, 64);
+        const k = txt(cl.nome, cl.cor, 14, true);
+        k.position.set(80, 6);
+        const t = txt(`Temperamento: ${temperamento(adv.temperamento).nome}`, C.text, 13, true);
+        t.position.set(80, 6 + k.height + 4);
+        const rg = txt(`Vem de: ${game.data.regioes[adv.regiao].nome}`, C.dim, 12);
+        rg.position.set(80, t.y + t.height + 3);
+        topo.addChild(ret, k, t, rg);
+        sc.add(topo, 72);
+        const gosta = para(`Costuma procurar: ${adv.prefere.map((c) => categoria(c).nome.toLowerCase()).join(', ')}.`, C.text, 13, w);
+        sc.add(gosta, gosta.height);
+        const n = col.aventureiros[adv.id];
+        const at = para(`Atendido ${fmt(n)} ${n === 1 ? 'vez' : 'vezes'}.`, C.dim, 13, w);
+        sc.add(at, at.height);
+        const fala = adv.falas?.chega?.[0];
+        if (fala) {
+          const f = para(`"${fala}"`, C.accent, 13, w);
+          sc.add(f, f.height);
+        }
+      },
+    });
+  }
+
+  function colecao(w, add) {
+    const col = game.state.colecao;
+    add(cartaoResumoColecao(w));
+    add(secao('Itens'));
+    for (const cat of game.data.meta.categorias) {
+      const lista = game.data.listas.itens.filter((i) => i.cat === cat.id);
+      const n = lista.filter((i) => col.itens[i.id] !== undefined).length;
+      add(secao(`${cat.nome} · ${n}/${lista.length}`));
+      add(grade(w, lista.map((item) => {
+        const visto = col.itens[item.id] !== undefined;
+        return {
+          chave: `item:${item.id}`, descoberto: visto, cor: raridade(item.raridade).cor,
+          desenhar: (b, tam) => {
+            if (!visto) return misterio(b, tam);
+            const ic = iconSprite('item', item.id, 36);
+            ic.position.set((tam - 36) / 2, (tam - 36) / 2);
+            b.addChild(ic);
+          },
+          aoTocar: () => detalheItem(item),
+        };
+      })));
+    }
+    add(secao('Aventureiros'));
+    for (const cl of game.data.meta.classes) {
+      const lista = game.data.listas.aventureiros.filter((a) => !a.lendario && a.classe === cl.id);
+      const n = lista.filter((a) => col.aventureiros[a.id] !== undefined).length;
+      add(secao(`${cl.nome} · ${n}/${lista.length}`));
+      add(grade(w, lista.map((adv) => {
+        const visto = col.aventureiros[adv.id] !== undefined;
+        return {
+          chave: `adv:${adv.id}`, descoberto: visto, cor: cl.cor,
+          desenhar: (b, tam) => {
+            if (!visto) return misterio(b, tam);
+            const r = portraitSprite(adv.id, 40);
+            r.position.set((tam - 40) / 2, (tam - 40) / 2);
+            b.addChild(r);
+          },
+          aoTocar: () => detalheAventureiro(adv),
+        };
+      })));
+    }
+  }
+
   function render() {
     dirty = false;
     quadros = 0;
@@ -323,7 +494,7 @@ export function createAventureirosScreen({ game, modal, toast }) {
       game.state.diario.encomendas.forEach((enc, i) => add(linhaEncomenda(w, enc, i)));
       add(cartaoSemana(w));
     } else {
-      add(cartaEmBreve(w, 'Coleção', 'A enciclopédia de itens e de aventureiros que você já descobriu.', 'M9'));
+      colecao(w, add);
     }
     scroll.resize(R.h, w);
     scroll.scrollBy(keepY);

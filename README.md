@@ -4,12 +4,13 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M7 (conteúdo II)**: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
+> Estado atual: **M9 (conquistas e coleção)**. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
+> 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
 > aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
-> (atendente, artesão, vendedor) e a árvore de cada ofício. Tutorial curto. Só a aba Aventureiros ainda é provisória.
+> (atendente, artesão, vendedor) e a árvore de cada ofício. Tutorial curto.
 > As próximas etapas estão no plano.
 
 ## Rodar localmente
@@ -71,6 +72,9 @@ e a receita dele em `receitas.js`:
 { id: 'r_machado_ferro', item: 'machado_ferro', oficio: 'ferraria', nivel: 1, tempo: 80, materiais: { barra_ferro: 2, madeira: 1 } },
 ```
 
+Conquistas ficam em `conquistas.js`: cada uma é uma linha com a medida (vendas, ouro, itens descobertos...), a meta e o prêmio;
+meta `'todos'` acompanha o conteúdo que você acrescentar.
+
 Os números de balanceamento (preços, qualidades, temperamentos, reputação) ficam em `src/data/meta.js`.
 
 **Ícones:** cada item/material aponta para um ícone do pack em `src/data/icones.js` (`id: 'fbNN'`, onde NN é o
@@ -81,7 +85,7 @@ fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai 
 rendimento) mais um nó final por ofício a partir de tabelas no topo do arquivo; é só mexer nelas para rebalancear.
 Melhorias avulsas (da loja, ou especiais) entram como objetos nas listas, usando os efeitos de `src/core/mods.js`.
 
-`npm run validate -- --metas` confere as metas de quantidade (hoje todas atingidas, menos as conquistas, que chegam no M9).
+`npm run validate -- --metas` confere as metas de quantidade (hoje todas atingidas).
 
 ### Save
 
