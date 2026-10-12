@@ -34,6 +34,9 @@ export function defaultState(now = Date.now()) {
     prontos: [],                     // produções terminadas esperando coleta: { uid, receita, oficio, resultado: { qualidade: qtd } }
     producaoUid: 0,
 
+    diario: { data: '', encomendas: [], especial: null, bonusColetado: false },   // conteúdo do dia (sorteado pela data)
+    sequencia: { dias: 0, ultimoDia: '', perdao: { semana: '', usados: 0 } },     // dias seguidos jogando
+    semanal: { chave: '', metas: [], base: {}, bauAberto: false },               // metas e baú da semana
     lendarios: {},                   // progresso das lendas: { id: { cap (capítulos concluídos), visita (ms da última chegada) } }
     expedicoes: [],                  // expedições em andamento ou terminadas e não coletadas: { uid, regiao, tier, inicio, fim, custo }
     expedicaoUid: 0,
@@ -43,7 +46,7 @@ export function defaultState(now = Date.now()) {
 
     mercado: { data: '', comprado: {} },   // compras de hoje por fornecedor: { "fornecedor:material": qtd }
 
-    stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0 },
+    stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0, encomendas: 0, produzidos: 0, expedicoes: 0, capitulos: 0 },
     tutorial: { passo: 0, feito: false },
   };
 }

@@ -14,7 +14,7 @@ import {
 import { totalEstoque } from '../../src/core/estoque.js';
 import { tickExpedicoes } from '../../src/core/expeditions.js';
 
-const T0 = new Date(2026, 9, 12, 12).getTime();
+const T0 = new Date(2026, 7, 4, 12).getTime();
 const novo = (nivel = 40, mexer, seed = 1) => {
   const clock = createClock(T0);
   const state = defaultState(T0);

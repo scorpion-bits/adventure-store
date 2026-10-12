@@ -2,13 +2,17 @@
 // fornecedores e aventureiro especial mudam à meia-noite e são sorteados pela data.
 
 // Relógio injetável: nos testes e no simulador dá para adiantar o tempo sem esperar.
-export function createClock(start = null) {
+//  - createClock()                    : o relógio de verdade
+//  - createClock(ms)                  : parado em `ms` (só anda com advance/set)
+//  - createClock(ms, { correr: true }): começa em `ms` e segue andando em tempo real (usado em desenvolvimento para fixar a data)
+export function createClock(start = null, { correr = false } = {}) {
   let offset = 0;
   const base = start;
+  const delta = base !== null && correr ? base - Date.now() : 0;
   return {
-    now: () => (base !== null ? base + offset : Date.now() + offset),
+    now: () => (base !== null && !correr ? base + offset : Date.now() + delta + offset),
     advance(ms) { offset += ms; },
-    set(ms) { offset = ms - (base !== null ? base : Date.now()); },
+    set(ms) { offset = ms - (base !== null && !correr ? base : Date.now() + delta); },
   };
 }
 

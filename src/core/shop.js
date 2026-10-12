@@ -3,6 +3,7 @@
 import { lerChave } from '../data/index.js';
 import { precoPedido } from './economy.js';
 import { proximaLenda, capituloAtual, qualidadeMinima } from './legends.js';
+import { proximoEspecial } from './especial.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -28,8 +29,8 @@ export function intervaloChegada(game) {
 
 // Itens que este aventureiro pode pedir por nome: das categorias que ele procura, já liberados pela reputação e dentro da
 // faixa de valor da região dele (novatos não pedem lendários; heróis não pedem pão). Sem nada na faixa, vale qualquer um liberado.
-const itensPedidos = (game, adv) => {
-  const nivel = game.nivel();
+export const itensPedidos = (game, adv, nivelRef = game.nivel()) => {
+  const nivel = nivelRef;
   const doTipo = game.data.listas.itens.filter((it) => adv.prefere.includes(it.cat) && (it.nivelRep ?? 1) <= nivel);
   const regiao = game.data.regioes[adv.regiao];
   const naFaixa = doTipo.filter((it) => it.valor >= (regiao?.valorMin ?? 0) && it.valor <= (regiao?.valorMax ?? Infinity));
@@ -93,6 +94,16 @@ export function gerarCliente(game, { semLendas = false } = {}) {
   if (!semLendas) {
     const lenda = proximaLenda(game);
     if (lenda) { const c = criarCliente(game, lenda); if (c) return c; }
+    const esp = proximoEspecial(game);
+    if (esp) {
+      const c = criarCliente(game, esp.adv);
+      if (c) {
+        c.especial = true;
+        c.pedido = { tipo: 'item', item: esp.item };
+        c.paciencia = c.pacienciaMax = c.pacienciaMax * game.data.diario.especial.pacienciaMult;
+        return c;
+      }
+    }
   }
   const adv = game.rng.weighted(game.data.listas.aventureiros.filter((a) => clienteElegivel(game, a)), (a) => a.peso ?? 1);
   return adv ? criarCliente(game, adv.id) : null;

@@ -15,7 +15,7 @@ import { capacidadeFila } from '../../src/core/shop.js';
 import { slotsDe, duracaoDe } from '../../src/core/craft.js';
 
 const novo = (mexer) => {
-  const clock = createClock(new Date(2026, 9, 12, 12).getTime());
+  const clock = createClock(new Date(2026, 7, 4, 12).getTime());
   const state = defaultState(clock.now());
   state.ouro = 1e6;
   state.rep = repParaNivel(30);
@@ -169,7 +169,7 @@ test('save e recarga: melhorias, equipe e decoração voltam aplicadas', async (
   const mem = {};
   const st = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; } };
   saveState(st, g.state);
-  const g2 = createGame({ state: loadState(st).state, clock: createClock(0), rng: createRng(2) });
+  const g2 = createGame({ state: loadState(st).state, clock: createClock(new Date(2026, 7, 4, 12).getTime()), rng: createRng(2) });
   assert.equal(capacidadeFila(g2), 4);
   assert.equal(g2.mods.atendente, 30);
   assert.equal(g2.state.loja.tema, 'taverna');

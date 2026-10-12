@@ -10,7 +10,7 @@ import { loadState, saveState } from '../../src/core/save.js';
 import { produzir } from '../../src/core/craft.js';
 import { elegiveis, disparar, escolher, tickEventos, aplicarEfeitosEvento, eventoPendente, TIPOS_DE_EFEITO } from '../../src/core/events.js';
 
-const T0 = new Date(2026, 9, 12, 12).getTime();
+const T0 = new Date(2026, 7, 4, 12).getTime();
 const novo = (nivel = 1, mexer, seed = 1) => {
   const clock = createClock(T0);
   const state = defaultState(T0);

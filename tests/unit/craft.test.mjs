@@ -11,7 +11,7 @@ import {
   slotsDe, emProducao, naFila, totalProntos, faltando, progressoOficio, duracaoDe,
 } from '../../src/core/craft.js';
 
-const T0 = new Date(2026, 9, 12, 12).getTime();
+const T0 = new Date(2026, 7, 4, 12).getTime();
 const novo = (mexer, seed = 1) => {
   const clock = createClock(T0);
   const state = defaultState(clock.now());

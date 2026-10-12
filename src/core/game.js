@@ -10,6 +10,7 @@ import { tickEquipe } from './staff.js';
 import { tickEventos } from './events.js';
 import { tickExpedicoes } from './expeditions.js';
 import { concluirCapitulo } from './legend-story.js';
+import { registrarDia, bonusEspecial } from './daily.js';
 import { modsBase, recalcularMods } from './mods.js';
 
 // número do dia de jogo (1 no primeiro dia), contado em dias de calendário
@@ -86,6 +87,9 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
   };
 
   game.on('venda', (v) => concluirCapitulo(game, v));
+  game.on('venda', (v) => bonusEspecial(game, v));
+  game.on('dia', () => { recalcularMods(game); registrarDia(game); });      // virou o dia: sazonais, sequência e conteúdo do dia
   recalcularMods(game);
+  registrarDia(game);                                                          // sequência de dias, encomendas e metas já valem desde o começo
   return game;
 }

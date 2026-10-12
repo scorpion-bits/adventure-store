@@ -1,3 +1,5 @@
+import { sazonaisAtivos } from './seasons.js';
+
 // Modificadores: tudo que melhorias, equipe e decoração mudam no jogo. Cada efeito é um objeto { tipo, valor, ... }
 // com tipo de EFEITOS; `recalcularMods` refaz game.mods do zero a partir do que o jogador tem (então nunca "acumula erro").
 // Para criar um efeito novo: acrescente uma entrada em EFEITOS e use `game.mods.<campo>` onde a regra se aplica.
@@ -83,6 +85,7 @@ export function recalcularMods(game) {
   aplicarEfeitos(m, game.data.decoracoes[s.loja.tema]?.efeitos);
   const agora = game.clock.now();
   for (const b of s.bonus ?? []) if (b.ate > agora) aplicarEfeitos(m, [b.efeito]);      // bônus temporários (eventos)
+  for (const sz of sazonaisAtivos(game)) aplicarEfeitos(m, sz.efeitos);                 // eventos sazonais (pela data)
   Object.assign(game.mods, m);        // mantém a mesma referência que o resto do jogo já guarda
   game.emit('mods', game.mods);
   return game.mods;

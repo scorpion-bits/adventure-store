@@ -32,3 +32,14 @@ test('relógio injetável avança sem esperar', () => {
   c.set(9000);
   assert.equal(c.now(), 9000);
 });
+
+test('relógio que corre: começa na data pedida e segue andando em tempo real', async () => {
+  const inicio = new Date(2026, 7, 4, 12).getTime();
+  const c = createClock(inicio, { correr: true });
+  const a = c.now();
+  assert.ok(Math.abs(a - inicio) < 1000);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.ok(c.now() - a >= 25, 'andou');
+  c.advance(60000);
+  assert.ok(c.now() - a >= 60000);
+});

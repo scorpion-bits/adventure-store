@@ -102,7 +102,7 @@ test.describe('oficina (retrato)', () => {
       const raw = JSON.parse(localStorage.getItem(k));
       const volta = 2 * 3600 * 1000;
       for (const j of raw.producao) { j.inicio -= volta; j.fim -= volta; }
-      raw.salvoEm = Date.now() - volta;
+      raw.salvoEm -= volta;
       return JSON.stringify(raw);
     }, chave);
     await page.addInitScript(({ k, v }) => {

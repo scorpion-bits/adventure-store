@@ -63,7 +63,9 @@ async function start() {
   // jogo: carrega o save (ou começa um novo) e liga o relógio
   const storage = (() => { try { return window.localStorage; } catch { return null; } })();
   const { state, origem } = loadState(storage);
-  const clock = createClock();
+  // em desenvolvimento, ?hoje=AAAA-MM-DD fixa a data do jogo (os testes usam isso para não depender de eventos sazonais)
+  const hoje = import.meta.env.DEV ? new URLSearchParams(location.search).get('hoje') : null;
+  const clock = hoje ? createClock(new Date(`${hoje}T12:00:00`).getTime(), { correr: true }) : createClock();
   const game = createGame({ state, clock });
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) game.state.tutorial.feito = true;
   game.verificarDia();

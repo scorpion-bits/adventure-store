@@ -14,7 +14,7 @@ import {
 const novo = (seed = 1, mexer) => {
   const state = defaultState(0);
   mexer?.(state);
-  return createGame({ state, rng: createRng(seed), clock: createClock(0) });
+  return createGame({ state, rng: createRng(seed), clock: createClock(new Date(2026, 7, 4, 12).getTime()) });
 };
 
 // põe um cliente específico na fila, com o pedido que o teste quiser

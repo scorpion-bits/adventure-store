@@ -11,7 +11,7 @@ import { gerarCliente, falasDe, opcoes } from '../../src/core/shop.js';
 const jogoNoNivel = (nivel, seed = 1) => {
   const state = defaultState(0);
   state.rep = repParaNivel(nivel);
-  return createGame({ state, clock: createClock(0), rng: createRng(seed) });
+  return createGame({ state, clock: createClock(new Date(2026, 7, 4, 12).getTime()), rng: createRng(seed) });
 };
 
 test('são 40+ tipos em 8 classes e 6 regiões, com variedade mínima', () => {
@@ -72,7 +72,7 @@ test('clientes pedem por nome só itens da faixa de valor da região deles', () 
   const g = jogoNoNivel(30);
   for (let i = 0; i < 3000; i++) {
     const c = gerarCliente(g);
-    if (c.pedido.tipo !== 'item') continue;
+    if (c.pedido.tipo !== 'item' || c.lenda) continue;              // os pedidos das lendas são fixos, escolhidos à mão
     const adv = DATA.aventureiros[c.adv];
     const reg = DATA.regioes[adv.regiao];
     const v = DATA.itens[c.pedido.item].valor;

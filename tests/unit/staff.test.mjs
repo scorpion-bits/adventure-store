@@ -12,7 +12,7 @@ import { produzir, avancarProducao, alternarRepetir, coletar, totalProntos } fro
 import { comprar, ofertas } from '../../src/core/market.js';
 import { espacoLivre, totalEstoque } from '../../src/core/estoque.js';
 
-const T0 = new Date(2026, 9, 12, 12).getTime();
+const T0 = new Date(2026, 7, 4, 12).getTime();
 const novo = (mexer, seed = 1) => {
   const clock = createClock(T0);
   const state = defaultState(clock.now());

@@ -4,6 +4,7 @@
 import { DATA } from '../src/data/index.js';
 import { EFEITOS } from '../src/core/mods.js';
 import { TIPOS_DE_EFEITO } from '../src/core/events.js';
+import { defaultState } from '../src/core/state.js';
 
 export function validar(data = DATA) {
   const erros = [];
@@ -184,6 +185,22 @@ export function validar(data = DATA) {
       for (const ef of c.recompensa ?? []) conferirEfeitoEvento(onde, ef);
     }
   }
+
+  // retenção: eventos sazonais, encomendas diárias e metas semanais
+  for (const sz of listas.sazonais) {
+    const dono = `sazonal ${sz.id}`;
+    for (const k of ['de', 'ate']) exige(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(sz[k] ?? ''), `${dono}: "${k}" precisa estar no formato MM-DD`);
+    exige(sz.nome && sz.desc?.length > 20, `${dono}: nome e descrição são obrigatórios`);
+    conferirEfeitos(dono, sz.efeitos);
+    exige(sz.efeitos?.length > 0, `${dono}: sem efeitos`);
+  }
+  const estatisticas = Object.keys(defaultState(0).stats);
+  for (const m of data.semanal.metas) {
+    exige(estatisticas.includes(m.stat), `meta semanal ${m.id}: o contador "${m.stat}" não existe em state.stats`);
+    exige(m.texto?.includes('{n}') && m.base > 0, `meta semanal ${m.id}: texto com {n} e base > 0`);
+  }
+  exige(data.semanal.quantas <= data.semanal.metas.length, 'metas semanais: "quantas" passa do tamanho do pool');
+  exige(data.diario.faixas[0] === 1 && data.diario.faixas.every((n, i, a) => i === 0 || n > a[i - 1]), 'diário: as faixas precisam começar em 1 e crescer');
 
   // ofícios: o primeiro vem aberto de graça (senão o jogo começa sem como produzir) e todos têm custo e reputação
   exige(meta.oficios[0].custo === 0, 'o primeiro ofício precisa ser grátis (vem aberto no início)');
