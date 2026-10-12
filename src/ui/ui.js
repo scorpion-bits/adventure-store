@@ -283,3 +283,11 @@ export function iconeComNome(tipo, id, tamanho, aoTocar, zona = { w: tamanho, h:
   c.on('pointertap', () => { if (!dragged) aoTocar(); });
   return c;
 }
+
+// Retângulo (em coordenadas da tela) de um elemento registrado em `refs` { c, w, h }; usado para destacar botões no tutorial.
+export function retanguloGlobal(ref) {
+  if (!ref || ref.c.destroyed) return null;
+  const a = ref.c.toGlobal({ x: 0, y: 0 });
+  const b = ref.c.toGlobal({ x: ref.w, y: ref.h });
+  return { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };
+}

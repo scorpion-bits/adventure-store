@@ -96,12 +96,18 @@ async function start() {
   const modal = createModal();
   app.stage.addChild(screensLayer, topbar.root, tabbar.root, toasts.root, modal.root);
 
-  const tutorial = createTutorial({ game, tabbar, onFinish: () => guardar() });
+  // `screens` é criado logo abaixo; o tutorial só o usa depois (para destacar botões e mudar de aba)
+  let screens = [];
+  const tutorial = createTutorial({
+    game, tabbar, onFinish: () => guardar(),
+    irParaAba: (i) => selectTab(i),
+    telas: () => Object.fromEntries(TABS.map((t, i) => [t.id, screens[i]?.hooks])),
+  });
   app.stage.addChild(tutorial.root);
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  const screens = createScreens({ toast: toasts.show, game, modal });
+  screens = createScreens({ toast: toasts.show, game, modal });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
@@ -176,6 +182,7 @@ async function start() {
     avisarConquistas();
     eventos.update();
     lendas.update();
+    tutorial.update(t.deltaMS);
     screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);

@@ -1,7 +1,7 @@
 // Tela da Oficina: escolha do ofício, fila de produção com barras de progresso em tempo real, receitas e coleta.
 // A lógica está em core/craft.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, iconeComNome } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { drawIcon } from './icons.js';
 import { iconSprite } from '../assets.js';
 import {
@@ -377,6 +377,8 @@ export function createOficinaScreen({ game, toast }) {
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
+      nomes: () => Object.keys(refs),
+      retangulo: (nome) => retanguloGlobal(refs[nome]),
       selecionar: (id) => { sel = id; marcar(); },
       oficioSelecionado: () => sel,
       centro: (nome) => global(refs[nome]),

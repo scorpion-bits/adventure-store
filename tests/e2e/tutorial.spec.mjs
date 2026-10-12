@@ -14,17 +14,23 @@ const irParaAba = async (page, i, id) => {
 };
 const prontaDe = (page, tela) => page.waitForFunction((t) => window.__loja[t].pronta(), tela, { timeout: 10_000 });
 
-test('um jogo novo começa com o tutorial; o jogo todo se completa fazendo as ações', async ({ page }) => {
+const esperarAba = (page, id) => page.waitForFunction((t) => window.__loja.tab() === t, id, { timeout: 8000 });
+const esperarPasso = (page, id) => page.waitForFunction((t) => window.__loja.tutorial.id() === t, id, { timeout: 8000 });
+const botaoOk = async (page) => { await quadros(page, 4); await clicarEm(page, await tutCentro(page, 'ok')); };
+
+test('um jogo novo começa com o tutorial; ele muda de tela sozinho e o jogo todo se completa seguindo os destaques', async ({ page }) => {
+  test.setTimeout(120_000);
   const errors = await openGame(page, { tutorial: true });
   expect(await passo(page)).toBe(0);
   expect(await page.evaluate(() => window.__loja.tutorial.visivel())).toBe(true);
   await page.screenshot({ path: shotPath('portrait-tutorial') });
 
-  // 0 -> 1: botão
-  await clicarEm(page, await tutCentro(page, 'ok'));
-  expect(await passo(page)).toBe(1);
+  await botaoOk(page);                      // boas-vindas
+  expect(await page.evaluate(() => window.__loja.tutorial.id())).toBe('cliente');
+  await botaoOk(page);                      // cliente
 
-  // 1 -> 2: fazer uma venda
+  // vender: o anel aponta para o preço Justo
+  expect(await page.evaluate(() => window.__loja.tutorial.id())).toBe('vender');
   await page.evaluate(() => {
     const L = window.__loja;
     L.clearQueue();
@@ -33,41 +39,70 @@ test('um jogo novo começa com o tutorial; o jogo todo se completa fazendo as a�
     L.loja.renderAgora();
   });
   await prontaDe(page, 'loja');
+  await quadros(page, 4);
+  expect(await page.evaluate(() => window.__loja.tutorial.alvo())).toBe('preco:justo');
+  await page.screenshot({ path: shotPath('portrait-tutorial-vender') });
   await clicarEm(page, await page.evaluate(() => window.__loja.loja.precoCentro('justo')));
-  expect(await passo(page)).toBe(2);
+  await esperarPasso(page, 'estoque');
+  await botaoOk(page);                      // estoque
+  await botaoOk(page);                      // reputação
 
-  // 2 -> 3: comprar no mercado
-  await irParaAba(page, 2, 'mercado');
+  // mercado: o tutorial leva para a aba sozinho e destaca os materiais que faltam, um de cada vez
+  await esperarPasso(page, 'mercado');
+  await esperarAba(page, 'mercado');
   await prontaDe(page, 'mercado');
-  await ver(page, 'mercado', 'mineradora_pedra:barra_ferro:x1');
-  await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'barra_ferro', 'x1')));
-  await prontaDe(page, 'mercado');
-  expect(await passo(page)).toBe(3);
-  await ver(page, 'mercado', 'mineradora_pedra:barra_ferro:x1');
-  await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('mineradora_pedra', 'barra_ferro', 'x1')));
-  await ver(page, 'mercado', 'ferreiro_toras:carvao:x1');
-  await clicarEm(page, await page.evaluate(() => window.__loja.mercado.botaoCentro('ferreiro_toras', 'carvao', 'x1')));
+  for (let i = 0; i < 6; i++) {
+    if ((await page.evaluate(() => window.__loja.tutorial.id())) !== 'mercado') break;
+    await quadros(page, 4);
+    const alvo = await page.evaluate(() => window.__loja.tutorial.alvo());
+    expect(alvo, 'o anel aponta para um botão +1').toMatch(/:x1$/);
+    if (i === 0) await page.screenshot({ path: shotPath('portrait-tutorial-mercado') });
+    await ver(page, 'mercado', alvo);
+    await clicarEm(page, await page.evaluate((n) => window.__loja.mercado.centro(n), alvo));
+    await prontaDe(page, 'mercado');
+  }
+  await esperarPasso(page, 'oficina');
 
-  // 3 -> 4: produzir
-  await irParaAba(page, 1, 'oficina');
+  // oficina: de novo a aba muda sozinha; o anel aponta para Produzir
+  await esperarAba(page, 'oficina');
   await prontaDe(page, 'oficina');
-  await ver(page, 'oficina', 'produzir:r_espada_ferro');
-  await clicarEm(page, await page.evaluate(() => window.__loja.oficina.centro('produzir:r_espada_ferro')));
-  expect(await passo(page)).toBe(4);
+  await quadros(page, 4);
+  expect(await page.evaluate(() => window.__loja.tutorial.alvo())).toBe('produzir:r_adaga_bronze');
+  await ver(page, 'oficina', 'produzir:r_adaga_bronze');
+  await clicarEm(page, await page.evaluate(() => window.__loja.oficina.centro('produzir:r_adaga_bronze')));
+  await esperarPasso(page, 'coletar');
 
-  // 4 -> 5: coletar
-  await page.evaluate(() => window.__loja.skip(120_000));
+  // coletar: o tutorial acelera a produção sozinho
+  await page.waitForFunction(() => window.__loja.state().prontos.length > 0, null, { timeout: 12_000 });
   await prontaDe(page, 'oficina');
+  await quadros(page, 4);
+  expect(await page.evaluate(() => window.__loja.tutorial.alvo())).toBe('coletarTudo');
   await ver(page, 'oficina', 'coletarTudo');
   await clicarEm(page, await page.evaluate(() => window.__loja.oficina.centro('coletarTudo')));
-  expect(await passo(page)).toBe(5);
+  await esperarPasso(page, 'niveis');
+  await botaoOk(page);
 
-  // 5: botão final encerra
+  // mapa (sub-aba do mercado), melhorias e aventureiros: só botões, com a tela mudando sozinha
+  await esperarPasso(page, 'mapa');
+  await esperarAba(page, 'mercado');
+  await page.waitForFunction(() => window.__loja.mercado.sub() === 'mapa', null, { timeout: 5000 });
+  await botaoOk(page);
+  await esperarPasso(page, 'melhorias');
+  await esperarAba(page, 'melhorias');
+  await botaoOk(page);
+  await esperarPasso(page, 'hoje');
+  await esperarAba(page, 'aventureiros');
+  await botaoOk(page);
+
+  // fim: volta para a loja
+  await esperarPasso(page, 'fim');
+  await esperarAba(page, 'loja');
   await page.screenshot({ path: shotPath('portrait-tutorial-fim') });
-  await clicarEm(page, await tutCentro(page, 'ok'));
+  await botaoOk(page);
   expect(await passo(page)).toBe(-1);
   expect(await page.evaluate(() => window.__loja.tutorial.visivel())).toBe(false);
   expect(await page.evaluate(() => window.__loja.state().tutorial.feito)).toBe(true);
+  expect(await page.evaluate(() => window.__loja.state().stats.produzidos)).toBeGreaterThanOrEqual(1);
   expect(errors).toEqual([]);
 });
 

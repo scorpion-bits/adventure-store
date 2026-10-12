@@ -1,7 +1,7 @@
 // Tela da Loja: a cena (prateleiras com o estoque de verdade e a fila no balcão) e o atendimento
 // (cliente, o que oferecer, os três preços). A lógica está em core/shop.js; aqui só desenho e toques.
 import { Container, Graphics } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten, retanguloGlobal } from './ui.js';
 import { iconSprite, portraitSprite, guiPronto, guiSprite } from '../assets.js';
 import { tween, ease } from './anim.js';
 import { opcoes, avaliar, vender, dispensar, passarNaFrente, pedidoTexto, adventureiro, temperamentoDe } from '../core/shop.js';
@@ -508,6 +508,8 @@ export function createLojaScreen({ game, toast }) {
       pronta: () => !dirty && quadros >= 2,
       selecionada: () => sel,
       resultado: () => resultado,
+      nomes: () => Object.keys(refs.precos).map((n) => `preco:${n}`),
+      retangulo: (nome) => (nome.startsWith('preco:') ? retanguloGlobal(refs.precos[nome.slice(6)]) : null),
       precoCentro: (nivel) => (refs.precos[nivel] ? global(refs.precos[nivel]) : null),
       dispensarCentro: () => (refs.dispensar ? global(refs.dispensar) : null),
       opcaoCentro: (i) => (refs.opcoes[i] ? global(refs.opcoes[i]) : null),

@@ -10,7 +10,7 @@ para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/)
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
-> (atendente, artesão, vendedor) e a árvore de cada ofício. Tutorial curto.
+> (atendente, artesão, vendedor) e a árvore de cada ofício. Tutorial guiado de 13 passos (muda de aba sozinho e destaca o botão a tocar; editável em `src/data/tutorial.js`).
 > As próximas etapas estão no plano.
 
 ## Rodar localmente

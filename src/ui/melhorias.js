@@ -1,7 +1,7 @@
 // Tela de Melhorias: Loja (ampliar, prateleiras, balcão, decoração), Equipe, árvores dos Ofícios,
 // e as abas que chegam depois (Conquistas, Expandir). A lógica está em core/upgrades.js.
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal } from './ui.js';
 import { descreverEfeito } from '../core/mods.js';
 import {
   comprarMelhoria, estadoMelhoria, melhoriasDoGrupo, contratar, proximoNivel, nivelFuncionario,
@@ -536,6 +536,10 @@ export function createMelhoriasScreen({ game, toast, modal }) {
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
+      nomes: () => Object.keys(refs),
+      retangulo: (nome) => retanguloGlobal(refs[nome]),
+      irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },
+
       centro: (nome) => global(refs[nome]),
       renderAgora: render,
       // rola a lista até o item ficar à vista (usado pelos testes: com muito conteúdo, nem tudo cabe na tela)
