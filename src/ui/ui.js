@@ -1,7 +1,8 @@
 // Componentes de interface (Pixi): textos, cartões, botões, listas roláveis com toque e inércia,
-// interruptores. Tudo desenhado por código; a skin com arte (Cryo's Mini GUI) entra depois pelo assets.js.
+// interruptores. Cartões e barras são desenhados por código; botões e molduras usam a arte do Cryo's Mini GUI (assets.js) quando carregada.
 import { Container, Graphics, Text, Rectangle } from 'pixi.js';
-import { C, FONT_BODY, FONT_DISPLAY } from './theme.js';
+import { C, FONT_BODY, FONT_DISPLAY, darken } from './theme.js';
+import { guiPronto, guiPainel } from '../assets.js';
 import { tween, ease } from './anim.js';
 
 export { C, T, hex, darken, lighten } from './theme.js';
@@ -41,12 +42,17 @@ export function drawCard(g, w, h, {
 let dragged = false;
 export const wasDragged = () => dragged;
 
+// tamanho de cada pixel da arte dos botões (Cryo's), em pixels de tela
+const ESCALA_BOTAO = 2;
+
 // ---------- Botão: cor de destaque, realce ao passar o mouse, "afunda" ao apertar ----------
 export function makeButton(w, h, { tint = C.accent, radius = 12, alpha = 0.14 } = {}) {
   const c = new Container();
   const inner = new Container();
   const bg = new Graphics();
   const hi = new Graphics();
+  let arte = null;          // botão de pixel-art (Cryo's), se o atlas da interface estiver carregado
+  if (guiPronto()) { arte = guiPainel('botao', w, h, ESCALA_BOTAO); inner.addChild(arte); }
   inner.addChild(bg, hi);
   Container.prototype.addChild.call(c, inner);
   // todo conteúdo adicionado ao botão vai para `inner`, para escalar junto
@@ -60,10 +66,18 @@ export function makeButton(w, h, { tint = C.accent, radius = 12, alpha = 0.14 } 
   c.paint = (over = {}) => {
     Object.assign(st, over);
     const a = st.disabled ? 0.05 : st.active ? 0.34 : st.alpha;
-    bg.clear()
-      .roundRect(0, 0, st.w, st.h, st.radius)
-      .fill({ color: st.tint, alpha: a })
-      .stroke({ width: 1, color: st.tint, alpha: st.disabled ? 0.15 : st.active ? 0.85 : 0.4 });
+    bg.clear();
+    if (arte) {
+      // a arte é creme: a cor do botão vira o tom da peça (apagada quando "fantasma"/desativada)
+      const fantasma = st.disabled || st.alpha < 0.1;
+      arte.setSize(st.w, st.h);
+      arte.tint = fantasma ? 0x4a3a30 : darken(st.tint, st.active ? 0.1 : 0.3);
+      arte.alpha = fantasma ? 0.75 : 1;
+    } else {
+      bg.roundRect(0, 0, st.w, st.h, st.radius)
+        .fill({ color: st.tint, alpha: a })
+        .stroke({ width: 1, color: st.tint, alpha: st.disabled ? 0.15 : st.active ? 0.85 : 0.4 });
+    }
     hi.clear().roundRect(0, 0, st.w, st.h, st.radius).fill({ color: 0xffffff, alpha: 1 });
     inner.pivot.set(st.w / 2, st.h / 2);
     inner.position.set(st.w / 2, st.h / 2);

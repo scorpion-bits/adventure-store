@@ -159,7 +159,7 @@ export const META = {
 
   // ---------- prestígio: expandir para uma nova cidade ----------
   // herança ganha = coef × raiz((ouro ganho nesta cidade) / ouroBase), arredondada para baixo; só vale com a reputação mínima
-  prestigio: { nivelMin: 20, ouroBase: 50000, coef: 1 },
+  prestigio: { nivelMin: 15, ouroBase: 12000, coef: 1 },
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {

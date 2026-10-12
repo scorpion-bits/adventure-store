@@ -14,7 +14,7 @@ import {
 import { validar } from '../../scripts/validate-data.mjs';
 
 const T0 = new Date(2026, 7, 4, 12).getTime();
-const novo = ({ nivel = 25, ouroTotal = 200000, mexer } = {}) => {
+const novo = ({ nivel = 25, ouroTotal = 108000, mexer } = {}) => {
   const clock = createClock(T0);
   const state = defaultState(clock.now());
   state.tutorial.feito = true;
@@ -34,9 +34,10 @@ test('os dados de herança passam no validador e há 10+ bônus', () => {
 test('a herança sobe com o ouro ganho e só vale com a reputação mínima', () => {
   assert.equal(herancaPendente(novo({ nivel: 10, ouroTotal: 1e9 })), 0);
   assert.equal(herancaPendente(novo({ ouroTotal: 10000 })), 0);
-  assert.equal(herancaPendente(novo({ ouroTotal: 50000 })), 1);
-  assert.equal(herancaPendente(novo({ ouroTotal: 200000 })), 2);
-  assert.equal(herancaPendente(novo({ ouroTotal: 5e6 })), 10);
+  assert.equal(herancaPendente(novo({ ouroTotal: 12000 })), 1);
+  assert.equal(herancaPendente(novo({ ouroTotal: 48000 })), 2);
+  assert.equal(herancaPendente(novo({ ouroTotal: 108000 })), 3);
+  assert.equal(herancaPendente(novo({ ouroTotal: 1.2e6 })), 10);
   const e = estadoExpansao(novo({ nivel: 3 }));
   assert.equal(e.ok, false);
   assert.equal(e.motivo, 'reputacao');
@@ -59,7 +60,7 @@ test('expandir reinicia a loja e mantém coleção, conquistas, estatísticas e 
   });
   const e = expandir(g);
   assert.equal(e.ok, true);
-  assert.equal(e.ganho, 2);
+  assert.equal(e.ganho, 3);
   const s = g.state;
   assert.equal(s.ouro, 100, 'ouro inicial de jogo novo');
   assert.deepEqual(s.materiais, {});
@@ -76,8 +77,8 @@ test('expandir reinicia a loja e mantém coleção, conquistas, estatísticas e 
   assert.equal(s.lendarios.ser_aldric.cap, 2);
   assert.equal(s.sequencia.dias, 6);
   assert.equal(s.prestigio.cidade, 2);
-  assert.equal(s.prestigio.heranca, 2);
-  assert.equal(s.prestigio.base, 200000);
+  assert.equal(s.prestigio.heranca, 3);
+  assert.equal(s.prestigio.base, 108000);
   assert.equal(ouroDestaCidade(g), 0);
   assert.equal(herancaPendente(g), 0, 'a cidade nova começa do zero');
   assert.equal(g.state.diario.data, g.state.dia.data, 'o dia foi refeito');
@@ -88,11 +89,11 @@ test('a cidade seguinte exige ganhar ouro de novo, e a herança acumula', () => 
   expandir(g);
   g.state.rep = repParaNivel(25);
   assert.equal(estadoExpansao(g).motivo, 'ouro');
-  g.state.stats.ouroTotal += 50000;
+  g.state.stats.ouroTotal += 48000;
   const e = expandir(g);
   assert.equal(e.ok, true);
-  assert.equal(g.state.prestigio.heranca, 3);
-  assert.equal(g.state.prestigio.herancaTotal, 3);
+  assert.equal(g.state.prestigio.heranca, 5);
+  assert.equal(g.state.prestigio.herancaTotal, 5);
   assert.equal(g.state.prestigio.cidade, 3);
 });
 
@@ -119,7 +120,7 @@ test('os bônus de herança sobrevivem à expansão e "reserva" dá ouro inicial
   assert.equal(g.state.ouro, 100 + 250);
   assert.ok(Math.abs(g.mods.compra - 0.97) < 1e-9);
   assert.ok(Math.abs(g.mods.xpOficio - 1.3) < 1e-9);
-  assert.equal(g.state.stats.ouroTotal, 200000, 'o pé-de-meia não conta como ouro ganho');
+  assert.equal(g.state.stats.ouroTotal, 108000, 'o pé-de-meia não conta como ouro ganho');
 });
 
 test('xpOficio multiplica a experiência dos ofícios', async () => {
