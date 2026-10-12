@@ -58,10 +58,16 @@ export function validar(data = DATA) {
     exige(regioes.has(a.regiao), `aventureiro ${a.id}: região inválida "${a.regiao}"`);
     exige(a.orcamento > 0, `aventureiro ${a.id}: orcamento deve ser > 0`);
     exige(Array.isArray(a.prefere) && a.prefere.length > 0 && a.prefere.every((c) => cats.has(c)), `aventureiro ${a.id}: "prefere" precisa listar categorias válidas`);
-    for (const k of ['chega', 'compra', 'recusa']) {
-      exige(Array.isArray(a.falas?.[k]) && a.falas[k].length > 0, `aventureiro ${a.id}: faltam falas "${k}"`);
+    exige(Array.isArray(a.falas?.chega) && a.falas.chega.length > 0, `aventureiro ${a.id}: faltam falas "chega"`);
+    for (const k of ['compra', 'recusa']) {
+      const t = meta.temperamentos.find((x) => x.id === a.temperamento);
+      exige((a.falas?.[k]?.length ?? 0) > 0 || (t?.falas?.[k]?.length ?? 0) > 0, `aventureiro ${a.id}: sem falas "${k}" (nem próprias, nem do temperamento)`);
     }
   }
+  // cada temperamento precisa das quatro listas de frases genéricas (a base de quem não tem as suas)
+  for (const t of meta.temperamentos) for (const k of ['compra', 'recusa', 'barato', 'caro']) exige(t.falas?.[k]?.length >= 2, `temperamento ${t.id}: faltam falas "${k}" (pelo menos 2)`);
+  for (const r of listas.regioes) exige(r.valorMin >= 0 && r.valorMax > r.valorMin, `região ${r.id}: faixa de valor inválida`);
+
   for (const f of listas.fornecedores) {
     exige(regioes.has(f.regiao), `fornecedor ${f.id}: região inválida "${f.regiao}"`);
     for (const v of f.vende ?? []) {
@@ -127,6 +133,9 @@ export function validar(data = DATA) {
     itens: [listas.itens.length, m.itens],
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.length, m.aventureiros],
+    // menor número de aventureiros por classe e por região (variedade)
+    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 5],
+    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 6],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
     // a menor quantidade de melhorias entre os ofícios

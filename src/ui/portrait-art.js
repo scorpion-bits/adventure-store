@@ -10,7 +10,7 @@ const OFF = 1;
 const PELES = [0xf1c6a0, 0xe0a97e, 0xc68a5b, 0x9a6540, 0x6e4529, 0xf6d9bf];
 const CABELOS = [0x2b1d14, 0x5a3a22, 0x9a6a2e, 0xd9b45a, 0xb5442f, 0x8f8f9a, 0x3a3a55, 0xe8e0d0];
 const CONTORNO = 0x1a1410;
-const OLHO = 0x1a1410;
+const OLHOS = [0x1a1410, 0x2a4f8a, 0x2f6b3a, 0x6b3a2a];
 const BOCA = 0x7a3b2e;
 
 const mix = (a, b, f) => {
@@ -53,6 +53,9 @@ export function portraitPixels(advId, classe, corClasse = 0x8a7660) {
   const pele = PELES[h % PELES.length];
   const cabelo = CABELOS[(h >>> 3) % CABELOS.length];
   const estilo = (h >>> 6) % 4;
+  const olho = OLHOS[(h >>> 9) % OLHOS.length];
+  const boca = (h >>> 12) % 3;           // 0 sorriso, 1 reta, 2 aberta
+  const sardas = (h >>> 14) % 4 === 0;
 
   const mapa = new Map();
   const put = (x, y, cor) => { if (x >= 0 && y >= 0 && x < 16 && y < 16) mapa.set(`${x},${y}`, cor); };
@@ -73,8 +76,11 @@ export function portraitPixels(advId, classe, corClasse = 0x8a7660) {
   if (estilo === 2) { rect(5, 2, 1, 1, cabelo); rect(7, 1, 1, 2, cabelo); rect(9, 2, 1, 1, cabelo); rect(10, 2, 1, 1, cabelo); }
   if (estilo === 3) rect(7, 1, 2, 2, cabelo);
   // rosto
-  put(6, 7, OLHO); put(9, 7, OLHO);
-  rect(7, 9, 2, 1, BOCA);
+  put(6, 7, olho); put(9, 7, olho);
+  if (boca === 0) { rect(7, 9, 2, 1, BOCA); put(6, 8, BOCA); put(9, 8, BOCA); }
+  else if (boca === 1) rect(7, 9, 2, 1, BOCA);
+  else rect(7, 9, 2, 2, BOCA);
+  if (sardas) { put(5, 8, mix(pele, 0x8a4a2a, 0.45)); put(10, 8, mix(pele, 0x8a4a2a, 0.45)); put(6, 9, mix(pele, 0x8a4a2a, 0.45)); }
   // acessório da classe
   (ACESSORIOS[classe] ?? (() => {}))(rect);
 

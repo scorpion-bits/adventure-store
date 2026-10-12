@@ -7,6 +7,12 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 export const capacidadeFila = (game) => game.data.meta.loja.filaBase + (game.mods.fila ?? 0);
 export const adventureiro = (game, cli) => game.data.aventureiros[cli.adv];
+// Frases do aventureiro para uma situação (chega, compra, recusa, barato, caro); o que ele não tiver vem do temperamento.
+export function falasDe(game, adv, tipo) {
+  if (adv.falas?.[tipo]?.length) return adv.falas[tipo];
+  return game.data.meta.temperamentos.find((t) => t.id === adv.temperamento)?.falas?.[tipo] ?? [];
+}
+
 export const temperamentoDe = (game, cli) => game.data.meta.temperamentos.find((t) => t.id === adventureiro(game, cli)?.temperamento);
 
 // ---------- chegada de clientes ----------
@@ -19,8 +25,15 @@ export function intervaloChegada(game) {
   return Math.max(L.intervaloMin * 0.5, (base * sorteio) / (game.mods.chegada ?? 1));
 }
 
-const itensPedidos = (game, adv) => game.data.listas.itens
-  .filter((it) => adv.prefere.includes(it.cat) && (it.nivelRep ?? 1) <= game.nivel());
+// Itens que este aventureiro pode pedir por nome: das categorias que ele procura, já liberados pela reputação e dentro da
+// faixa de valor da região dele (novatos não pedem lendários; heróis não pedem pão). Sem nada na faixa, vale qualquer um liberado.
+const itensPedidos = (game, adv) => {
+  const nivel = game.nivel();
+  const doTipo = game.data.listas.itens.filter((it) => adv.prefere.includes(it.cat) && (it.nivelRep ?? 1) <= nivel);
+  const regiao = game.data.regioes[adv.regiao];
+  const naFaixa = doTipo.filter((it) => it.valor >= (regiao?.valorMin ?? 0) && it.valor <= (regiao?.valorMax ?? Infinity));
+  return naFaixa.length ? naFaixa : doTipo;
+};
 
 // Sorteia um aventureiro e o pedido dele. Devolve null se ninguém puder vir (nada a pedir).
 export function gerarCliente(game) {
@@ -43,7 +56,7 @@ export function gerarCliente(game) {
 
   const temp = game.data.meta.temperamentos.find((t) => t.id === adv.temperamento);
   const espera = L.pacienciaBase * (temp?.paciencia ?? 1) * (game.mods.paciencia ?? 1);
-  const falas = adv.falas?.chega ?? [];
+  const falas = falasDe(game, adv, 'chega');
   game.state.loja.uid += 1;
   return {
     uid: game.state.loja.uid, adv: adv.id, pedido,
@@ -154,15 +167,13 @@ export function fecharVenda(game, cli, entrada, nivelPreco) {
     game.state.stats.vendas += 1;
     const rep = av.rep > 0 ? av.rep * (game.mods.repGanho ?? 1) : av.rep;
     game.ganharRep(rep);
-    const falaCompra = nivelPreco === 'barato' && adv.falas.barato?.length ? adv.falas.barato : adv.falas.compra;
-    const r = { ok: true, preco: av.preco, rep, fala: sorteia(game, falaCompra), cli, item: entrada.item, qualidade: entrada.qualidade, nivelPreco };
+    const r = { ok: true, preco: av.preco, rep, fala: sorteia(game, falasDe(game, adv, nivelPreco === 'barato' ? 'barato' : 'compra')), cli, item: entrada.item, qualidade: entrada.qualidade, nivelPreco };
     game.emit('venda', r);
     return r;
   }
   game.state.stats.recusas += 1;
   game.ganharRep(temp.rep.recusa);
-  const falaRecusa = nivelPreco === 'caro' && adv.falas.caro?.length ? adv.falas.caro : adv.falas.recusa;
-  const r = { ok: false, motivo: 'recusou', preco: av.preco, rep: temp.rep.recusa, fala: sorteia(game, falaRecusa), cli, item: entrada.item, nivelPreco };
+  const r = { ok: false, motivo: 'recusou', preco: av.preco, rep: temp.rep.recusa, fala: sorteia(game, falasDe(game, adv, nivelPreco === 'caro' ? 'caro' : 'recusa')), cli, item: entrada.item, nivelPreco };
   game.emit('recusa', r);
   return r;
 }

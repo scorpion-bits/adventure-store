@@ -1,8 +1,20 @@
-// Tipos de aventureiro (clientes comuns).
+// Tipos de aventureiro (clientes comuns). Os 8 primeiros têm falas completas; os demais usam `ficha(...)` (mais curta).
 // { id, nome, classe, temperamento, orcamento, prefere: [categorias], regiao, nivelRep, peso, falas }
 //  - orcamento: o maior preço que ele paga, como múltiplo do preço de referência (1,1 = não paga "caro" de 1,35)
 //  - peso: chance relativa de aparecer; nivelRep: reputação mínima da loja para ele vir
-//  - falas: listas de frases por situação (chega, compra, recusa, barato, caro); o jogo sorteia uma
+//  - falas: listas de frases por situação (chega, compra, recusa, barato, caro); o jogo sorteia uma. Só `chega` é obrigatória:
+//    o que faltar vem das frases do temperamento (data/meta.js)
+// O que cada classe costuma procurar (pode ser trocado em cada aventureiro com `prefere`)
+const PREFERE = {
+  guerreiro: ['armas', 'armaduras', 'comida'], arqueiro: ['armas', 'acessorios', 'comida'], mago: ['magia', 'pocoes', 'curiosidades'],
+  ladino: ['armas', 'acessorios', 'curiosidades', 'ferramentas'], clerigo: ['pocoes', 'comida', 'acessorios', 'magia'],
+  bardo: ['acessorios', 'comida', 'curiosidades'], cacador: ['armas', 'ferramentas', 'comida', 'armaduras'], alquimista: ['pocoes', 'magia', 'curiosidades'],
+};
+// ficha(id, nome, classe, temperamento, regiao, orcamento, nivelRep, peso, [frases de chegada], prefere?)
+const ficha = (id, nome, classe, temperamento, regiao, orcamento, nivelRep, peso, chega, prefere = PREFERE[classe]) => (
+  { id, nome, classe, temperamento, orcamento, prefere, regiao, nivelRep, peso, falas: { chega } }
+);
+
 export const AVENTUREIROS = [
   { id: 'aprendiz_guerreiro', nome: 'Aprendiz de guerreiro', classe: 'guerreiro', temperamento: 'pechincheiro', orcamento: 1.05,
     prefere: ['armas', 'armaduras'], regiao: 'vila', nivelRep: 1, peso: 10,
@@ -76,4 +88,54 @@ export const AVENTUREIROS = [
       barato: ['Obrigado pela consideração!'],
       caro: ['Por você, eu aceito.'],
     } },
+  // ============ Vila Inicial ============
+  ficha('soldado_guarda', 'Soldado da guarda', 'guerreiro', 'leal', 'vila', 1.2, 1, 8, ['Ronda terminada! Preciso repor o equipamento.', 'O capitão mandou eu vir aqui.']),
+  ficha('escudeiro', 'Escudeiro', 'guerreiro', 'generoso', 'vila', 1.3, 2, 7, ['Meu cavaleiro quebrou o escudo de novo...', 'Vim buscar o que o mestre encomendou.'], ['armaduras', 'armas', 'comida']),
+  ficha('batedor_carteira', 'Batedor de carteiras', 'ladino', 'impaciente', 'vila', 1.0, 2, 5, ['Só estou olhando. Pode ficar de olho nas mãos.', 'Rápido, antes que alguém chame a guarda.']),
+  ficha('novica_templo', 'Noviça do templo', 'clerigo', 'generoso', 'vila', 1.4, 1, 8, ['O templo precisa de provisões para a viagem.', 'Que a luz guie suas vendas.']),
+  ficha('menestrel', 'Menestrel de taverna', 'bardo', 'curioso', 'vila', 1.3, 2, 7, ['Procuro inspiração... ou um alaúde novo.', 'Tenho uma canção sobre esta loja!']),
+  ficha('cacadora_javalis', 'Caçadora de javalis', 'cacador', 'pechincheiro', 'vila', 1.1, 2, 7, ['Javali grande na floresta! Preciso de uma lança boa.', 'Algo resistente e barato, por favor.']),
+  ficha('boticario', 'Boticário', 'alquimista', 'leal', 'vila', 1.3, 3, 6, ['Meus frascos acabaram de novo.', 'Você tem aquelas ervas de sempre?']),
+  // ============ Floresta Sussurrante ============
+  ficha('cavaleiro_errante', 'Cavaleiro errante', 'guerreiro', 'esnobe', 'floresta', 1.7, 5, 7, ['Procuro uma lâmina digna da minha busca.', 'Um cavaleiro precisa de equipamento à altura.']),
+  ficha('patrulheira_bosque', 'Patrulheira do bosque', 'arqueiro', 'leal', 'floresta', 1.5, 5, 8, ['O bosque anda inquieto. Preciso de um arco decente.', 'Passei para ver o que há de novo.']),
+  ficha('mago_bosque', 'Feiticeiro do bosque', 'mago', 'curioso', 'floresta', 1.6, 6, 7, ['As árvores sussurraram sobre esta loja.', 'Algum pergaminho que eu ainda não conheça?']),
+  ficha('ladino_copa', 'Ladino das copas', 'ladino', 'pechincheiro', 'floresta', 1.4, 6, 6, ['Atravesso o bosque pelo alto, e preciso de cordas.', 'Vi um preço bom aqui, não vi?']),
+  ficha('druida', 'Druida', 'clerigo', 'curioso', 'floresta', 1.7, 7, 6, ['A natureza me trouxe até aqui.', 'Procuro algo que a terra não oferece.']),
+  ficha('trovador', 'Trovador da floresta', 'bardo', 'esnobe', 'floresta', 1.8, 7, 6, ['Minhas baladas merecem acessórios melhores.', 'Só o que há de mais fino, por favor.']),
+  ficha('rastreador', 'Rastreador', 'cacador', 'leal', 'floresta', 1.6, 5, 8, ['Pegadas frescas na trilha. Hora de me equipar.', 'Mesma coisa de sempre, amigo.']),
+  ficha('herbalista', 'Herbalista', 'alquimista', 'curioso', 'floresta', 1.5, 6, 6, ['Tenho ervas raras para trocar... se você tiver frascos!', 'Aposto que você nunca viu esta flor.']),
+  // ============ Montanhas de Ferro ============
+  ficha('anao_berserker', 'Anão berserker', 'guerreiro', 'impaciente', 'montanhas', 1.9, 10, 8, ['Machado! Preciso de um machado, e já!', 'Sem enrolação: o que tem de mais pesado?']),
+  ficha('atirador_montanha', 'Atirador das montanhas', 'arqueiro', 'desconfiado', 'montanhas', 1.8, 10, 6, ['Boas armas ou nada. Mostre.', 'O vento aqui é forte; preciso de precisão.']),
+  ficha('mestre_runas', 'Mestre de runas', 'mago', 'desconfiado', 'montanhas', 2.0, 11, 6, ['Pedras rúnicas autênticas, por favor.', 'Cuidado com o que você vende por aqui.']),
+  ficha('contrabandista', 'Contrabandista', 'ladino', 'sovina', 'montanhas', 1.7, 11, 6, ['Tenho uma carga atrasada. Algo pequeno e valioso?', 'Não faça perguntas e eu também não faço.']),
+  ficha('monge', 'Monge da montanha', 'clerigo', 'leal', 'montanhas', 1.9, 10, 7, ['Vim em paz, e com a bolsa leve.', 'Os irmãos pediram suprimentos.']),
+  ficha('contador_historias', 'Contador de histórias', 'bardo', 'leal', 'montanhas', 1.8, 12, 6, ['Tenho uma história sobre esta loja...', 'Quem compra comigo ganha um conto.']),
+  ficha('cacador_trolls', 'Caçador de trolls', 'cacador', 'impaciente', 'montanhas', 2.0, 12, 6, ['Troll na ponte! Preciso de reforços!', 'Armadura pesada, e rápido!']),
+  ficha('fundidor', 'Fundidor de metais', 'alquimista', 'desconfiado', 'montanhas', 2.0, 13, 5, ['Preciso saber a origem desses materiais.', 'Algo que aguente a fornalha.']),
+  // ============ Deserto de Cinzas ============
+  ficha('gladiador_cinzas', 'Gladiador das cinzas', 'guerreiro', 'esnobe', 'deserto', 2.4, 16, 7, ['A arena exige o melhor!', 'Quem lutou comigo nunca reclamou do equipamento.']),
+  ficha('arqueiro_duna', 'Arqueiro das dunas', 'arqueiro', 'curioso', 'deserto', 2.1, 16, 6, ['A areia esconde coisas estranhas. Preciso de um arco bom.', 'O que um forasteiro compra por aqui?']),
+  ficha('mago_areias', 'Mago das areias', 'mago', 'esnobe', 'deserto', 2.5, 17, 6, ['Um mago do meu nível não aceita imitações.', 'Procuro um artefato digno de um sultão.']),
+  ficha('assassino_dunas', 'Assassino das dunas', 'ladino', 'esnobe', 'deserto', 2.4, 18, 5, ['Silêncio... só o que há de mais fino.', 'Sem testemunhas, sem perguntas.']),
+  ficha('sacerdote_sol', 'Sacerdote do sol', 'clerigo', 'generoso', 'deserto', 2.3, 17, 7, ['Que o sol abençoe o seu comércio.', 'Fiz uma oferenda; agora preciso de provisões.']),
+  ficha('dancarino', 'Dançarino do deserto', 'bardo', 'generoso', 'deserto', 2.2, 16, 6, ['Meu espetáculo precisa de brilho!', 'Algo reluzente, meu bom amigo!']),
+  ficha('cacador_escorpioes', 'Caçador de escorpiões', 'cacador', 'sovina', 'deserto', 2.0, 18, 6, ['Escorpião gigante na duna! Preciso de uma boa lança.', 'Quanto custa o antídoto?']),
+  ficha('alquimista_deserto', 'Alquimista do deserto', 'alquimista', 'curioso', 'deserto', 2.4, 19, 5, ['Troco segredos por frascos.', 'O calor muda tudo: preciso de outra receita.']),
+  // ============ Pântano Esmeralda ============
+  ficha('cavaleiro_amaldicoado', 'Cavaleiro amaldiçoado', 'guerreiro', 'desconfiado', 'pantano', 2.8, 22, 6, ['A maldição me persegue. Algo que a afaste?', 'Cuidado: o que eu toco, apodrece.']),
+  ficha('arqueira_brejo', 'Arqueira do brejo', 'arqueiro', 'pechincheiro', 'pantano', 2.3, 23, 6, ['As flechas apodrecem aqui. Preciso de muitas.', 'Nada de preço de forasteiro, hein?']),
+  ficha('bruxo_brejo', 'Bruxo do brejo', 'mago', 'sovina', 'pantano', 2.7, 22, 6, ['Eu pago... em favores. Aceita?', 'Tenho uma poção que ninguém quer, mas vale ouro.']),
+  ficha('pirata_pantano', 'Pirata do pântano', 'ladino', 'pechincheiro', 'pantano', 2.4, 24, 5, ['Yarr! Um barco sem mar, mas com tesouros!', 'Pagamento só depois da maré.']),
+  ficha('poeta_brejo', 'Poeta do brejo', 'bardo', 'desconfiado', 'pantano', 2.5, 23, 5, ['Versos nascem de estranhas inspirações.', 'Se rimar, eu compro.']),
+  ficha('necromante', 'Necromante amigável', 'alquimista', 'esnobe', 'pantano', 3.0, 25, 5, ['Não se preocupe, só uso mortos que pediram.', 'Tenho uma encomenda... especial.']),
+  // ============ Cume do Dragão ============
+  ficha('campeao_arena', 'Campeão da arena', 'guerreiro', 'generoso', 'dragao', 3.6, 30, 6, ['O dragão desafiou o reino. Preciso do melhor.', 'Pago bem pelo que me trouxer a vitória.']),
+  ficha('guarda_real_arqueiro', 'Arqueiro da guarda real', 'arqueiro', 'esnobe', 'dragao', 3.4, 30, 6, ['O rei exige a perfeição.', 'Só aceito o melhor arco do reino.']),
+  ficha('arquimago', 'Arquimago', 'mago', 'generoso', 'dragao', 4.0, 30, 5, ['Algo digno de uma torre de marfim.', 'O conhecimento tem preço, e eu pago.']),
+  ficha('ladrao_tesouros', 'Ladrão de tesouros', 'ladino', 'sovina', 'dragao', 3.2, 30, 5, ['Vim aliviar um dragão de alguns pertences.', 'Quanto por essa joia? E pelo seu silêncio?']),
+  ficha('paladino_draconico', 'Paladino draconiano', 'clerigo', 'leal', 'dragao', 3.5, 30, 5, ['Juro pela chama sagrada!', 'Só a luz vence o dragão.']),
+  ficha('cacador_dragoes', 'Caçador de dragões', 'cacador', 'generoso', 'dragao', 3.8, 30, 5, ['O maior dos dragões ainda me deve uma cicatriz.', 'Equipamento lendário, por favor.']),
+  ficha('bardo_corte', 'Bardo da corte real', 'bardo', 'esnobe', 'dragao', 3.5, 30, 4, ['Uma balada épica pede um instrumento à altura.', 'Para o rei, só o melhor.']),
 ];

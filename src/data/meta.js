@@ -35,25 +35,34 @@ export const META = {
   precos: { barato: 0.75, justo: 1, caro: 1.35 },
 
   // ---------- temperamentos ----------
+  // falas: frases genéricas do temperamento (compra, recusa, barato, caro); cada aventureiro pode ter as suas em data/aventureiros.js.
   // aceita: chance base de comprar em cada preço. rep: reputação ganha ao vender em cada preço
   // (e `recusa` quando o cliente vai embora sem comprar). paciencia: multiplica o tempo na fila.
   temperamentos: [
     { id: 'pechincheiro', nome: 'Pechincheiro', desc: 'Adora uma pechincha e foge de preço alto.',
-      aceita: { barato: 0.98, justo: 0.72, caro: 0.18 }, rep: { barato: 3, justo: 1, caro: 0, recusa: -1 }, paciencia: 1 },
+      aceita: { barato: 0.98, justo: 0.72, caro: 0.18 }, rep: { barato: 3, justo: 1, caro: 0, recusa: -1 }, paciencia: 1,
+      falas: { compra: ['Fechado! Mais barato que isso só no mercado negro.', 'Negócio bom é negócio fechado.', 'Levo! E volto semana que vem.'], recusa: ['Está caro demais para mim.', 'Se baixar um pouquinho, a gente conversa.', 'Hmm... a loja da esquina cobra menos.'], barato: ['Uau, que pechincha!', 'Esse preço eu não esperava!', 'Pode embrulhar antes que você mude de ideia!'], caro: ['Isso é um roubo!', 'Eu pago bem menos em qualquer lugar.', 'Preço de rei para bolso de plebeu...'] } },
     { id: 'esnobe', nome: 'Esnobe', desc: 'Desconfia do que é barato demais.',
-      aceita: { barato: 0.7, justo: 0.9, caro: 0.85 }, rep: { barato: 0, justo: 1, caro: 3, recusa: -1 }, paciencia: 1 },
+      aceita: { barato: 0.7, justo: 0.9, caro: 0.85 }, rep: { barato: 0, justo: 1, caro: 3, recusa: -1 }, paciencia: 1,
+      falas: { compra: ['Aceitável. Embrulhe com cuidado.', 'Finalmente, algo digno.', 'Levo. Mande entregar na estalagem.'], recusa: ['Que falta de elegância.', 'Isso não está à minha altura.', 'Prefiro não me envolver com isso.'], barato: ['Tão barato? Duvido da qualidade.', 'Preço de quem não confia no próprio produto.', 'Hmm... suspeito.'], caro: ['O melhor tem seu preço, não é?', 'Pelo menos você sabe o que vale.', 'Caro, mas à altura.'] } },
     { id: 'impaciente', nome: 'Impaciente', desc: 'Não gosta de esperar na fila.',
-      aceita: { barato: 0.95, justo: 0.85, caro: 0.45 }, rep: { barato: 2, justo: 1, caro: 0, recusa: -2 }, paciencia: 0.55 },
+      aceita: { barato: 0.95, justo: 0.85, caro: 0.45 }, rep: { barato: 2, justo: 1, caro: 0, recusa: -2 }, paciencia: 0.55,
+      falas: { compra: ['Anotado. Já vou!', 'Rápido, rápido, embrulhe isso.', 'Combinado. Tchau!'], recusa: ['Perdi meu tempo aqui.', 'Não dá para esperar mais.', 'Ficou tudo muito lento, vou embora.'], barato: ['Ótimo, vamos logo!', 'Pode ser, sem enrolar.', 'Fechado, rápido!'], caro: ['Sem tempo para discutir... mas está caro.', 'Caro, mas não vou perder tempo barganhando.', 'Se for rápido, eu pago.'] } },
     { id: 'generoso', nome: 'Generoso', desc: 'Paga bem por bom atendimento.',
-      aceita: { barato: 0.9, justo: 0.95, caro: 0.8 }, rep: { barato: 1, justo: 2, caro: 2, recusa: 0 }, paciencia: 1.1 },
+      aceita: { barato: 0.9, justo: 0.95, caro: 0.8 }, rep: { barato: 1, justo: 2, caro: 2, recusa: 0 }, paciencia: 1.1,
+      falas: { compra: ['Que bênção! Obrigado!', 'Com prazer! Fique com o troco.', 'Um prazer fazer negócio com você.'], recusa: ['Que pena, que pena...', 'Quem sabe da próxima vez.', 'Vou pensar com carinho.'], barato: ['Que preço generoso!', 'Tão bom que vou indicar a loja!', 'Assim você me deixa sem graça!'], caro: ['Pelo bom serviço, pago com gosto.', 'Vale cada moeda.', 'Qualidade se paga.'] } },
     { id: 'desconfiado', nome: 'Desconfiado', desc: 'Só compra com preço justo.',
-      aceita: { barato: 0.6, justo: 0.92, caro: 0.2 }, rep: { barato: 0, justo: 2, caro: -1, recusa: -1 }, paciencia: 1 },
+      aceita: { barato: 0.6, justo: 0.92, caro: 0.2 }, rep: { barato: 0, justo: 2, caro: -1, recusa: -1 }, paciencia: 1,
+      falas: { compra: ['Está dentro do esperado. Levo.', 'Hmm. Pode ser. Confio... por enquanto.', 'Preço justo. É o que me interessa.'], recusa: ['Não confio nesse preço.', 'Tem alguma pegadinha aí.', 'Prefiro não arriscar.'], barato: ['Barato demais... tem algo errado?', 'Hmm, quem dá desconto assim?', 'Isso cheira a armadilha.'], caro: ['Isso é um assalto!', 'Está me enganando, não está?', 'Nem pensar num preço desses.'] } },
     { id: 'curioso', nome: 'Curioso', desc: 'Compra por impulso e leva coisas diferentes.',
-      aceita: { barato: 0.95, justo: 0.88, caro: 0.55 }, rep: { barato: 1, justo: 1, caro: 1, recusa: 0 }, paciencia: 1.2 },
+      aceita: { barato: 0.95, justo: 0.88, caro: 0.55 }, rep: { barato: 1, justo: 1, caro: 1, recusa: 0 }, paciencia: 1.2,
+      falas: { compra: ['Gostei! Levo!', 'Nunca vi nada igual, quero!', 'Hm, por que não?'], recusa: ['Vou pensar e volto depois.', 'Interessante... mas hoje não.', 'Ah, deixa para a próxima.'], barato: ['Preço bom!', 'Que achado!', 'Levo dois! Ah, só tenho dinheiro para um...'], caro: ['Ai, ai... será que vale?', 'Caro, mas a curiosidade fala mais alto.', 'Tentador... e salgado.'] } },
     { id: 'leal', nome: 'Leal', desc: 'Cliente de longa data: perdoa um preço alto de vez em quando.',
-      aceita: { barato: 0.95, justo: 0.95, caro: 0.7 }, rep: { barato: 1, justo: 2, caro: 1, recusa: -1 }, paciencia: 1.25 },
+      aceita: { barato: 0.95, justo: 0.95, caro: 0.7 }, rep: { barato: 1, justo: 2, caro: 1, recusa: -1 }, paciencia: 1.25,
+      falas: { compra: ['Sempre um prazer negociar com você.', 'Como sempre, ótimo atendimento.', 'Pode contar comigo de novo.'], recusa: ['Hoje não, amigo.', 'Dessa vez vou passar.', 'Vamos deixar para outra ocasião.'], barato: ['Obrigado pela consideração!', 'Você sempre cuida bem dos seus clientes.', 'Isso é amizade!'], caro: ['Por você, eu aceito.', 'Um pouco salgado, mas somos amigos.', 'Tudo bem, a confiança conta.'] } },
     { id: 'sovina', nome: 'Sovina', desc: 'Conta cada moeda.',
-      aceita: { barato: 0.9, justo: 0.5, caro: 0.05 }, rep: { barato: 3, justo: 1, caro: -2, recusa: -1 }, paciencia: 0.9 },
+      aceita: { barato: 0.9, justo: 0.5, caro: 0.05 }, rep: { barato: 3, justo: 1, caro: -2, recusa: -1 }, paciencia: 0.9,
+      falas: { compra: ['Combinado. Nem vi você aqui.', 'Cada moeda conta... fechado.', 'Tá, tá. Embrulha.'], recusa: ['Muito caro. Eu arrumo de graça por aí.', 'Nem pensar, guardo meu dinheiro.', 'Meu bolso agradece por eu não comprar.'], barato: ['Agora sim!', 'Esse preço eu entendo!', 'Uma moeda poupada é uma moeda ganha.'], caro: ['Você está louco?', 'Meu dinheiro não é de pedra!', 'Prefiro dormir ao relento.'] } },
   ],
 
   // ---------- classes de aventureiro (as preferências ficam em cada aventureiro) ----------
