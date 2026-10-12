@@ -1,18 +1,20 @@
-// Tutorial guiado: um balão com o texto do passo (e botão, quando o passo pede), mudança de aba automática e um anel
+// Tutorial guiado: um balão com o texto do passo (e botão, quando o passo pede), mudança de sub-aba automática e um anel
 // pulsante em volta do botão a tocar. Nunca bloqueia o jogo: dá para tocar em qualquer lugar ou pular.
+// Há uma sequência inicial (a Loja) e uma por aba, que começa na primeira visita (veja data/tutorial.js).
 import { Container, Graphics } from 'pixi.js';
 import { C, txt, para, drawCard, labelButton } from './ui.js';
 import { tween } from './anim.js';
 import { settings } from '../settings.js';
-import { TUTORIAL } from '../data/tutorial.js';
-import { faltando, adiantarProducao } from '../core/craft.js';
+import { SEQUENCIAS, ABAS_COM_TUTORIAL } from '../data/tutorial.js';
+import { adiantarProducao } from '../core/craft.js';
 import { TABS } from './tabbar.js';
 import { sfx } from '../audio/sfx.js';
 
-const ATRASO_NAVEGAR = 650;          // ms entre o passo aparecer e a tela mudar sozinha (dá tempo de ler o fim do passo anterior)
+const ATRASO_SUB = 450;              // ms entre o passo aparecer e a sub-aba mudar sozinha
+const ATRASO_ABRIR = 500;            // ms entre entrar numa aba pela primeira vez e o tutorial dela começar
 const ATRASO_ACELERAR = 2500;        // ms até o tutorial acelerar a produção do primeiro item
 
-export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
+export function createTutorial({ game, tabbar, onFinish, telas }) {
   const root = new Container();
   root.visible = false;
   const halo = new Graphics();           // anel que destaca o botão a tocar
@@ -20,29 +22,46 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
   root.addChild(halo, cartao);
   const state = game.state.tutorial;
   let L = null;
-  let tela = null;          // última aba mostrada na tela (para não pedir uma aba em que já estamos)
+  let tela = null;          // aba mostrada agora
   let relogio = 0;
-  let passoNavegado = -1;   // passo cuja mudança de aba já foi feita
-  let passoAcelerado = -1;  // passo em que a aceleração já foi agendada
+  let passoFeito = '';      // passo cujos efeitos de entrada (sub-aba, presente, aceleração) já foram feitos
   let vistoAlvo = '';       // alvo que já foi rolado para a tela neste passo
   const timers = new Set();
   const refs = {};
 
-  const passo = () => (state.feito ? null : TUTORIAL[state.passo] ?? null);
+  // qual sequência está ativa: a inicial até ser concluída; depois, a da aba em andamento
+  const seqAtiva = () => (!state.feito ? 'inicio' : state.seq || null);
+  const passo = () => { const s = seqAtiva(); return s ? SEQUENCIAS[s]?.[state.passo] ?? null : null; };
   const later = (fn, ms) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
   const limparTimers = () => { for (const t of timers) clearTimeout(t); timers.clear(); };
+  const naoVistas = () => ABAS_COM_TUTORIAL.filter((a) => !state.abas[a]);
+
+  function terminarSequencia() {
+    const s = seqAtiva();
+    if (s === 'inicio') state.feito = true;
+    else if (s) state.abas[s] = true;
+    state.seq = '';
+    state.passo = 0;
+    onFinish?.();
+    // acabou a sequência inicial: se o jogador já está numa aba com tutorial, ele começa
+    if (s === 'inicio' && tela) later(() => abrirAba(tela), ATRASO_ABRIR);
+  }
 
   function avancar() {
     limparTimers();
     state.passo += 1;
-    if (state.passo >= TUTORIAL.length) { state.feito = true; onFinish?.(); }
+    if (state.passo >= SEQUENCIAS[seqAtiva()].length) terminarSequencia();
     sfx.tap();
     desenhar();
   }
 
+  // "Pular tutorial" encerra tudo: a sequência inicial e as das abas
   function pular() {
     limparTimers();
     state.feito = true;
+    state.seq = '';
+    state.passo = 0;
+    for (const a of ABAS_COM_TUTORIAL) state.abas[a] = true;
     onFinish?.();
     desenhar();
   }
@@ -51,22 +70,28 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
     limparTimers();
     state.passo = 0;
     state.feito = false;
-    passoNavegado = -1;
+    state.seq = '';
+    state.abas = {};
+    passoFeito = '';
     desenhar();
   }
 
-  // a receita guiada já tem todos os materiais? (então o passo de compra já está cumprido)
-  const compraFeita = (p) => !p.compra || Object.keys(faltando(game, game.data.receitas[p.compra])).length === 0;
+  // começa a sequência de uma aba na primeira visita (depois da sequência inicial)
+  function abrirAba(id) {
+    if (!state.feito || state.abas[id] || !SEQUENCIAS[id] || id === 'inicio') return;
+    if (state.seq === id) return;
+    state.seq = id;
+    state.passo = 0;
+    passoFeito = '';
+    desenhar();
+  }
 
   // ---------- alvo do anel ----------
   function nomeDoAlvo(p, hooks) {
     if (!p.alvo || !hooks?.nomes) return null;
     const nomes = hooks.nomes();
     if (typeof p.alvo === 'string') return nomes.find((n) => n === p.alvo) ?? nomes.find((n) => n.startsWith(p.alvo)) ?? null;
-    if (p.alvo.material && p.compra) {
-      const falta = Object.keys(faltando(game, game.data.receitas[p.compra]))[0];
-      return falta ? nomes.find((n) => n.includes(`:${falta}:x1`)) ?? null : null;
-    }
+    if (p.alvo.termina) return nomes.find((n) => n.endsWith(p.alvo.termina)) ?? null;
     return null;
   }
 
@@ -81,12 +106,11 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
     if (!nome) return;
     const r = hooks.retangulo?.(nome);
     if (!r) return;
-    // fora da área visível: rola uma vez até o botão (depois o jogador pode rolar à vontade)
-    // (e também não pode ficar escondido atrás do próprio balão)
+    // fora da área visível (ou escondido atrás do balão): rola uma vez até o botão; depois o jogador rola à vontade
     const balao = cartao.children[0] ? { x: cartao.children[0].x, y: cartao.children[0].y, w: cartao.children[0].width, h: cartao.children[0].height } : null;
     const coberto = balao && r.x < balao.x + balao.w && r.x + r.w > balao.x && r.y < balao.y + balao.h + 6 && r.y + r.h > balao.y - 6;
     const dentro = !coberto && r.y >= L.content.y - 4 && r.y + r.h <= L.content.y + L.content.h + 4 && r.x >= -4 && r.x + r.w <= L.w + 4;
-    const chave = `${state.passo}:${nome}`;
+    const chave = `${seqAtiva()}:${state.passo}:${nome}`;
     if (!dentro && vistoAlvo !== chave) { vistoAlvo = chave; hooks.ver?.(nome); return; }
     if (!dentro) return;
     relogio += dt;
@@ -97,35 +121,41 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
     halo.roundRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4, 12).fill({ color: C.gold, alpha: 0.05 + pulso * 0.07 });
   }
 
-  // ---------- balão ----------
+  // ---------- avisos nas abas e balão ----------
+  function pintarAvisos(p) {
+    if (!tabbar) return;
+    TABS.forEach((t, i) => {
+      const naoVista = state.feito && !state.abas[t.id] && !!SEQUENCIAS[t.id] && t.id !== 'inicio';
+      const pedida = !!p && p.aba === t.id && t.id !== tela;
+      tabbar.setBadge(i, (naoVista && t.id !== tela) || pedida, 'tutorial');
+    });
+  }
+
   function desenhar() {
     cartao.removeChildren().forEach((c) => c.destroy({ children: true }));
-    tabbar && TABS.forEach((_, i) => tabbar.setBadge(i, false, 'tutorial'));
     for (const k of Object.keys(refs)) delete refs[k];
     halo.clear();
     const p = passo();
-    root.visible = !!p && !!L;
-    if (!p || !L) return;
+    pintarAvisos(p);
+    // o tutorial de uma aba só aparece nela (se o jogador sai, ele espera a volta)
+    root.visible = !!p && !!L && (seqAtiva() === 'inicio' || tela === p.aba);
+    if (!root.visible) return;
 
-    // passo de compra já cumprido (jogo antigo, ou a receita já tem material): pula sem pedir nada
-    if (p.compra && compraFeita(p)) { later(avancar, 0); return; }
-
-    const aba = TABS.findIndex((t) => t.id === p.aba);
-    if (tabbar && aba >= 0 && TABS[aba].id !== tela) tabbar.setBadge(aba, true, 'tutorial');
-
-    // muda de tela sozinho quando o passo começa (uma vez por passo)
-    if (passoNavegado !== state.passo) {
-      passoNavegado = state.passo;
-      if (aba >= 0 && TABS[aba].id !== tela && irParaAba) later(() => { if (passo() === p) irParaAba(aba); }, ATRASO_NAVEGAR);
-      if (p.sub) later(() => { if (passo() === p) telas()[p.aba]?.irParaSub?.(p.sub); }, ATRASO_NAVEGAR + 60);
+    // efeitos de entrada do passo (uma vez): sub-aba, materiais de presente, aceleração
+    const marca = `${seqAtiva()}:${state.passo}`;
+    if (passoFeito !== marca) {
+      passoFeito = marca;
+      if (p.presente) darMateriais(p.presente);
+      if (p.sub) later(() => { if (passo() === p) telas()[p.aba]?.irParaSub?.(p.sub); }, ATRASO_SUB);
+      if (p.acelerar) later(() => { if (passo() === p) adiantarProducao(game, 3600); }, ATRASO_ACELERAR);
     }
-    if (p.acelerar && passoAcelerado !== state.passo) { passoAcelerado = state.passo; later(() => { if (passo() === p) adiantarProducao(game, 3600); }, ATRASO_ACELERAR); }
 
     const landscape = L.mode === 'landscape';
     const w = landscape ? Math.min(L.content.w * 0.46, 360) : Math.min(L.content.w, 560);
     const c = new Container();
     const bg = new Graphics();
-    const num = txt(`Dica ${state.passo + 1}/${TUTORIAL.length}`, C.accent, 11, true);
+    const lista = SEQUENCIAS[seqAtiva()];
+    const num = txt(`Dica ${state.passo + 1}/${lista.length}`, C.accent, 11, true);
     num.position.set(14, 10);
     const t = para(p.texto, C.text, 13, w - 28);
     t.position.set(14, num.y + num.height + 3);
@@ -154,14 +184,23 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
     tween(c, { alpha: 1 }, 220);
   }
 
+  // completa os materiais de uma receita (o presente do tutorial), só o que faltar
+  function darMateriais(receitaId) {
+    const r = game.data.receitas[receitaId];
+    if (!r) return;
+    for (const [m, q] of Object.entries(r.materiais)) {
+      const tem = game.state.materiais[m] ?? 0;
+      if (tem < q) game.state.materiais[m] = q;
+    }
+    game.emit('materiais', game.state.materiais);
+  }
+
   // avança sozinho quando o jogador faz o que o passo pede
-  const eventos = new Set(TUTORIAL.flatMap((p) => p.espera ?? []));
+  const eventos = new Set(Object.values(SEQUENCIAS).flat().flatMap((p) => p.espera ?? []));
   for (const ev of eventos) {
     game.on(ev, () => {
       const p = passo();
-      if (!p?.espera?.includes(ev)) return;
-      if (!compraFeita(p)) return;       // falta comprar mais um material: continua no passo (o anel vai para o próximo)
-      avancar();
+      if (p?.espera?.includes(ev) && root.visible) avancar();
     });
   }
 
@@ -170,13 +209,18 @@ export function createTutorial({ game, tabbar, onFinish, irParaAba, telas }) {
   return {
     root,
     layout(layout) { L = layout; desenhar(); },
-    // a aba da tela mudou: o aviso some se já estamos na aba pedida
-    abaAtual(id) { tela = id; desenhar(); },
+    // a aba da tela mudou: abre o tutorial dela, se for a primeira vez
+    abaAtual(id) {
+      tela = id;
+      desenhar();
+      if (state.feito && !state.abas[id] && SEQUENCIAS[id] && id !== 'inicio') later(() => { if (tela === id) abrirAba(id); }, ATRASO_ABRIR);
+    },
     update(dt = 16) { atualizarHalo(dt); },
     pular, reiniciar,
     ativo: () => !!passo(),
     hooks: {
-      passo: () => (state.feito ? -1 : state.passo),
+      passo: () => (passo() ? state.passo : -1),
+      sequencia: () => seqAtiva(),
       id: () => passo()?.id ?? null,
       visivel: () => root.visible,
       centro: (nome) => global(refs[nome]),
