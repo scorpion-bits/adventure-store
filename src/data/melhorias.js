@@ -37,25 +37,74 @@ export const MELHORIAS_LOJA = [
     efeitos: [{ tipo: 'compra', valor: 0.93 }] },
 ];
 
-// Árvore de cada ofício. (Provisória: 3 melhorias por ofício; o conteúdo completo, 20+ por ofício, vem no M6.)
-const trio = (oficio, nome, base, rep) => [
-  { id: `${oficio}_bancada`, grupo: oficio, nome: `Bancada extra de ${nome}`, desc: 'Mais uma produção ao mesmo tempo.', custo: base, nivelRep: rep,
-    efeitos: [{ tipo: 'slots', oficio, valor: 1 }] },
-  { id: `${oficio}_ferramentas`, grupo: oficio, nome: 'Ferramentas melhores', desc: 'O trabalho rende mais rápido.', custo: Math.round(base * 1.4), nivelRep: rep, requer: [`${oficio}_bancada`],
-    efeitos: [{ tipo: 'velocidade', oficio, valor: 1.15 }] },
-  { id: `${oficio}_mestre`, grupo: oficio, nome: `Mestre de ${nome}`, desc: 'Mais chance de itens de qualidade.', custo: Math.round(base * 3), nivelRep: rep + 2, requer: [`${oficio}_ferramentas`],
-    efeitos: [{ tipo: 'qualidade', valor: 0.05 }, { tipo: 'filaOficina', oficio, valor: 1 }] },
+// ---------------------------------------------------------------------------------------------------------------------
+// Árvores dos 8 ofícios: 4 linhas de 5 degraus + 1 nó final que exige o último degrau das quatro (21 por ofício).
+//   Linha A  velocidade    (produz mais rápido)
+//   Linha B  qualidade     (mais itens finos e primorosos)
+//   Linha C  capacidade    (mais produções ao mesmo tempo e fila maior)
+//   Linha D  rendimento    (chance de render uma unidade a mais)
+// Cada degrau exige o anterior da mesma linha. Para ajustar o ritmo mexa nas tabelas abaixo; para um ofício novo,
+// acrescente uma linha em OFICIOS_ARVORE.
+// ---------------------------------------------------------------------------------------------------------------------
+const GRAUS = {
+  m: ['básico', 'reforçado', 'refinado', 'mestre', 'lendário'],
+  f: ['básica', 'reforçada', 'refinada', 'mestra', 'lendária'],
+};
+const FATOR_CUSTO = [1, 3, 9, 27, 80];           // custo de cada degrau, em múltiplos do custo-base do ofício
+const FATOR_LINHA = { vel: 1, qual: 1.2, cap: 1.6, rend: 1.4 };
+const VEL = [1.1, 1.12, 1.15, 1.18, 1.2];
+const QUAL = [0.03, 0.04, 0.05, 0.06, 0.08];
+const REND = [0.05, 0.08, 0.1, 0.12, 0.15];
+const CAP = [
+  { tipo: 'slots', valor: 1 }, { tipo: 'filaOficina', valor: 1 }, { tipo: 'slots', valor: 1 }, { tipo: 'filaOficina', valor: 2 }, { tipo: 'slots', valor: 1 },
+];
+const DESC = {
+  vel: ['Trabalho mais ágil.', 'Cada movimento rende mais.', 'Sem desperdício de tempo.', 'Mãos que já sabem o caminho.', 'Tão rápido que parece magia.'],
+  qual: ['Mais cuidado nos detalhes.', 'Acabamento de quem se importa.', 'Peças que chamam atenção.', 'Obras dignas de vitrine.', 'Cada peça é uma obra-prima.'],
+  cap: ['Mais espaço para trabalhar.', 'Dá para deixar encomendas esperando.', 'Mais uma bancada funcionando.', 'A fila de encomendas cresce.', 'Uma oficina que não para.'],
+  rend: ['Aproveita melhor o material.', 'Sobras viram peças extras.', 'Quase nada se perde.', 'O material rende mais do que devia.', 'O ofício sem desperdício.'],
+};
+
+// [id, nome, custo-base, nível mínimo de reputação, [tema A, gênero], [tema B, gênero], [tema C, gênero], [tema D, gênero], nome do mestre]
+const OFICIOS_ARVORE = [
+  ['ferraria', 'Ferraria', 150, 1, ['Fornalha', 'f'], ['Martelo', 'm'], ['Bancada', 'f'], ['Molde', 'm'], 'Mestre ferreiro'],
+  ['culinaria', 'Culinária', 120, 1, ['Fogão', 'm'], ['Tempero', 'm'], ['Despensa', 'f'], ['Receita', 'f'], 'Mestre cozinheiro'],
+  ['alquimia', 'Alquimia', 250, 2, ['Alambique', 'm'], ['Fórmula', 'f'], ['Estante', 'f'], ['Destilação', 'f'], 'Mestre alquimista'],
+  ['carpintaria', 'Carpintaria', 350, 3, ['Serra', 'f'], ['Lixa', 'f'], ['Bancada', 'f'], ['Gabarito', 'm'], 'Mestre carpinteiro'],
+  ['costura', 'Costura', 500, 4, ['Roca', 'f'], ['Agulha', 'f'], ['Tear', 'm'], ['Molde de corte', 'm'], 'Mestre costureiro'],
+  ['encantamento', 'Encantamento', 900, 6, ['Círculo', 'm'], ['Runa', 'f'], ['Altar', 'm'], ['Ressonância', 'f'], 'Mestre encantador'],
+  ['joalheria', 'Joalheria', 1300, 8, ['Torno', 'm'], ['Lapidação', 'f'], ['Cofre', 'm'], ['Cinzel', 'm'], 'Mestre joalheiro'],
+  ['artefatos', 'Artefatos', 2600, 12, ['Estudo', 'm'], ['Lupa', 'f'], ['Acervo', 'm'], ['Intuição', 'f'], 'Mestre de relíquias'],
 ];
 
-export const MELHORIAS_OFICIOS = [
-  ...trio('ferraria', 'ferraria', 150, 1),
-  ...trio('culinaria', 'culinária', 120, 1),
-  ...trio('alquimia', 'alquimia', 250, 2),
-  ...trio('carpintaria', 'carpintaria', 350, 3),
-  ...trio('costura', 'costura', 500, 4),
-  ...trio('encantamento', 'encantamento', 900, 6),
-  ...trio('joalheria', 'joalheria', 1300, 8),
-  ...trio('artefatos', 'artefatos', 2600, 12),
-];
+function arvore([oficio, nomeOficio, custoBase, repMin, ...resto]) {
+  const mestre = resto.pop();
+  const [temaA, temaB, temaC, temaD] = resto;
+  const linhas = [
+    ['vel', temaA, (t) => [{ tipo: 'velocidade', oficio, valor: VEL[t] }]],
+    ['qual', temaB, (t) => [{ tipo: 'qualidadeOficio', oficio, valor: QUAL[t] }]],
+    ['cap', temaC, (t) => [{ ...CAP[t], oficio }]],
+    ['rend', temaD, (t) => [{ tipo: 'rendimento', oficio, valor: REND[t] }]],
+  ];
+  const lista = [];
+  for (let t = 0; t < 5; t++) {
+    linhas.forEach(([chave, [tema, genero], efeitos], col) => {
+      lista.push({
+        id: `${oficio}_${chave}${t + 1}`, grupo: oficio, nome: `${tema} ${GRAUS[genero][t]}`, desc: DESC[chave][t],
+        custo: Math.round((custoBase * FATOR_CUSTO[t] * FATOR_LINHA[chave]) / 5) * 5, nivelRep: repMin + t * 2 + (col > 1 ? 1 : 0),
+        requer: t === 0 ? [] : [`${oficio}_${chave}${t}`], efeitos: efeitos(t),
+      });
+    });
+  }
+  lista.push({
+    id: `${oficio}_mestre`, grupo: oficio, nome: mestre, desc: `O auge de ${nomeOficio}: exige o último degrau das quatro linhas.`,
+    custo: Math.round(custoBase * 200 / 5) * 5, nivelRep: repMin + 11,
+    requer: ['vel', 'qual', 'cap', 'rend'].map((c) => `${oficio}_${c}5`),
+    efeitos: [{ tipo: 'velocidade', oficio, valor: 1.25 }, { tipo: 'qualidadeOficio', oficio, valor: 0.1 }, { tipo: 'rendimento', oficio, valor: 0.1 }],
+  });
+  return lista;
+}
+
+export const MELHORIAS_OFICIOS = OFICIOS_ARVORE.flatMap(arvore);
 
 export const MELHORIAS = [...MELHORIAS_LOJA, ...MELHORIAS_OFICIOS];

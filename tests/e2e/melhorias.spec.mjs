@@ -99,9 +99,9 @@ test.describe('melhorias (retrato)', () => {
     await clicar(page, 'sub:oficios');
     await clicar(page, 'oficio:culinaria');
     await page.screenshot({ path: shotPath('portrait-oficios-melhorias') });
-    await clicar(page, 'comprar:culinaria_bancada');
-    expect(await page.evaluate(() => window.__loja.state().melhorias.culinaria_bancada)).toBe(true);
-    expect(await page.evaluate(() => window.__loja.game.mods.slots.culinaria)).toBe(1);
+    await clicar(page, 'comprar:culinaria_vel1');
+    expect(await page.evaluate(() => window.__loja.state().melhorias.culinaria_vel1)).toBe(true);
+    expect(await page.evaluate(() => window.__loja.game.mods.velocidadeOficina.culinaria)).toBeCloseTo(1.1, 5);
     expect(errors).toEqual([]);
   });
 

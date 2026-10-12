@@ -180,7 +180,7 @@ export function createOficinaScreen({ game, toast }) {
     const fila = naFila(game, def.id).length;
     const info = txt(`Produzindo ${rod}/${slotsDe(game, def.id)} · na fila ${fila}/${filaMaxDe(game, def.id)}`, C.dim, 12);
     info.position.set(14, xb.y + 14);
-    const p = chancesQualidade(game, nivel);
+    const p = chancesQualidade(game, nivel, def.id);
     const nomes = game.data.meta.qualidades.map((q) => q.nome);
     const qual = txt(`Qualidade: ${p.map((v, i) => (v > 0 ? `${nomes[i]} ${Math.round(v * 100)}%` : null)).filter(Boolean).join(' · ')}`, C.faint, 11);
     qual.position.set(14, info.y + info.height + 3);

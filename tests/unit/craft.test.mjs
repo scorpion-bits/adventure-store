@@ -205,3 +205,30 @@ test('o jogo avança a produção sozinho a cada tick', () => {
   game.tick(16);
   assert.equal(game.state.prontos.length, 1);
 });
+
+test('qualidade por ofício só vale no ofício certo', () => {
+  const { game } = novo();
+  game.mods.qualidadeOficio = { ferraria: 0.1 };
+  const com = chancesQualidade(game, 1, 'ferraria');
+  const sem = chancesQualidade(game, 1, 'alquimia');
+  assert.ok(com[0] < sem[0] && com[1] >= 0);
+  assert.deepEqual(sem, chancesQualidade(game, 1));
+  assert.ok(Math.abs(com.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+});
+
+test('rendimento: chance de render uma unidade a mais, só no ofício certo', () => {
+  const total = (rend, receita, oficioAberto) => {
+    const { game, clock } = novo((s) => { s.estoque = {}; s.materiais = { cobre: 1e6, carvao: 1e6 }; if (oficioAberto) s.oficios[oficioAberto] = { nivel: 1, xp: 0 }; }, 5);
+    game.mods.rendimento = rend;
+    game.mods.slots = { ferraria: 99 };
+    game.mods.filaOficina = { ferraria: 999 };
+    for (let i = 0; i < 400; i++) produzir(game, receita);
+    clock.advance(3600 * 1000); avancarProducao(game);
+    return totalProntos(game);
+  };
+  const base = total({}, 'r_adaga_bronze');
+  assert.equal(base, 400);
+  const com = total({ ferraria: 0.25 }, 'r_adaga_bronze');
+  assert.ok(com > 400 * 1.15 && com < 400 * 1.35, `com 25% de chance: ${com}`);
+  assert.equal(total({ alquimia: 0.5 }, 'r_adaga_bronze'), 400, 'o bônus de outro ofício não conta');
+});

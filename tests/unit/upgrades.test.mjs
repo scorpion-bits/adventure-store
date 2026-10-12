@@ -64,10 +64,10 @@ test('efeitos de várias melhorias se combinam (soma, produto e por ofício)', (
   assert.ok(Math.abs(g.mods.chegada - 1.1 * 1.1) < 1e-9, 'multiplicadores se multiplicam');
 
   assert.equal(slotsDe(g, 'ferraria'), 1);
-  comprarMelhoria(g, 'ferraria_bancada'); comprarMelhoria(g, 'ferraria_ferramentas');
+  comprarMelhoria(g, 'ferraria_cap1'); comprarMelhoria(g, 'ferraria_vel1');
   assert.equal(slotsDe(g, 'ferraria'), 2);
   assert.equal(slotsDe(g, 'alquimia'), 1, 'não vaza para outro ofício');
-  assert.equal(duracaoDe(g, DATA.receitas.r_espada_ferro), Math.round(90000 / 1.15));
+  assert.equal(duracaoDe(g, DATA.receitas.r_espada_ferro), Math.round(90000 / 1.1));
   assert.equal(duracaoDe(g, DATA.receitas.r_pocao_cura), 40000);
 });
 
@@ -174,4 +174,45 @@ test('save e recarga: melhorias, equipe e decoração voltam aplicadas', async (
   assert.equal(g2.mods.atendente, 30);
   assert.equal(g2.state.loja.tema, 'taverna');
   assert.ok(g2.mods.chegada > 1);
+});
+
+test('árvore de ofício: 21 nós, 4 linhas de 5 degraus e um nó final que exige as quatro', () => {
+  for (const o of DATA.meta.oficios) {
+    const lista = melhoriasDoGrupo(novo(), o.id);
+    assert.equal(lista.length, 21, o.id);
+    for (const linha of ['vel', 'qual', 'cap', 'rend']) {
+      let anterior = null;
+      for (let t = 1; t <= 5; t++) {
+        const m = DATA.melhorias[`${o.id}_${linha}${t}`];
+        assert.ok(m, `${o.id}_${linha}${t}`);
+        assert.deepEqual(m.requer, t === 1 ? [] : [`${o.id}_${linha}${t - 1}`]);
+        if (anterior) { assert.ok(m.custo > anterior.custo, `custo cresce em ${m.id}`); assert.ok(m.nivelRep >= anterior.nivelRep, `reputação não cai em ${m.id}`); }
+        anterior = m;
+      }
+    }
+    const mestre = DATA.melhorias[`${o.id}_mestre`];
+    assert.deepEqual(mestre.requer.sort(), ['vel', 'qual', 'cap', 'rend'].map((c) => `${o.id}_${c}5`).sort());
+    assert.ok(mestre.custo > DATA.melhorias[`${o.id}_cap5`].custo, 'o nó final é o mais caro');
+  }
+});
+
+test('comprar a árvore inteira de um ofício: os efeitos somam e o nó final só abre depois dos outros', () => {
+  const g = novo();
+  assert.equal(comprarMelhoria(g, 'ferraria_mestre').motivo, 'requisito');
+  for (const linha of ['vel', 'qual', 'cap', 'rend']) for (let t = 1; t <= 5; t++) assert.equal(comprarMelhoria(g, `ferraria_${linha}${t}`).ok, true, `${linha}${t}`);
+  assert.equal(comprarMelhoria(g, 'ferraria_mestre').ok, true);
+  assert.equal(slotsDe(g, 'ferraria'), 1 + 3);
+  const velocidade = 1.1 * 1.12 * 1.15 * 1.18 * 1.2 * 1.25;
+  assert.ok(Math.abs(g.mods.velocidadeOficina.ferraria - velocidade) < 1e-9);
+  assert.ok(velocidade > 2.5 && velocidade < 4, `velocidade total ${velocidade.toFixed(2)}x: forte, mas não absurda`);
+  assert.ok(Math.abs(g.mods.qualidadeOficio.ferraria - (0.03 + 0.04 + 0.05 + 0.06 + 0.08 + 0.1)) < 1e-9);
+  assert.ok(Math.abs(g.mods.rendimento.ferraria - (0.05 + 0.08 + 0.1 + 0.12 + 0.15 + 0.1)) < 1e-9);
+  assert.equal(slotsDe(g, 'alquimia'), 1, 'não vaza para outros ofícios');
+});
+
+test('o custo total de uma árvore completa fica numa escala plausível (o simulador do M12 afina o ritmo)', () => {
+  for (const o of DATA.meta.oficios) {
+    const total = melhoriasDoGrupo(novo(), o.id).reduce((n, m) => n + m.custo, 0);
+    assert.ok(total > 10000 && total < 5e6, `${o.id}: ${total}`);
+  }
 });

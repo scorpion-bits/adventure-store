@@ -94,7 +94,7 @@ export function validar(data = DATA) {
   const conferirEfeitos = (dono, efeitos) => {
     for (const e of efeitos ?? []) {
       exige(EFEITOS[e.tipo], `${dono}: efeito desconhecido "${e.tipo}"`);
-      if (['slots', 'velocidade', 'filaOficina'].includes(e.tipo)) exige(oficios.has(e.oficio), `${dono}: efeito "${e.tipo}" com ofício inválido "${e.oficio}"`);
+      if (['slots', 'velocidade', 'filaOficina', 'qualidadeOficio', 'rendimento'].includes(e.tipo)) exige(oficios.has(e.oficio), `${dono}: efeito "${e.tipo}" com ofício inválido "${e.oficio}"`);
     }
   };
   for (const m of listas.melhorias) {
@@ -129,6 +129,8 @@ export function validar(data = DATA) {
     aventureiros: [listas.aventureiros.length, m.aventureiros],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
+    // a menor quantidade de melhorias entre os ofícios
+    melhoriasPorOficio: [Math.min(...meta.oficios.map((o) => listas.melhorias.filter((x) => x.grupo === o.id).length)), m.melhoriasPorOficio],
   };
   const faltas = Object.entries(contagens).filter(([, [n, meta_]]) => n < meta_).map(([k, [n, meta_]]) => `${k}: ${n}/${meta_}`);
   return { erros, contagens, faltas };

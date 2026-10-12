@@ -13,7 +13,9 @@ export const modsBase = () => ({
   preco: 1,                // multiplica o ouro das vendas
   repGanho: 1,             // multiplica a reputação ganha em vendas
   compra: 1,               // multiplica o preço dos materiais
-  qualidade: 0,            // desloca a chance de qualidade para cima
+  qualidade: 0,            // desloca a chance de qualidade para cima (todos os ofícios)
+  qualidadeOficio: {},     // idem, por ofício
+  rendimento: {},          // chance de uma produção render 1 unidade a mais, por ofício
   slots: {},               // produções simultâneas extras por ofício
   slotsGlobal: 0,
   velocidadeOficina: {},   // multiplica a velocidade por ofício
@@ -42,6 +44,8 @@ export const EFEITOS = {
   repGanho: { aplicar: (m, e) => mult(m, 'repGanho', e), texto: (e) => `${pct(e.valor)} mais reputação por venda` },
   compra: { aplicar: (m, e) => mult(m, 'compra', e), texto: (e) => `Materiais ${pct(e.valor)} mais baratos` },
   qualidade: { aplicar: (m, e) => soma(m, 'qualidade', e), texto: (e) => `Itens de melhor qualidade (+${Math.round(e.valor * 100)}%)` },
+  qualidadeOficio: { aplicar: porOficio('qualidadeOficio', 'soma'), texto: (e, g) => `${nomeOficio(g, e.oficio)}: itens de melhor qualidade (+${Math.round(e.valor * 100)}%)` },
+  rendimento: { aplicar: porOficio('rendimento', 'soma'), texto: (e, g) => `${nomeOficio(g, e.oficio)}: ${Math.round(e.valor * 100)}% de chance de render 1 a mais` },
   slots: { aplicar: porOficio('slots', 'soma'), texto: (e, g) => `+${e.valor} produção simultânea em ${nomeOficio(g, e.oficio)}` },
   slotsGlobal: { aplicar: (m, e) => soma(m, 'slotsGlobal', e), texto: (e) => `+${e.valor} produção simultânea em todos os ofícios` },
   velocidade: { aplicar: porOficio('velocidadeOficina', 'mult'), texto: (e, g) => `${nomeOficio(g, e.oficio)} produz ${pct(e.valor)} mais rápido` },

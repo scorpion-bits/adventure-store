@@ -4,7 +4,7 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M5 (melhorias, equipe e tutorial)**. Há topo, cinco abas, configurações, sons, layout responsivo,
+> Estado atual: **M6 (conteúdo I)**: 112 itens, 50 materiais, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
@@ -71,6 +71,16 @@ e a receita dele em `receitas.js`:
 ```
 
 Os números de balanceamento (preços, qualidades, temperamentos, reputação) ficam em `src/data/meta.js`.
+
+**Ícones:** cada item/material aponta para um ícone do pack em `src/data/icones.js` (`id: 'fbNN'`, onde NN é o
+número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o pack original em `assets-src/raven`,
+fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
+
+**Melhorias dos ofícios:** `src/data/melhorias.js` gera 4 linhas de 5 degraus (velocidade, qualidade, capacidade,
+rendimento) mais um nó final por ofício a partir de tabelas no topo do arquivo; é só mexer nelas para rebalancear.
+Melhorias avulsas (da loja, ou especiais) entram como objetos nas listas, usando os efeitos de `src/core/mods.js`.
+
+`npm run validate -- --metas` confere as metas de quantidade; hoje só falta o conteúdo de aventureiros (M7).
 
 ### Save
 

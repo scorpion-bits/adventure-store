@@ -110,11 +110,11 @@ export function alternarRepetir(game, receitaId) {
 }
 
 // ---------- tempo ----------
-export function chancesQualidade(game, nivel) {
+export function chancesQualidade(game, nivel, oficio = null) {
   const tabela = O(game).qualidade;
   let p = tabela[0].p;
   for (const t of tabela) if (nivel >= t.nivel) p = t.p;
-  const bonus = game.mods.qualidade ?? 0;           // melhorias deslocam chance do pior para o melhor
+  const bonus = (game.mods.qualidade ?? 0) + (oficio ? game.mods.qualidadeOficio?.[oficio] ?? 0 : 0);   // melhorias deslocam chance do pior para o melhor
   if (!bonus) return p;
   const q = [...p];
   for (let i = 0; i < q.length - 1; i++) {
@@ -125,8 +125,8 @@ export function chancesQualidade(game, nivel) {
   return q;
 }
 
-function sortearQualidade(game, nivel) {
-  const p = chancesQualidade(game, nivel);
+function sortearQualidade(game, nivel, oficio) {
+  const p = chancesQualidade(game, nivel, oficio);
   let r = game.rng.next();
   let ultimo = 1;
   for (let i = 0; i < p.length; i++) {
@@ -141,8 +141,10 @@ function concluir(game, job) {
   const receita = game.data.receitas[job.receita];
   const e = game.state.oficios[job.oficio];
   const resultado = {};
-  for (let i = 0; i < job.qtd; i++) {
-    const q = sortearQualidade(game, e?.nivel ?? 1);
+  const extra = game.rng.chance(game.mods.rendimento?.[job.oficio] ?? 0) ? 1 : 0;      // melhoria de rendimento
+  const total = job.qtd + extra;
+  for (let i = 0; i < total; i++) {
+    const q = sortearQualidade(game, e?.nivel ?? 1, job.oficio);
     resultado[q] = (resultado[q] ?? 0) + 1;
   }
   game.state.prontos.push({ uid: job.uid, receita: job.receita, oficio: job.oficio, resultado, fim: job.fim });
@@ -152,7 +154,7 @@ function concluir(game, job) {
     while (e.nivel < O(game).nivelMax && e.xp >= xpParaNivel(game, e.nivel + 1)) e.nivel += 1;
     if (e.nivel > antes) game.emit('nivelOficio', { id: job.oficio, nivel: e.nivel });
   }
-  game.state.stats.produzidos = (game.state.stats.produzidos ?? 0) + job.qtd;
+  game.state.stats.produzidos = (game.state.stats.produzidos ?? 0) + total;
   game.emit('pronto', { job, receita });
 }
 
