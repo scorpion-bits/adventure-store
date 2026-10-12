@@ -162,3 +162,11 @@ Os marcos M6–M7 são os maiores em volume; vou escrevê-los em lotes por categ
 | Texto em Pixi (nitidez, performance) | `resolution` do device, cache de textos, `BitmapText` onde houver muita repetição |
 | Arte de personagem inexistente no pack | Retratos procedurais agora; manifesto permite trocar por pacote depois |
 | Licença do pack | Item 1 da seção 1 |
+
+## 11. Pack extra: Cryo's Mini GUI
+
+Recebido depois do plano. Conteúdo: `GUI` (painéis, molduras de madeira, pergaminho, barras, ícones de coração/moeda/chave/etc., em 1x/2x/4x, com versão "sliced"), `Buttons` (botões creme + ícones de ✓ ✕ pausa play menu busca setas), `Controller` e `Social Buttons`.
+
+- **Usar:** `GUI` e `Buttons` combinam com o visual quente (madeira + pergaminho). Entram no M11 como skin do `ui.js` via 9-slice (`NineSliceSprite`) pelo `assets.js`; até lá os cartões desenhados por código seguem funcionando.
+- **Não usar:** `Controller` (gamepad) e `Social Buttons` não têm função no jogo.
+- **Licença:** os zips **não trazem arquivo de licença**. Preciso do link/termos da página de origem para o `CREDITS.md` e para decidir se os PNGs podem ir ao repo (mesma regra do pack de ícones: pasta original fora do git, só o atlas usado).
