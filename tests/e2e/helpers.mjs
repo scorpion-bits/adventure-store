@@ -19,3 +19,9 @@ export async function openGame(page) {
   await page.waitForTimeout(600);   // animação de entrada
   return errors;
 }
+
+// espera `n` quadros do navegador (o Pixi só atualiza as áreas de toque ao desenhar; com GL por software cada quadro demora)
+export const quadros = (page, n = 3) => page.evaluate((k) => new Promise((resolve) => {
+  const passo = (i) => (i <= 0 ? resolve() : requestAnimationFrame(() => passo(i - 1)));
+  passo(k);
+}), n);

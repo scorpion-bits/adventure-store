@@ -4,9 +4,10 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M2 (loja jogável)**. Há topo, cinco abas, configurações, sons, layout responsivo,
+> Estado atual: **M3 (mercado)**. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
-> temperamentos e reputação. As outras abas ainda são provisórias.
+> temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
+> A Oficina, Aventureiros e Melhorias ainda são provisórias.
 > As próximas etapas estão no plano.
 
 ## Rodar localmente

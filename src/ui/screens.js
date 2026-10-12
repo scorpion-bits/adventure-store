@@ -5,6 +5,7 @@ import { C, txt, para, drawCard, createScroll } from './ui.js';
 import { TELAS } from '../data/strings.js';
 import { TABS } from './tabbar.js';
 import { createLojaScreen } from './loja.js';
+import { createMercadoScreen } from './mercado.js';
 
 function stubScreen(id, { toast }) {
   const info = TELAS[id];
@@ -58,5 +59,6 @@ function stubScreen(id, { toast }) {
 }
 
 export function createScreens(ctx) {
-  return TABS.map((tab) => (tab.id === 'loja' ? createLojaScreen(ctx) : stubScreen(tab.id, ctx)));
+  const reais = { loja: createLojaScreen, mercado: createMercadoScreen };
+  return TABS.map((tab) => (reais[tab.id] ?? ((c) => stubScreen(tab.id, c)))(ctx));
 }

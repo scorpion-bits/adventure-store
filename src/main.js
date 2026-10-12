@@ -170,9 +170,12 @@ async function start() {
       modalOpen: () => modal.isOpen(),
       toast: (text) => toasts.show(text),
       loja: screens[0].hooks,
+      mercado: screens[2].hooks,
+      giveMaterial: (id, n = 1) => { game.state.materiais[id] = (game.state.materiais[id] ?? 0) + n; game.emit('materiais'); },
       giveItem: (id, q = 1, n = 1) => { const k = `${id}:${q}`; game.state.estoque[k] = (game.state.estoque[k] ?? 0) + n; game.emit('estoque'); },
       clearQueue: () => { game.state.fila.length = 0; game.state.loja.proximaChegada = 1e9; game.emit('fila'); },
       addClient: (adv, pedido = { tipo: 'surpresa' }) => { game.state.loja.uid += 1; const e = game.data.aventureiros[adv]; game.state.fila.push({ uid: game.state.loja.uid, adv, pedido, paciencia: 75000, pacienciaMax: 75000, fala: e?.falas?.chega?.[0] ?? '' }); game.emit('fila'); },
+      scrollTo: (y) => screens[active].scroll.scrollBy(y - screens[active].scroll.scrollY),
       scroll: () => { const sc = screens[active].scroll; return { y: sc.scrollY, contentH: sc.contentH, viewH: sc.viewH }; },
     };
   }
