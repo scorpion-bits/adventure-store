@@ -8,7 +8,7 @@ import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
-const ROW_H = 78;
+const ROW_H = 84;
 
 export function createMercadoScreen({ game, toast, modal }) {
   const root = new Container();
@@ -92,7 +92,7 @@ export function createMercadoScreen({ game, toast, modal }) {
   function botaoCompra(rotulo, w, o, f, tipo) {
     const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o);
     const pode = tipo === 'max' ? n > 0 : o.restante > 0;
-    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 32, { size: 12, tint: pode ? C.accent : C.dim });
+    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: pode ? C.accent : C.dim });
     if (!pode) b.setDisabled(true);
     b.tap(() => {
       const r = comprar(game, f.id, o.material, n);
@@ -129,9 +129,9 @@ export function createMercadoScreen({ game, toast, modal }) {
     const bw = Math.min(70, (w - 54 - 12 - 12) / 3);
     [['+1', 'x1'], ['+5', 'x5'], ['Máx', 'max']].forEach(([rot, tipo], i) => {
       const b = botaoCompra(rot, bw, o, f, tipo);
-      b.position.set(w - 12 - (3 - i) * bw - (2 - i) * 6, ROW_H - 38);
+      b.position.set(w - 12 - (3 - i) * bw - (2 - i) * 6, ROW_H - 44);
       c.addChild(b);
-      refs[`${f.id}:${o.material}:${tipo}`] = { c: b, w: bw, h: 32 };
+      refs[`${f.id}:${o.material}:${tipo}`] = { c: b, w: bw, h: 38 };
     });
     return { c, h: ROW_H };
   }

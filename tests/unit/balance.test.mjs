@@ -20,3 +20,23 @@ test('o simulador é determinístico (mesma semente, mesmo resultado)', () => {
   const b = simular({ perfil: PERFIS.casual, dias: 1, semente: 5 }).linhas;
   assert.deepEqual(a, b);
 });
+
+// depois de dias de jogo (todas as telas e sistemas mexidos pelo bot), o estado precisa continuar são e sobreviver a salvar/carregar
+test('estado após 3 dias de jogo: sem números quebrados e com save/load idêntico', async () => {
+  const { loadState, saveState } = await import('../../src/core/save.js');
+  const { game } = simular({ perfil: PERFIS.dedicado, dias: 3, semente: 3, prestigio: true });
+  const ruins = [];
+  const olhar = (v, caminho) => {
+    if (typeof v === 'number' && !Number.isFinite(v)) ruins.push(`${caminho} = ${v}`);
+    else if (v === undefined) ruins.push(`${caminho} indefinido`);
+    else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) olhar(x, `${caminho}.${k}`);
+  };
+  olhar(game.state, 'state');
+  assert.deepEqual(ruins, []);
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: (k) => mem.delete(k) };
+  saveState(storage, game.state);
+  const { state, origem } = loadState(storage);
+  assert.equal(origem, 'carregado');
+  assert.deepEqual(JSON.parse(JSON.stringify(state)), JSON.parse(JSON.stringify(game.state)));
+});
