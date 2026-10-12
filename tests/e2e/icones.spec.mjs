@@ -13,6 +13,7 @@ for (const dpr of [1, 3]) {
     test.use({ viewport: VIEWPORTS.portrait, deviceScaleFactor: dpr });
 
     test('itens e materiais usam a arte do atlas, não os provisórios', async ({ page }) => {
+      test.slow();      // 3x de densidade: cada captura é pesada no GL por software
       const errors = await openGame(page);
       expect(await page.evaluate(() => window.__loja.icones.quadros())).toBeGreaterThanOrEqual(160);
       const origens = await page.evaluate(() => ['espada_ferro', 'pocao_cura', 'barra_ferro', 'ovo_dragao', 'banquete'].map((id) => window.__loja.icones.origem(id)));

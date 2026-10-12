@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { VIEWPORTS, openGame, shotPath } from './helpers.mjs';
+import { VIEWPORTS, openGame, shotPath, quadros } from './helpers.mjs';
 
 // prepara uma loja sem clientes aleatórios e com um cliente conhecido na fila
 async function prepararLoja(page, { pedido, advId = 'aprendiz_guerreiro', aceitar } = {}) {
@@ -92,7 +92,7 @@ test.describe('retrato', () => {
     const errors = await openGame(page);
     await prepararLoja(page, { advId: 'aprendiz_guerreiro', pedido: { tipo: 'surpresa' } });
     await page.evaluate(() => { window.__loja.addClient('bardo_cantor'); window.__loja.loja.renderAgora(); });
-    await page.waitForTimeout(100);
+    await quadros(page, 4);
     const antes = await page.evaluate(() => window.__loja.state().fila.map((c) => c.adv));
     expect(antes).toEqual(['aprendiz_guerreiro', 'bardo_cantor']);
     await clicar(page, await page.evaluate(() => window.__loja.loja.filaCentro(1)));
