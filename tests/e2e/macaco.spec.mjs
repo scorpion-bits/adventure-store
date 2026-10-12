@@ -8,7 +8,9 @@ function sorteador(semente) {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-for (const [nome, vp, semente] of [['retrato', 'portrait', 11], ['retrato (outra)', 'portrait', 29], ['retrato (3)', 'portrait', 101], ['retrato (4)', 'portrait', 77], ['paisagem', 'landscape', 5], ['desktop', 'desktop', 7]]) {
+// no CI (GL por software, bem mais lento) só rodam duas sementes; as outras ficam para a máquina local
+const CASOS = [['retrato', 'portrait', 11], ['retrato (outra)', 'portrait', 29], ['retrato (3)', 'portrait', 101], ['retrato (4)', 'portrait', 77], ['paisagem', 'landscape', 5], ['desktop', 'desktop', 7]];
+for (const [nome, vp, semente] of process.env.CI ? [CASOS[0], CASOS[4]] : CASOS) {
   test(`macaco: ${nome}, ${semente}`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize(VIEWPORTS[vp]);

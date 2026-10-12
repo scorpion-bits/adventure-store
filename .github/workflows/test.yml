@@ -1,13 +1,21 @@
-# Testes a cada push e pull request: lógica (Node) e jogo no navegador (Playwright, GL por software).
+# Testes em todo pull request e a cada push na main: lógica (Node) e jogo no navegador (Playwright, GL por software).
+# (Não roda em push de branch com PR aberto: o pull_request já cobre, e assim não chegam dois avisos por mudança.)
 name: Testes
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+# uma execução nova cancela a anterior da mesma branch (menos avisos de falha por commits seguidos)
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

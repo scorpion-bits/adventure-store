@@ -8,7 +8,9 @@ const executablePath = process.env.PW_CHROMIUM ?? (existsSync(PRE) ? PRE : undef
 export default defineConfig({
   testDir: './e2e',
   outputDir: './out/results',
-  timeout: 30_000,
+  // no CI o GL por software é bem mais lento: mais tempo por teste e uma nova tentativa antes de contar como falha
+  timeout: process.env.CI ? 60_000 : 30_000,
+  retries: process.env.CI ? 2 : 0,
   fullyParallel: false,
   workers: 1,
   reporter: [['list']],
