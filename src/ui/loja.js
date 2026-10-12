@@ -398,7 +398,12 @@ export function createLojaScreen({ game, toast }) {
     if (ops.length) {
       // os preços vêm logo abaixo do cliente (ao alcance do polegar); a lista para trocar o item fica depois
       const atual = ops.find((o) => o.chave === sel);
-      const t = txt(`Oferecendo: ${atual.item.nome} (${game.data.meta.qualidades[atual.qualidade].nome})`, C.dim, 12, true);
+      const qual = game.data.meta.qualidades[atual.qualidade].nome;
+      const pediu = cli.pedido.tipo === 'item' ? game.data.itens[cli.pedido.item]?.nome : null;
+      // oferecer outra coisa que não o pedido funciona (com menos chance), mas a tela precisa deixar isso claro
+      const t = atual.substituto && pediu && atual.item.id !== cli.pedido.item
+        ? para(`Oferecendo ${atual.item.nome} (${qual}) no lugar de ${pediu}: ele pode não gostar`, C.warn, 12, w, { bold: true })
+        : txt(`Oferecendo: ${atual.item.nome} (${qual})`, C.dim, 12, true);
       itens.push({ c: t, h: t.height });
       itens.push(linhaPrecos(w, cli, ops));
       refs.opcoes = [];

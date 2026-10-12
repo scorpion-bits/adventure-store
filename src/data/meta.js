@@ -151,7 +151,7 @@ export const META = {
     // chance de cada tipo de pedido
     pedido: { item: 0.55, categoria: 0.3, surpresa: 0.15 },
     // ajustes na chance de compra
-    substituto: 0.7,            // ofereceu outro item que não o pedido
+    substituto: 0.55,           // ofereceu outro item que não o pedido
     preferido: 1.1,             // item de uma categoria que ele prefere
     naoPreferido: 0.85,
     semOrcamento: 0.04,         // o preço passa do orçamento: quase nunca compra

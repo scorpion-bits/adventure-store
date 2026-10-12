@@ -226,3 +226,14 @@ test('save com cliente de aventureiro removido: o jogo carrega e descarta o clie
   assert.equal(g.state.fila.length, 1);
   assert.equal(g.state.fila[0].paciencia, 70000, 'paciência volta ao máximo ao carregar');
 });
+
+test('ninguém pede pelo nome um item que só existe como achado raro de expedição', async () => {
+  const { itensPedidos } = await import('../../src/core/shop.js');
+  const { obtivel } = await import('../../src/core/obtivel.js');
+  assert.equal(obtivel(novo(), 'ovo_dragao'), false);
+  assert.equal(obtivel(novo(), 'espada_ferro'), true);
+  const g = novo(1, (s) => { s.rep = repParaNivel(40); });
+  for (const adv of g.data.listas.aventureiros) {
+    for (const it of itensPedidos(g, adv)) assert.ok(obtivel(g, it.id), `${adv.id} pediria ${it.id}`);
+  }
+});

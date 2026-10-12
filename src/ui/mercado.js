@@ -1,7 +1,7 @@
 // Tela do Mercado: o depósito (o que você tem) e os fornecedores do dia, com preço e estoque que mudam à meia-noite.
 // A lógica está em core/market.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, txt, para, drawCard, createScroll, labelButton, wasDragged } from './ui.js';
+import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '../core/market.js';
@@ -75,7 +75,8 @@ export function createMercadoScreen({ game, toast, modal }) {
       lista.forEach((m, i) => {
         const x = 12 + (i % per) * cell;
         const yy = y + Math.floor(i / per) * 60;
-        const ic = iconSprite('material', m.id, 32);
+        const nomeM = game.data.materiais[m.id]?.nome ?? m.id;
+        const ic = iconeComNome('material', m.id, 32, () => toast(`${nomeM}: ${fmt(m.qtd)} no depósito`, C.dim), { w: 40, h: 52 });
         ic.position.set(x + (cell - 32) / 2 - 2, yy);
         const n = txt(`${fmt(m.qtd)}`, C.text, 12, true);
         n.position.set(x + (cell - n.width) / 2 - 2, yy + 34);
