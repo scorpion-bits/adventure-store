@@ -169,4 +169,4 @@ Recebido depois do plano. Conteúdo: `GUI` (painéis, molduras de madeira, perga
 
 - **Usar:** `GUI` e `Buttons` combinam com o visual quente (madeira + pergaminho). Entram no M11 como skin do `ui.js` via 9-slice (`NineSliceSprite`) pelo `assets.js`; até lá os cartões desenhados por código seguem funcionando.
 - **Não usar:** `Controller` (gamepad) e `Social Buttons` não têm função no jogo.
-- **Licença:** os zips **não trazem arquivo de licença**. Preciso do link/termos da página de origem para o `CREDITS.md` e para decidir se os PNGs podem ir ao repo (mesma regra do pack de ícones: pasta original fora do git, só o atlas usado).
+- **Licença:** confirmada pelo autor (PaperHatLizard, página do pack no itch.io, resposta a uma pergunta sobre uso comercial): qualquer asset do pack pode ser usado em projetos comerciais; crédito não é obrigatório, mas ele pede que ninguém diga que fez a arte. Vai no `CREDITS.md` com o link da página. A resposta fala de uso no jogo, não de redistribuir os arquivos, então a regra segue a mesma: pasta original fora do git, só o atlas usado entra no repositório.
