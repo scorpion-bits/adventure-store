@@ -46,7 +46,7 @@ function volumeRow(w, label, key, after) {
   return row;
 }
 
-export function settingsContent(scroll, w) {
+export function settingsContent(scroll, w, { onReset } = {}) {
   scroll.add(toggleRow(w, 'Efeitos sonoros', 'sound', () => applyVolume()), ROW_H);
   scroll.add(volumeRow(w, 'Volume dos efeitos', 'volume', () => applyVolume()), ROW_H);
   if (hasMusic()) {
@@ -55,6 +55,20 @@ export function settingsContent(scroll, w) {
   }
   scroll.add(toggleRow(w, 'Animações', 'motion'), ROW_H);
   scroll.add(toggleRow(w, 'Vibração (celular)', 'haptics'), ROW_H);
+
+  if (onReset) {
+    // apagar o progresso pede dois toques
+    const btn = labelButton('Apagar progresso', w, 48, { tint: C.bad });
+    let armed = false;
+    btn.tap(() => {
+      if (!armed) {
+        armed = true;
+        btn.label.text = 'Tem certeza? Toque de novo';
+        setTimeout(() => { armed = false; if (!btn.destroyed) btn.label.text = 'Apagar progresso'; }, 3500);
+      } else onReset();
+    });
+    scroll.add(btn, 48);
+  }
 
   const about = new Container();
   const t = txt(`Loja do Aventureiro · Scorpion Bits · v${__APP_VERSION__}`, C.faint, 12);

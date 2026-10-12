@@ -12,6 +12,10 @@ import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
 import { unlockAudio, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
+import { createGame, diaDeJogo } from './core/game.js';
+import { loadState, saveState, clearSave } from './core/save.js';
+import { createClock } from './core/time.js';
+import { initAssets } from './assets.js';
 
 const BACK_INSET = 46;   // espaço do botão "voltar ao site" no canto superior esquerdo
 
@@ -44,6 +48,18 @@ async function start() {
     resolution: Math.min(window.devicePixelRatio || 1, 3),
   });
   document.body.appendChild(app.canvas);
+  initAssets(app);
+
+  // jogo: carrega o save (ou começa um novo) e liga o relógio
+  const storage = (() => { try { return window.localStorage; } catch { return null; } })();
+  const { state, origem } = loadState(storage);
+  const clock = createClock();
+  const game = createGame({ state, clock });
+  game.verificarDia();
+  // ao apagar o progresso o salvamento é bloqueado: senão o `pagehide` da recarga gravaria tudo de novo
+  let apagando = false;
+  const guardar = () => (apagando ? false : saveState(storage, game.state, clock.now()));
+  const apagarProgresso = () => { apagando = true; clearSave(storage); location.reload(); };
 
   // camadas, de baixo para cima
   const screensLayer = new Container();
@@ -74,7 +90,10 @@ async function start() {
 
   function openSettings() {
     sfx.tap();
-    modal.open({ title: 'Configurações', build: settingsContent });
+    modal.open({
+      title: 'Configurações',
+      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso }),
+    });
   }
 
   function layout() {
@@ -87,12 +106,25 @@ async function start() {
     modal.layout({ w: L.w, h: L.h });
   }
 
-  topbar.set({ gold: 100, repLevel: 1, repPct: 0, day: 1 });
+  const atualizarTopo = () => topbar.set({
+    gold: game.state.ouro, repLevel: game.nivel(), repPct: game.progressoNivel(), day: diaDeJogo(game.state),
+  });
+  game.on('ouro', atualizarTopo);
+  game.on('rep', atualizarTopo);
+  game.on('dia', atualizarTopo);
+  atualizarTopo();
   layout();
   app.renderer.on('resize', layout);
   selectTab(0, { silent: true });
 
+  // salva a cada 10 s, ao esconder a aba e ao fechar a página
+  setInterval(guardar, 10_000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) guardar(); });
+  window.addEventListener('pagehide', guardar);
+  game.on('nivel', (n) => { toasts.show(`Reputação nível ${n}!`, 0xc79cf0); sfx.levelUp(); });
+
   app.ticker.add((t) => {
+    game.tick(t.deltaMS);
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);
   });
@@ -117,6 +149,15 @@ async function start() {
     window.__loja = {
       ready: true,
       app,
+      game,
+      origem,
+      state: () => game.state,
+      give: (n) => game.ganharOuro(n),
+      addRep: (n) => game.ganharRep(n),
+      save: guardar,
+      // vai para uma data (AAAA-MM-DD), ao meio-dia, e deixa o jogo perceber a virada do dia
+      setDay: (key) => { const [y, m, d] = key.split('-').map(Number); clock.set(new Date(y, m - 1, d, 12).getTime()); game.verificarDia(); },
+      reset: apagarProgresso,
       layout: () => L,
       mode: () => L.mode,
       tab: () => TABS[active].id,

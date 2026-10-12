@@ -4,8 +4,9 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M0 (esqueleto)**. Há topo, cinco abas, janela de configurações, sons e layout
-> responsivo; as telas ainda são provisórias. As etapas seguintes estão no plano.
+> Estado atual: **M1 (núcleo e dados)**. Há topo, cinco abas, configurações, sons, layout responsivo,
+> save com migração, formato definitivo dos dados e validador; as telas ainda são provisórias.
+> As próximas etapas estão no plano.
 
 ## Rodar localmente
 
@@ -19,9 +20,10 @@ Em modo de desenvolvimento existe o objeto `window.__loja` (só em dev) com atal
 ## Testes
 
 ```bash
-npm run test:unit    # lógica pura (layout, formatação...), roda no Node
+npm run validate     # confere os arquivos de dados (ids, referências); `-- --metas` cobra as metas de conteúdo
+npm run test:unit    # lógica pura (núcleo, save, dados, layout...), roda no Node
 npm run test:e2e     # jogo no Chromium com GL por software (Playwright)
-npm test             # os dois
+npm test             # os três
 ```
 
 As capturas de tela dos testes ficam em `tests/out/shots/` (fora do git). No container de desenvolvimento
@@ -45,8 +47,34 @@ classe do Pixi, exporte-a nesse arquivo também.
 | `src/ui/` | Componentes (cartões, botões, listas roláveis com toque, interruptores, janela), tema, animações, layout responsivo, telas |
 | `src/audio/` | Efeitos sintetizados (Web Audio) e música opcional |
 | `src/data/` | Conteúdo do jogo (itens, receitas, aventureiros...). É aqui que se adiciona conteúdo, sem mexer no código |
-| `src/core/` | Lógica pura, sem Pixi (chega no M1) |
+| `src/core/` | Lógica pura, sem Pixi: estado, save, sorteios com semente, relógio/calendário, economia, o `game` |
+| `src/assets.js` | Manifesto de sprites: ícones do atlas, ou provisórios desenhados por código |
 | `tests/` | Testes de lógica (Node) e do jogo (Playwright) |
+
+### Adicionar conteúdo
+
+Tudo fica em `src/data/`; cada arquivo começa com um comentário explicando os campos. Basta acrescentar uma
+entrada na lista e rodar `npm run validate`, que acusa id repetido, categoria/material inexistente, falas
+faltando etc. Exemplo, um item novo em `itens.js`:
+
+```js
+{ id: 'machado_ferro', nome: 'Machado de ferro', cat: 'armas', raridade: 'comum', valor: 38 },
+```
+
+e a receita dele em `receitas.js`:
+
+```js
+{ id: 'r_machado_ferro', item: 'machado_ferro', oficio: 'ferraria', nivel: 1, tempo: 80, materiais: { barra_ferro: 2, madeira: 1 } },
+```
+
+Os números de balanceamento (preços, qualidades, temperamentos, reputação) ficam em `src/data/meta.js`.
+
+### Save
+
+O progresso fica no `localStorage` (`scorpion-bits-loja-v1`), salvo a cada 10 s e ao sair da página. Para
+criar um campo novo, acrescente-o em `src/core/state.js` com um valor padrão: saves antigos são completados
+sozinhos (`withDefaults`), nunca quebram. Mudança que precisa transformar dados antigos entra em `MIGRACOES`
+(`src/core/save.js`).
 
 ### Layout responsivo
 
