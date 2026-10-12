@@ -1,8 +1,9 @@
 // Conteúdo da janela de configurações.
 import { Container, Graphics } from 'pixi.js';
-import { C, txt, drawCard, makeToggle, labelButton } from './ui.js';
+import { C, txt, para, drawCard, makeToggle, labelButton } from './ui.js';
 import { settings, setSetting } from '../settings.js';
 import { applyVolume, sfx } from '../audio/sfx.js';
+import { emApp, ehIOS, podeInstalar, instalar } from '../pwa.js';
 import { startMusic, stopMusic, updateMusicVolume, hasMusic } from '../audio/music.js';
 
 const ROW_H = 56;
@@ -55,6 +56,18 @@ export function settingsContent(scroll, w, { onReset, onTutorial } = {}) {
   }
   scroll.add(toggleRow(w, 'Animações', 'motion'), ROW_H);
   scroll.add(toggleRow(w, 'Vibração (celular)', 'haptics'), ROW_H);
+
+  // instalar como app (só no navegador; já instalado não aparece)
+  if (!emApp()) {
+    if (podeInstalar()) {
+      const inst = labelButton('Instalar o app', w, 48, { tint: C.good });
+      inst.tap(() => { instalar(); });
+      scroll.add(inst, 48);
+    } else if (ehIOS()) {
+      const dica = para('Para instalar no iPhone ou iPad: toque em Compartilhar e depois em "Adicionar à Tela de Início".', C.dim, 13, w);
+      scroll.add(dica, dica.height + 6);
+    }
+  }
 
   if (onTutorial) {
     const rev = labelButton('Rever o tutorial', w, 48, { tint: C.accent });
