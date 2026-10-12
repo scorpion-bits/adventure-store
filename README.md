@@ -137,6 +137,8 @@ por causa das licenças); só o atlas gerado a partir deles entra no repositóri
 
 ### Jogar pelo GitHub Pages
 
-O workflow `.github/workflows/pages.yml` compila (`npm run build`) e publica a cada push na `main` **e** na branch de desenvolvimento, para jogar antes de subir para o site.
+O workflow `.github/workflows/pages.yml` compila (`npm run build`) e publica a cada push na `main` (e pode ser rodado à mão em *Actions*).
 Uso único: *Settings → Pages → Source = GitHub Actions*. O endereço fica em `https://<organização>.github.io/adventure-store/` (ou no domínio próprio da organização).
-Se o deploy for recusado por regra de ambiente: *Settings → Environments → github-pages → Deployment branches* e permita a branch.
+O ambiente `github-pages` só aceita a `main`, então branches de desenvolvimento não publicam.
+
+Os testes (`.github/workflows/test.yml`) rodam em todo pull request e em push na `main`, com uma nova tentativa automática para testes lentos.
