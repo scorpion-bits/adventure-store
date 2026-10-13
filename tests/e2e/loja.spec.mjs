@@ -128,3 +128,55 @@ test.describe('desktop', () => {
     expect(errors).toEqual([]);
   });
 });
+
+test.describe('prateleira e clientes na cena', () => {
+  test.use({ viewport: VIEWPORTS.portrait });
+
+  async function encher(page, tipos) {
+    await page.evaluate((n) => {
+      const L = window.__loja;
+      L.clearQueue();
+      Object.keys(L.game.state.estoque).forEach((k) => delete L.game.state.estoque[k]);
+      Object.keys(L.game.data.itens).slice(0, n).forEach((id) => L.giveItem(id, 1, 2));
+      L.addClient('aprendiz_guerreiro');
+      L.addClient('arqueira_novata');
+      L.loja.renderAgora();
+    }, tipos);
+    await page.waitForFunction(() => window.__loja.loja.pronta(), null, { timeout: 10_000 });
+  }
+
+  test('prateleira cheia vira uma fileira que se arrasta para o lado', async ({ page }) => {
+    const errors = await openGame(page);
+    await encher(page, 5);
+    expect((await page.evaluate(() => window.__loja.loja.prateleira())).maxX, 'poucos itens cabem sem rolar').toBe(0);
+    await encher(page, 30);
+    const antes = await page.evaluate(() => window.__loja.loja.prateleira());
+    expect(antes.maxX).toBeGreaterThan(200);
+    expect(antes.x).toBe(0);
+    await page.screenshot({ path: shotPath('prateleira-cheia') });
+    const c = await page.evaluate(() => window.__loja.loja.prateleiraCentro());
+    await page.mouse.move(c.x + 100, c.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(c.x + 100 - i * 20, c.y + 1);
+    await page.mouse.up();
+    await quadros(page, 3);
+    const depois = await page.evaluate(() => window.__loja.loja.prateleira());
+    expect(depois.x, 'arrastar para a esquerda mostra os itens da direita').toBeGreaterThan(100);
+    await page.screenshot({ path: shotPath('prateleira-rolada') });
+    // um redesenho (chegou cliente, vendeu...) não joga a prateleira de volta ao começo
+    await page.evaluate(() => { window.__loja.loja.renderAgora(); });
+    await quadros(page, 3);
+    expect((await page.evaluate(() => window.__loja.loja.prateleira())).x).toBeGreaterThanOrEqual(depois.x - 1);
+    expect(errors).toEqual([]);
+  });
+
+  test('o cliente da vez aparece grande, em múltiplo inteiro do retrato', async ({ page }) => {
+    const errors = await openGame(page);
+    await encher(page, 6);
+    const a = await page.evaluate(() => window.__loja.loja.filaCentro(0));
+    const b = await page.evaluate(() => window.__loja.loja.filaCentro(1));
+    expect(a && b).toBeTruthy();
+    expect(a.y, 'o da vez fica mais alto (maior) que o de trás').toBeLessThan(b.y);
+    expect(errors).toEqual([]);
+  });
+});
