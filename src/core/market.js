@@ -23,9 +23,14 @@ function garantirDia(game) {
   return m;
 }
 
-// O estoque do dia chega aos poucos: uma parte logo cedo e o resto em horários fixos (hora local do aparelho).
+// O estoque do dia chega aos poucos: uma parte logo à meia-noite e mais a cada 3 horas, até completar às 21h (hora local do aparelho).
 // `f` = fração do estoque do dia já liberada a partir de `hora`.
-export const LIBERACOES = [{ hora: 0, f: 0.4 }, { hora: 8, f: 0.6 }, { hora: 14, f: 0.8 }, { hora: 20, f: 1 }];
+export const INTERVALO_ESTOQUE_H = 3;
+const PARTES = 24 / INTERVALO_ESTOQUE_H;
+export const LIBERACOES = Array.from({ length: PARTES }, (_, i) => ({
+  hora: i * INTERVALO_ESTOQUE_H,
+  f: Math.round((0.3 + (0.7 * i) / (PARTES - 1)) * 1000) / 1000,
+}));
 // depois que o estoque liberado acaba, dá para comprar mais por `URGENTE.preco`x o preço, até `URGENTE.fracao` do estoque do dia
 export const URGENTE = { preco: 2, fracao: 0.3 };
 

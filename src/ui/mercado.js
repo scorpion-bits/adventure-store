@@ -4,7 +4,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
 import { iconSprite } from '../assets.js';
-import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, LIBERACOES } from '../core/market.js';
+import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -198,8 +198,7 @@ export function createMercadoScreen({ game, toast, modal }) {
     } else {
       const dep = cartaoDeposito(w);
       scroll.add(dep.c, dep.h);
-      const horas = LIBERACOES.filter((l) => l.hora > 0).map((l) => `${l.hora}h`).join(', ');
-      const aviso = para(`O estoque do dia chega aos poucos (às ${horas}, horário do seu aparelho) e o preço muda à meia-noite. Acabou? A compra urgente custa o dobro.`, C.faint, 11, w);
+      const aviso = para(`O estoque chega aos poucos, a cada ${INTERVALO_ESTOQUE_H} horas (horário do seu aparelho), e o preço muda à meia-noite. Acabou? A compra urgente custa o dobro.`, C.faint, 11, w);
       scroll.add(aviso, aviso.height);
 
       const todos = game.data.listas.fornecedores;

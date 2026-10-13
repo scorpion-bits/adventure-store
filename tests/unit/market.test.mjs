@@ -119,10 +119,12 @@ test('um fornecedor que vende item pronto põe na prateleira', () => {
 // ---------- estoque que chega aos poucos e compra urgente ----------
 test('o estoque do dia é liberado em partes ao longo do dia e nunca passa do total', () => {
   const horas = LIBERACOES.map((l) => l.hora);
-  assert.deepEqual(horas, [...horas].sort((a, b) => a - b));
+  assert.deepEqual(horas, [0, 3, 6, 9, 12, 15, 18, 21], 'a cada 3 horas');
+  assert.equal(LIBERACOES[0].f, 0.3);
   assert.equal(LIBERACOES.at(-1).f, 1);
+  assert.deepEqual(LIBERACOES.map((l) => l.f), [...LIBERACOES.map((l) => l.f)].sort((a, b) => a - b), 'só cresce');
   let antes = 0;
-  for (const h of [1, 9, 15, 21]) {
+  for (const h of [1, 4, 9, 15, 21]) {
     const { game } = novo([2026, 10, 12], undefined);
     game.clock.set(dia(2026, 10, 12, h));
     const o = ofertas(game, minerio)[0];
@@ -133,10 +135,13 @@ test('o estoque do dia é liberado em partes ao longo do dia e nunca passa do to
   }
   const cedo = novo().game;
   cedo.clock.set(dia(2026, 10, 12, 1));
-  assert.deepEqual(liberacaoAgora(cedo), { f: 0.4, proximaHora: 8 });
+  assert.deepEqual(liberacaoAgora(cedo), { f: 0.3, proximaHora: 3 });
   const noite = novo().game;
   noite.clock.set(dia(2026, 10, 12, 22));
   assert.deepEqual(liberacaoAgora(noite), { f: 1, proximaHora: null });
+  const tarde = novo().game;
+  tarde.clock.set(dia(2026, 10, 12, 14));
+  assert.deepEqual(liberacaoAgora(tarde), { f: 0.7, proximaHora: 15 });
 });
 
 test('quem não comprou guarda o estoque: o liberado soma durante o dia', () => {

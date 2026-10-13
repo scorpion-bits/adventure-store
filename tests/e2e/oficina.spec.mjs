@@ -21,33 +21,45 @@ const clicar = async (page, nome) => {
 test.describe('oficina (retrato)', () => {
   test.use({ viewport: VIEWPORTS.portrait });
 
-  test('filtros das receitas: por categoria, por nível e "dá para fazer"', async ({ page }) => {
+  test('filtro das receitas: um botão que abre as opções (categoria, nível e "dá para fazer") e fecha ao escolher', async ({ page }) => {
     const errors = await openGame(page);
     await abrirOficina(page);
-    const receitas = () => page.evaluate(() => window.__loja.oficina.nomes().filter((n) => n.startsWith('produzir:')).length);
-    const nomesFiltro = () => page.evaluate(() => window.__loja.oficina.nomes().filter((n) => n.startsWith('filtro:')));
-    const filtros = await nomesFiltro();
-    expect(filtros).toEqual(expect.arrayContaining(['filtro:todas', 'filtro:fazer', 'filtro:cat:armas', 'filtro:cat:armaduras', 'filtro:cat:ferramentas', 'filtro:niv:1-3']));
-    await page.screenshot({ path: shotPath('portrait-oficina-filtros') });
+    const nomes = () => page.evaluate(() => window.__loja.oficina.nomes());
+    const receitas = async () => (await nomes()).filter((n) => n.startsWith('produzir:')).length;
+    // fechado: só o botão "filtro", sem as opções
+    let ns = await nomes();
+    expect(ns).toContain('filtro');
+    expect(ns.filter((n) => n.startsWith('filtro:'))).toEqual([]);
+    await page.screenshot({ path: shotPath('portrait-oficina-filtro-fechado') });
     const todas = await page.evaluate(() => window.__loja.game.data.listas.receitas.filter((r) => r.oficio === 'ferraria').length);
-    // categoria: só as receitas de armas aparecem (a lista é longa, então conta pelo estado da tela e não pelos botões já desenhados)
+    // tocar abre as opções
+    await clicar(page, 'filtro');
+    ns = await nomes();
+    expect(ns).toEqual(expect.arrayContaining(['filtro:todas', 'filtro:fazer', 'filtro:cat:armas', 'filtro:cat:armaduras', 'filtro:cat:ferramentas', 'filtro:niv:1-3']));
+    await page.screenshot({ path: shotPath('portrait-oficina-filtro-aberto') });
+    // escolher uma opção filtra e fecha a lista de opções
     await clicar(page, 'filtro:cat:armas');
+    ns = await nomes();
+    expect(ns.filter((n) => n.startsWith('filtro:'))).toEqual([]);
     const armas = await page.evaluate(() => window.__loja.game.data.listas.receitas.filter((r) => r.oficio === 'ferraria' && window.__loja.game.data.itens[r.item].cat === 'armas').length);
     expect(armas).toBeGreaterThan(0);
     expect(armas).toBeLessThan(todas);
     expect(await receitas()).toBe(armas);
-    // "dá para fazer": sem materiais não há nada, e a tela explica
+    // "dá para fazer": sem materiais não há nada
+    await clicar(page, 'filtro');
     await clicar(page, 'filtro:fazer');
     expect(await receitas()).toBe(0);
     // com os materiais da adaga ela aparece
     await page.evaluate(() => { window.__loja.giveMaterial('cobre', 2); window.__loja.giveMaterial('carvao', 1); });
     await pronta(page);
-    expect(await page.evaluate(() => window.__loja.oficina.nomes().filter((n) => n.startsWith('produzir:')))).toEqual(['produzir:r_adaga_bronze']);
+    expect((await nomes()).filter((n) => n.startsWith('produzir:'))).toEqual(['produzir:r_adaga_bronze']);
     await page.screenshot({ path: shotPath('portrait-oficina-fazer') });
-    // por nível
+    // por nível, e de volta para "Todas"
+    await clicar(page, 'filtro');
     await clicar(page, 'filtro:niv:4-6');
     const niv = await page.evaluate(() => window.__loja.game.data.listas.receitas.filter((r) => r.oficio === 'ferraria' && r.nivel >= 4 && r.nivel <= 6).length);
     expect(await receitas()).toBe(niv);
+    await clicar(page, 'filtro');
     await clicar(page, 'filtro:todas');
     expect(await receitas()).toBe(todas);
     expect(errors).toEqual([]);
