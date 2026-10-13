@@ -234,6 +234,18 @@ export function validar(data = DATA) {
   // cada categoria precisa ter ao menos um item (senão "pedido por categoria" trava)
   for (const c of meta.categorias) exige(listas.itens.some((i) => i.cat === c.id), `categoria "${c.id}" não tem nenhum item`);
 
+  // retratos: todo aventureiro tem o seu (do pack), sem repetir, e só existe retrato para quem existe
+  const usadosRetrato = new Map();
+  for (const a of listas.aventureiros) {
+    exige(data.retratos[a.id], `aventureiro ${a.id}: sem retrato em data/retratos.js`);
+    const n = data.retratos[a.id];
+    if (n) {
+      exige(!usadosRetrato.has(n), `retrato ${n} usado por ${usadosRetrato.get(n)} e por ${a.id}`);
+      usadosRetrato.set(n, a.id);
+    }
+  }
+  for (const id of Object.keys(data.retratos)) exige(data.aventureiros[id], `data/retratos.js: "${id}" não é um aventureiro`);
+
   // ---------- metas de conteúdo ----------
   const m = meta.metas;
   const contagens = {
@@ -244,8 +256,8 @@ export function validar(data = DATA) {
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.filter((a) => !a.lendario).length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)
-    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 5],
-    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 6],
+    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 3],
+    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 3],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
     conquistas: [listas.conquistas.length, m.conquistas],

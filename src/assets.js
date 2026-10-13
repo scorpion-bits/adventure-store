@@ -11,11 +11,14 @@ import ATLAS_32_URL from './assets/atlas/icones-32.png';
 import ATLAS_64_URL from './assets/atlas/icones-64.png';
 import GUI from './assets/gui/gui.json';
 import GUI_URL from './assets/gui/gui.png';
+import RETRATOS_ATLAS from './assets/retratos/retratos.json';
+import RETRATOS_URL from './assets/retratos/retratos.png';
 
 let renderer = null;
 const cache = new Map();
 // Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
 const atlas = { 32: new Map(), 64: new Map() };
+const retratosArte = new Map();       // id do aventureiro -> Texture (pack de retratos, 32 px)
 
 // Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
 const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
@@ -34,7 +37,12 @@ export function initAssets(app) {
 // Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
 export async function carregarAtlas() {
   try {
-    const [t32, t64] = await Promise.all([Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL)]);
+    const [t32, t64, tRet] = await Promise.all([Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL), Assets.load(RETRATOS_URL).catch(() => null)]);
+    if (tRet) {
+      tRet.source.scaleMode = 'nearest';
+      const T = RETRATOS_ATLAS.tamanho;
+      for (const [id, [cx, cy]] of Object.entries(RETRATOS_ATLAS.quadros)) retratosArte.set(id, new Texture({ source: tRet.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
+    }
     for (const [tam, tex] of [[32, t32], [64, t64]]) {
       tex.source.scaleMode = 'nearest';                     // pixel-art: sem suavizar
       for (const [nome, [cx, cy]] of Object.entries(ATLAS.quadros)) {
@@ -125,6 +133,9 @@ export function guiPainel(nome, w, h, escala = 2, { repetir = false } = {}) {
   return cont;
 }
 
+// O retrato do aventureiro vem do pack (retratos.json); sem ele, do desenho por código.
+export const retratoDoPack = (advId) => retratosArte.has(advId);
+
 // De onde vem a imagem de um item/material: 'atlas' (arte do pack) ou 'provisorio' (desenhada por código).
 export const origemTextura = (id) => (DATA.icones[id] && quadroDoAtlas(DATA.icones[id]) ? 'atlas' : 'provisorio');
 export const quadrosNoAtlas = () => atlas[32].size;
@@ -181,6 +192,8 @@ const ESCALA_RETRATO = 4;
 export function portraitTexture(advId) {
   const key = `retrato:${advId}`;
   if (cache.has(key)) return cache.get(key);
+  const pack = retratosArte.get(advId);
+  if (pack) { cache.set(key, pack); return pack; }
   const arte = DATA.icones[`retrato_${advId}`] ? quadroDoAtlas(DATA.icones[`retrato_${advId}`]) : null;
   if (arte) { cache.set(key, arte); return arte; }
   if (!renderer) return Texture.EMPTY;

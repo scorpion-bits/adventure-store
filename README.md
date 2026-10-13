@@ -5,7 +5,7 @@ para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/)
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
 > Estado atual: **mini-jogo de memória** (Mercado → Mini-jogo, ganha um pouco de material), estoque dos fornecedores a cada 3 h com compra urgente, mais batedores cedo e filtro de receitas na Oficina. Antes, M12 (balanceamento): simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
-> 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
+> 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 30 aventureiros (cada um com o seu retrato do pack: humanos, orcs, sapos, slimes, golens...) em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
 > aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
@@ -80,6 +80,10 @@ Os números de balanceamento (preços, qualidades, temperamentos, reputação) f
 **Ícones:** cada item/material aponta para um ícone do pack em `src/data/icones.js` (`id: 'fbNN'`, onde NN é o
 número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o pack original em `assets-src/raven`,
 fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
+
+**Retratos dos aventureiros:** vêm do pack "Free 39 Portraits Pixel Art" (CraftPix, 32×32). O mapa aventureiro → retrato fica em `src/data/retratos.js`
+(o validador exige um retrato por aventureiro, sem repetir); `npm run pack:retratos` (pack original em `assets-src/retratos`, fora do git) gera o atlas em
+`src/assets/retratos/`. Quem ficar sem retrato usa o retrato desenhado por código (`src/ui/portrait-art.js`).
 
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,

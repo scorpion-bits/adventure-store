@@ -1,0 +1,167 @@
+{
+ "tamanho": 32,
+ "colunas": 8,
+ "linhas": 5,
+ "quadros": {
+  "aprendiz_guerreiro": [
+   0,
+   0
+  ],
+  "arqueira_novata": [
+   1,
+   0
+  ],
+  "maga_estudante": [
+   2,
+   0
+  ],
+  "ladino_sorrateiro": [
+   3,
+   0
+  ],
+  "clerigo_viajante": [
+   4,
+   0
+  ],
+  "bardo_cantor": [
+   5,
+   0
+  ],
+  "cacador_lobos": [
+   6,
+   0
+  ],
+  "alquimista_errante": [
+   7,
+   0
+  ],
+  "soldado_guarda": [
+   0,
+   1
+  ],
+  "batedor_carteira": [
+   1,
+   1
+  ],
+  "novica_templo": [
+   2,
+   1
+  ],
+  "patrulheira_bosque": [
+   3,
+   1
+  ],
+  "mago_bosque": [
+   4,
+   1
+  ],
+  "ladino_copa": [
+   5,
+   1
+  ],
+  "druida": [
+   6,
+   1
+  ],
+  "trovador": [
+   7,
+   1
+  ],
+  "rastreador": [
+   0,
+   2
+  ],
+  "herbalista": [
+   1,
+   2
+  ],
+  "cavaleiro_errante": [
+   2,
+   2
+  ],
+  "mestre_runas": [
+   3,
+   2
+  ],
+  "atirador_montanha": [
+   4,
+   2
+  ],
+  "javali_berserker": [
+   5,
+   2
+  ],
+  "contrabandista": [
+   6,
+   2
+  ],
+  "fundidor": [
+   7,
+   2
+  ],
+  "gladiador_cinzas": [
+   0,
+   3
+  ],
+  "sacerdote_sol": [
+   1,
+   3
+  ],
+  "alquimista_deserto": [
+   2,
+   3
+  ],
+  "bruxo_brejo": [
+   3,
+   3
+  ],
+  "poeta_brejo": [
+   4,
+   3
+  ],
+  "campeao_arena": [
+   5,
+   3
+  ],
+  "ser_aldric": [
+   6,
+   3
+  ],
+  "lyra_seda": [
+   7,
+   3
+  ],
+  "merlindo": [
+   0,
+   4
+  ],
+  "irmao_anselmo": [
+   1,
+   4
+  ],
+  "selene_lua": [
+   2,
+   4
+  ],
+  "thorin_rubro": [
+   3,
+   4
+  ],
+  "zahir": [
+   4,
+   4
+  ],
+  "morwen": [
+   5,
+   4
+  ],
+  "kael": [
+   6,
+   4
+  ],
+  "rainha_isolde": [
+   7,
+   4
+  ]
+ }
+}

@@ -14,11 +14,11 @@ const jogoNoNivel = (nivel, seed = 1) => {
   return createGame({ state, clock: createClock(new Date(2026, 7, 4, 12).getTime()), rng: createRng(seed) });
 };
 
-test('são 40+ tipos em 8 classes e 6 regiões, com variedade mínima', () => {
+test('são 30 tipos comuns (um por retrato do pack) em 8 classes e 6 regiões, com variedade mínima', () => {
   const lista = DATA.listas.aventureiros.filter((a) => !a.lendario);
-  assert.ok(lista.length >= 40);
-  for (const c of DATA.meta.classes) assert.ok(lista.filter((a) => a.classe === c.id).length >= 5, c.id);
-  for (const r of DATA.listas.regioes) assert.ok(lista.filter((a) => a.regiao === r.id).length >= 6, r.id);
+  assert.ok(lista.length >= 30);
+  for (const c of DATA.meta.classes) assert.ok(lista.filter((a) => a.classe === c.id).length >= 2, c.id);
+  for (const r of DATA.listas.regioes) assert.ok(lista.filter((a) => a.regiao === r.id).length >= 1, r.id);
   for (const t of DATA.meta.temperamentos) assert.ok(lista.filter((a) => a.temperamento === t.id).length >= 3, t.id);
 });
 

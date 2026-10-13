@@ -172,7 +172,7 @@ export const META = {
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
-    itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
+    itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 30, lendarios: 10,
     regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80, heranca: 10,
   },
 };

@@ -15,6 +15,7 @@ import { SAZONAIS } from './sazonais.js';
 import { DIARIO, SEMANAL } from './retencao.js';
 import { CONQUISTAS } from './conquistas.js';
 import { HERANCA, CIDADES } from './heranca.js';
+import { RETRATOS } from './retratos.js';
 import { ICONES } from './icones.js';
 
 const indexar = (lista) => Object.fromEntries(lista.map((x) => [x.id, x]));
@@ -39,6 +40,7 @@ export const DATA = {
   diario: DIARIO,
   semanal: SEMANAL,
   icones: ICONES,
+  retratos: RETRATOS,
   // listas na ordem em que foram escritas (para sorteios e telas)
   listas: {
     materiais: MATERIAIS, itens: ITENS, receitas: RECEITAS,
