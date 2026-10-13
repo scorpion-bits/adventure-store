@@ -2,7 +2,7 @@
 // (cliente, o que oferecer, os três preços). A lógica está em core/shop.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten, retanguloGlobal } from './ui.js';
-import { iconSprite, portraitSprite, guiPronto, guiSprite } from '../assets.js';
+import { iconSprite, portraitSprite, guiPronto, guiSprite, emoteSprite } from '../assets.js';
 import { tween, ease } from './anim.js';
 import { opcoes, avaliar, vender, dispensar, passarNaFrente, pedidoTexto, adventureiro, temperamentoDe } from '../core/shop.js';
 import { classe } from '../data/index.js';
@@ -98,11 +98,11 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     return e;
   }
   game.on('venda', (v) => {
-    const e = sair(v.cli, v.nivelPreco === 'barato' ? 'coracao' : 'estrela');
+    const e = sair(v.cli, v.nivelPreco === 'barato' ? 'coracao' : v.nivelPreco === 'caro' ? 'estrela' : 'sorriso');
     if (e && v.preco > 0) soltarMoedas(e, v.preco);
   });
-  game.on('recusa', (r) => { sair(r.cli, 'bravo'); });
-  game.on('dispensou', ({ cli }) => { sair(cli, 'suspiro'); });
+  game.on('recusa', (r) => { sair(r.cli, 'partido'); });
+  game.on('dispensou', ({ cli }) => { sair(cli, 'reticencias'); });
   game.on('saiu', ({ cli }) => { sair(cli, 'bravo', 0.3); });
 
   // moedinhas que saem do balcão e voam, em arco, até o contador de ouro do topo
@@ -121,29 +121,14 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     }
   }
 
-  // desenha o balãozinho de reação (coração, estrela, "!" ou reticências)
-  function desenharBolha(tipo) {
+  // balãozinho de reação: um emote do pack (veja scripts/pack-ninja.mjs para a numeração)
+  const EMOTE = { coracao: 27, sorriso: 11, estrela: 29, partido: 26, bravo: 19, reticencias: 20 };
+  const desenharBolha = (tipo) => {
     const c = new Container();
-    const g = new Graphics();
-    g.roundRect(0, 0, 22, 20, 6).fill({ color: 0x1b130f, alpha: 0.88 }).stroke({ width: 1, color: 0xffffff, alpha: 0.25 });
-    g.poly([8, 19, 11, 24, 14, 19]).fill({ color: 0x1b130f, alpha: 0.88 });
-    const ic = new Graphics();
-    if (tipo === 'coracao') {
-      ic.circle(8.6, 8, 3).circle(13.4, 8, 3).fill(0xff6f8b);
-      ic.poly([5.7, 9.4, 11, 15, 16.3, 9.4]).fill(0xff6f8b);
-    } else if (tipo === 'estrela') {
-      ic.star(11, 10, 5, 6.2, 2.9).fill(C.gold);
-    } else if (tipo === 'bravo') {
-      ic.roundRect(9.6, 3.5, 2.8, 8, 1.2).fill(C.bad);
-      ic.circle(11, 15, 1.7).fill(C.bad);
-    } else {
-      ic.circle(6, 10, 1.6).circle(11, 10, 1.6).circle(16, 10, 1.6).fill(C.dim);
-    }
-    c.addChild(g, ic);
-    c.scale.set(1.4);
+    c.addChild(emoteSprite(EMOTE[tipo] ?? EMOTE.reticencias, 3));
     c.eventMode = 'none';
     return c;
-  }
+  };
 
   // ---------- cena ----------
   function buildScene(w, h) {
@@ -244,9 +229,9 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     refs.saindo = [];
     const counterY = h - 34;
     const n = fila.length;
-    // os retratos de 32 px ficam nítidos em múltiplos inteiros: o cliente da vez é grande (96 ou 128) e os de trás têm 32
-    const big = Math.max(32, Math.floor(Math.min(h >= 280 ? 128 : 96, h - floorY - 20) / 32) * 32);
-    const small = 32;
+    // os retratos de 38 px ficam nítidos em múltiplos inteiros: o cliente da vez é grande (76, 114 ou 152) e os de trás têm 38
+    const big = Math.max(38, Math.floor(Math.min(h >= 280 ? 152 : 114, h - floorY - 20) / 38) * 38);
+    const small = 38;
     const step = n > 1 ? Math.min(small + 4, (w - 24 - big - 8) / (n - 1)) : 0;
     const naFila = new Set();
     fila.forEach((cli, i) => {
@@ -394,15 +379,15 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     const cls = classe(adv.classe);
     const c = new Container();
     const bg = new Graphics();
-    const p = portraitSprite(cli.adv, 64);
+    const p = portraitSprite(cli.adv, 76);
     p.position.set(12, 12);
     const nome = txt(adv.nome, C.text, 16, true);
-    nome.position.set(88, 12);
+    nome.position.set(100, 12);
     const lendaTxt = cli.lenda ? ` · Lenda, capítulo ${cli.lenda.cap + 1}` : '';
     const sub = txt(`${cls.nome} · ${temp.nome}${lendaTxt}`, cli.lenda ? C.gold : C.dim, 12);
-    sub.position.set(88, 12 + nome.height + 1);
+    sub.position.set(100, 12 + nome.height + 1);
     c.addChild(bg, p, nome, sub);
-    let y = Math.max(sub.y + sub.height + 6, 12 + 64 + 6);
+    let y = Math.max(sub.y + sub.height + 6, 12 + 76 + 6);
     if (cli.fala) {
       const f = para(`“${cli.fala}”`, C.dim, 13, w - 24);
       f.position.set(12, y);
@@ -680,7 +665,7 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     bolhas = bolhas.filter((b) => b.t < 1100);
     for (const r of refs.bolhas ?? []) {
       const b = r.b;
-      r.c.position.set(Math.round(b.cx - 15), Math.round(b.y - 34 - Math.min(10, b.t / 70)));
+      r.c.position.set(Math.round(b.cx - 21), Math.round(b.y - 40 - Math.min(10, b.t / 70)));
       r.c.alpha = b.t < 800 ? Math.min(1, b.t / 120) : Math.max(0, 1 - (b.t - 800) / 300);
     }
     for (let i = moedas.length - 1; i >= 0; i--) {

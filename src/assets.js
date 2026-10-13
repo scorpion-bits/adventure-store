@@ -13,12 +13,15 @@ import GUI_URL from './assets/gui/gui.png';
 import { retratoDe } from './data/retratos.js';
 import RETRATOS_ATLAS from './assets/retratos/retratos.json';
 import RETRATOS_URL from './assets/retratos/retratos.png';
+import EMOTES from './assets/emotes/emotes.json';
+import EMOTES_URL from './assets/emotes/emotes.png';
 
 let renderer = null;
 const cache = new Map();
 // Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
 const atlas = { 32: new Map(), 64: new Map() };
-const retratosArte = new Map();       // número do retrato -> Texture (pack de retratos, 32 px)
+const retratosArte = new Map();       // chave do retrato (ex.: c_Knight) -> Texture (pack Ninja Adventure, 38 px, fundo transparente)
+const emotesArte = new Map();         // número do emote (1 a 30) -> Texture (14x13)
 
 // Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
 const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
@@ -37,11 +40,19 @@ export function initAssets(app) {
 // Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
 export async function carregarAtlas() {
   try {
-    const [t32, t64, tRet] = await Promise.all([Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL), Assets.load(RETRATOS_URL).catch(() => null)]);
+    const [t32, t64, tRet, tEmo] = await Promise.all([
+      Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL),
+      Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null),
+    ]);
     if (tRet) {
       tRet.source.scaleMode = 'nearest';
       const T = RETRATOS_ATLAS.tamanho;
-      for (const [numero, [cx, cy]] of Object.entries(RETRATOS_ATLAS.quadros)) retratosArte.set(numero, new Texture({ source: tRet.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
+      for (const [chave, [cx, cy]] of Object.entries(RETRATOS_ATLAS.quadros)) retratosArte.set(chave, new Texture({ source: tRet.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
+    }
+    if (tEmo) {
+      tEmo.source.scaleMode = 'nearest';
+      const { largura: ew, altura: eh } = EMOTES;
+      for (const [n, [cx, cy]] of Object.entries(EMOTES.quadros)) emotesArte.set(Number(n), new Texture({ source: tEmo.source, frame: new Rectangle(cx * ew, cy * eh, ew, eh) }));
     }
     for (const [tam, tex] of [[32, t32], [64, t64]]) {
       tex.source.scaleMode = 'nearest';                     // pixel-art: sem suavizar
@@ -133,6 +144,14 @@ export function guiPainel(nome, w, h, escala = 2, { repetir = false } = {}) {
   return cont;
 }
 
+// Emote do pack (balão de emoção 14x13, nítido em escalas inteiras). `n`: 1 a 30 (veja scripts/pack-ninja.mjs). Sem o atlas, devolve um sprite vazio.
+export const emotesProntos = () => emotesArte.size > 0;
+export function emoteSprite(n, escala = 3) {
+  const s = new Sprite(emotesArte.get(n) ?? Texture.EMPTY);
+  s.scale.set(escala);
+  return s;
+}
+
 // O retrato do aventureiro vem do pack (retratos.json); sem ele, do desenho por código.
 export const retratoDoPack = (advId) => retratosArte.has(retratoDe(advId, [...retratosArte.keys()]));
 
@@ -187,12 +206,13 @@ export function iconSprite(tipo, id, size = 32) {
 
 // ---------- retratos de aventureiros ----------
 // Textura do retrato (pixel-art, "nearest"): o do pack mapeado em data/retratos.js ou, para quem não tem, um do pack escolhido pelo id.
+// Os retratos têm 38 px de arte: mostre-os em múltiplos inteiros (38, 76, 114, 152) para ficarem nítidos.
 // Só se o atlas não carregar aparece um quadrado simples com a inicial.
 export function portraitTexture(advId) {
   const key = `retrato:${advId}`;
   if (cache.has(key)) return cache.get(key);
-  const numero = retratoDe(advId, [...retratosArte.keys()].sort());
-  const pack = numero ? retratosArte.get(numero) : null;
+  const chave = retratoDe(advId, [...retratosArte.keys()].sort());
+  const pack = chave ? retratosArte.get(chave) : null;
   if (pack) { cache.set(key, pack); return pack; }
   if (!renderer) return Texture.EMPTY;
   const adv = DATA.aventureiros[advId];
@@ -201,7 +221,7 @@ export function portraitTexture(advId) {
   return tex;
 }
 
-export function portraitSprite(advId, size = 64) {
+export function portraitSprite(advId, size = 76) {
   const s = new Sprite(portraitTexture(advId));
   s.width = size;
   s.height = size;

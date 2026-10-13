@@ -1,6 +1,7 @@
 // Confere o conteúdo de src/data: ids únicos, referências válidas e metas de quantidade.
 // Uso:  npm run validate            -> só erros (referência quebrada, id repetido...)
 //       npm run validate -- --metas -> também falha se alguma meta de conteúdo não foi atingida
+import { readFileSync } from 'node:fs';
 import { DATA } from '../src/data/index.js';
 import { EFEITOS } from '../src/core/mods.js';
 import { TIPOS_DE_EFEITO } from '../src/core/events.js';
@@ -234,10 +235,13 @@ export function validar(data = DATA) {
   // cada categoria precisa ter ao menos um item (senão "pedido por categoria" trava)
   for (const c of meta.categorias) exige(listas.itens.some((i) => i.cat === c.id), `categoria "${c.id}" não tem nenhum item`);
 
-  // retratos: o mapa só pode apontar para aventureiros que existem e para arquivos do pack (Icons_NN); quem não está no mapa recebe um do pack
-  for (const [id, n] of Object.entries(data.retratos)) {
+  // retratos: o mapa só pode apontar para aventureiros que existem e para retratos que estão no atlas (gerado por `npm run pack:ninja`);
+  // quem não está no mapa recebe um do pack
+  const atlasRetratos = JSON.parse(readFileSync(new URL('../src/assets/retratos/retratos.json', import.meta.url), 'utf8'));
+  for (const [id, chave] of Object.entries(data.retratos)) {
     exige(data.aventureiros[id], `data/retratos.js: "${id}" não é um aventureiro`);
-    exige(/^\d{2}$/.test(n), `data/retratos.js: "${id}" tem o retrato "${n}" (esperava o número com 2 dígitos, ex.: "07")`);
+    exige(/^[cmba]_[A-Za-z0-9]+$/.test(chave), `data/retratos.js: "${id}" tem o retrato "${chave}" (esperava a chave do pack: c_, m_, b_ ou a_ + nome da pasta, ex.: "c_Knight")`);
+    exige(atlasRetratos.quadros[chave], `data/retratos.js: o retrato "${chave}" (${id}) não está no atlas: rode npm run pack:ninja`);
   }
 
   // ---------- metas de conteúdo ----------
@@ -250,8 +254,8 @@ export function validar(data = DATA) {
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.filter((a) => !a.lendario).length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)
-    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 3],
-    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 3],
+    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 8],
+    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 15],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
     conquistas: [listas.conquistas.length, m.conquistas],

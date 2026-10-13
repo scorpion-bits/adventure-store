@@ -61,6 +61,8 @@ export const CONQUISTAS = [
     [5, 'Rostos novos', 'Receba 5 tipos de aventureiro.'],
     [15, 'Casa de todos', 'Receba 15 tipos de aventureiro.'],
     [30, 'Taverna da cidade', 'Receba 30 tipos de aventureiro.'],
+    [70, 'Cidade em festa', 'Receba 70 tipos de aventureiro.'],
+    [110, 'Todos os reinos aqui', 'Receba 110 tipos de aventureiro.'],
     ['todos', 'Conheço todo mundo', 'Receba todos os tipos de aventureiro.'],
   ]),
   ...serie('lendasVistas', 60, [

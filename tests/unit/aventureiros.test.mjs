@@ -14,11 +14,11 @@ const jogoNoNivel = (nivel, seed = 1) => {
   return createGame({ state, clock: createClock(new Date(2026, 7, 4, 12).getTime()), rng: createRng(seed) });
 };
 
-test('são 30 tipos comuns (um por retrato do pack) em 8 classes e 6 regiões, com variedade mínima', () => {
+test('são mais de 130 tipos comuns (um por retrato do pack) em 8 classes e 6 regiões, com variedade em todas', () => {
   const lista = DATA.listas.aventureiros.filter((a) => !a.lendario);
-  assert.ok(lista.length >= 30);
-  for (const c of DATA.meta.classes) assert.ok(lista.filter((a) => a.classe === c.id).length >= 2, c.id);
-  for (const r of DATA.listas.regioes) assert.ok(lista.filter((a) => a.regiao === r.id).length >= 1, r.id);
+  assert.ok(lista.length >= 130);
+  for (const c of DATA.meta.classes) assert.ok(lista.filter((a) => a.classe === c.id).length >= 8, c.id);
+  for (const r of DATA.listas.regioes) assert.ok(lista.filter((a) => a.regiao === r.id).length >= 15, r.id);
   for (const t of DATA.meta.temperamentos) assert.ok(lista.filter((a) => a.temperamento === t.id).length >= 3, t.id);
 });
 
@@ -51,7 +51,7 @@ test('todo aventureiro comum consegue pedir algo no nível em que aparece', () =
   for (const a of DATA.listas.aventureiros.filter((x) => !x.lendario)) {
     const g = jogoNoNivel(Math.max(a.nivelRep, DATA.regioes[a.regiao].nivelRep));
     let pediu = false;
-    for (let i = 0; i < 400 && !pediu; i++) {
+    for (let i = 0; i < 12000 && !pediu; i++) {   // são muitos tipos: cada um aparece pouco, então sorteia bastante
       const c = gerarCliente(g);
       if (c.adv === a.id && c.pedido.tipo === 'item') pediu = true;
     }
