@@ -1,6 +1,6 @@
 // Tela da Loja: a cena (prateleiras com o estoque de verdade e a fila no balcão) e o atendimento
 // (cliente, o que oferecer, os três preços). A lógica está em core/shop.js; aqui só desenho e toques.
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, makeButton, wasDragged, lighten, retanguloGlobal } from './ui.js';
 import { iconSprite, portraitSprite, guiPronto, guiSprite } from '../assets.js';
 import { tween, ease } from './anim.js';
@@ -37,6 +37,10 @@ export function createLojaScreen({ game, toast }) {
   let quadros = 0;           // quadros desenhados desde o último render() (o Pixi só atualiza as posições de toque ao desenhar)
   let bars = [];             // barras de paciência atualizadas a cada quadro
   let tempos = [];           // textos de tempo restante dos bônus
+  let prateleiraX = 0;       // rolagem horizontal da prateleira (sobrevive aos redesenhos)
+  let prateleiraVel = 0;
+  let prateleiraSegurada = false;   // dedo na prateleira: sem inércia
+  let ultimoQuadro = 0;
   const refs = { precos: {}, fila: [], opcoes: [], frente: null, dispensar: null };
   const marcar = () => { dirty = true; };
 
@@ -77,51 +81,86 @@ export function createLojaScreen({ game, toast }) {
     refs.cena = { c, w, h };
     const bg = new Graphics();
     const cor = temaAtual(game).cores;
-    const floorY = Math.round(h * 0.5);
+    const floorY = 62;                     // a parede só tem a prateleira; o resto é palco dos clientes
     bg.roundRect(0, 0, w, h, 14).fill(cor.parede);
     bg.rect(0, floorY, w, h - floorY - 14).fill(cor.piso);
     bg.roundRect(0, h - 30, w, 30, 14).fill(cor.piso);
     bg.roundRect(0, 0, w, h, 14).stroke({ width: 1, color: 0xffffff, alpha: 0.09 });
     c.addChild(bg);
 
-    // prateleiras
+    // prateleira: uma fileira fina no alto; quando enche, arrasta-se para o lado (o cenário fica para os clientes)
     const slots = Object.entries(game.state.estoque).filter(([, q]) => q > 0);
-    const rows = floorY >= 110 ? 2 : 1;
-    const rowH = (floorY - 14) / rows;
-    const cols = Math.max(1, Math.floor((w - 24) / 36));
-    const cap = rows * cols;
-    const lista = slots.length > cap ? slots.slice(0, cap - 1) : slots;
-    for (let r = 0; r < rows; r++) {
-      const boardY = 10 + rowH * (r + 1) - 4;
-      const g = new Graphics();
-      g.roundRect(8, boardY, w - 16, 5, 2).fill(cor.prateleira);
-      g.rect(8, boardY + 4, w - 16, 2).fill({ color: 0x000000, alpha: 0.25 });
-      c.addChild(g);
-    }
-    lista.forEach(([chave, qtd], i) => {
-      const r = Math.floor(i / cols);
-      const col = i % cols;
+    const PASSO = 36;
+    const topo = 18;                       // abaixo do contador "Prateleiras x/y"
+    const tabuaY = topo + 28 + 4;
+    const larg = w - 16;                   // largura visível da prateleira
+    const total = 8 + slots.length * PASSO;
+    const maxX = Math.max(0, total - larg);
+    prateleiraX = Math.min(maxX, Math.max(0, prateleiraX));
+    const tabua = new Graphics();
+    c.addChild(tabua);
+    const itens = new Container();
+    const faixa = new Container();         // recebe o arrasto
+    faixa.eventMode = 'static';
+    faixa.hitArea = new Rectangle(8, 0, larg, tabuaY + 6);
+    faixa.cursor = maxX > 0 ? 'ew-resize' : 'default';
+    const mascara = new Graphics().rect(8, 0, larg, tabuaY + 6).fill(0xffffff);
+    itens.mask = mascara;
+    faixa.addChild(itens);
+    slots.forEach(([chave, qtd], i) => {
       const ic = iconSprite('item', chave.split(':')[0], 28);
-      ic.position.set(12 + col * 36, 10 + rowH * (r + 1) - 4 - 28);
-      c.addChild(ic);
+      ic.position.set(12 + i * PASSO, topo);
+      itens.addChild(ic);
       if (qtd > 1) {
         const q = txt(`${qtd}`, C.text, 10, true);
         q.position.set(ic.x + 28 - q.width, ic.y + 28 - q.height + 1);
         const qb = new Graphics().roundRect(q.x - 2, q.y, q.width + 4, q.height, 3).fill({ color: 0x000000, alpha: 0.6 });
-        c.addChild(qb, q);
+        itens.addChild(qb, q);
       }
     });
-    if (slots.length > lista.length) {
-      const more = txt(`+${slots.length - lista.length}`, C.dim, 12, true);
-      more.position.set(12 + (cap - 1) % cols * 36 + 4, 10 + rowH * rows - 4 - 22);
-      c.addChild(more);
+    const pintarTabua = () => {
+      itens.x = -prateleiraX;
+      tabua.clear().roundRect(8, tabuaY, larg, 5, 2).fill(cor.prateleira);
+      tabua.rect(8, tabuaY + 4, larg, 2).fill({ color: 0x000000, alpha: 0.25 });
+      if (maxX > 0) {                      // a própria tábua é a barra de rolagem
+        const polegar = Math.max(24, larg * (larg / total));
+        const px = 8 + (prateleiraX / maxX) * (larg - polegar);
+        tabua.roundRect(px, tabuaY, polegar, 5, 2).fill(lighten(cor.prateleira, 0.45));
+      }
+    };
+    pintarTabua();
+    refs.prateleira = { maxX, mover: (dx) => { prateleiraX = Math.min(maxX, Math.max(0, prateleiraX + dx)); pintarTabua(); } };
+    if (maxX > 0) {
+      let toque = null;
+      faixa.on('pointerdown', (e) => { toque = { x: e.global.x, last: e.global.x, t: performance.now(), moveu: false }; prateleiraVel = 0; prateleiraSegurada = true; });
+      faixa.on('globalpointermove', (e) => {
+        if (!toque) return;
+        if (!toque.moveu && Math.abs(e.global.x - toque.x) > 6) toque.moveu = true;
+        if (!toque.moveu) return;
+        const dx = toque.last - e.global.x;
+        const agora = performance.now();
+        refs.prateleira.mover(dx);
+        prateleiraVel = prateleiraVel * 0.6 + (dx / Math.max(1, agora - toque.t)) * 0.4;
+        toque.t = agora;
+        toque.last = e.global.x;
+      });
+      const soltar = () => { if (toque && !toque.moveu) prateleiraVel = 0; toque = null; prateleiraSegurada = false; };
+      faixa.on('pointerup', soltar);
+      faixa.on('pointerupoutside', soltar);
+      faixa.on('wheel', (e) => { refs.prateleira.mover(e.deltaX || e.deltaY); prateleiraVel = 0; e.stopPropagation?.(); });
     }
+    c.addChild(faixa, mascara);
     const capTxt = txt(`Prateleiras ${totalEstoque(game)}/${capacidadeEstoque(game)}`, totalEstoque(game) >= capacidadeEstoque(game) ? C.warn : C.faint, 10, true);
-    capTxt.position.set(w - capTxt.width - 12, 4);
+    capTxt.position.set(w - capTxt.width - 12, 3);
     c.addChild(capTxt);
+    if (maxX > 0) {
+      const dica = txt('arraste para ver mais', C.faint, 10);
+      dica.position.set(12, 3);
+      c.addChild(dica);
+    }
     if (!slots.length) {
       const vazio = txt('Prateleiras vazias!', C.warn, 13, true);
-      vazio.position.set((w - vazio.width) / 2, floorY / 2 - vazio.height / 2);
+      vazio.position.set((w - vazio.width) / 2, topo + 14 - vazio.height / 2);
       c.addChild(vazio);
     }
 
@@ -130,8 +169,8 @@ export function createLojaScreen({ game, toast }) {
     refs.fila = [];
     const counterY = h - 34;
     const n = fila.length;
-    // os retratos de 32 px ficam nítidos em múltiplos inteiros: 64 (cliente da vez) ou 32 (os de trás)
-    const big = Math.max(32, Math.floor(Math.min(64, h - floorY - 20) / 32) * 32);
+    // os retratos de 32 px ficam nítidos em múltiplos inteiros: o cliente da vez é grande (96 ou 128) e os de trás têm 32
+    const big = Math.max(32, Math.floor(Math.min(h >= 280 ? 128 : 96, h - floorY - 20) / 32) * 32);
     const small = 32;
     const step = n > 1 ? Math.min(small + 4, (w - 24 - big - 8) / (n - 1)) : 0;
     fila.forEach((cli, i) => {
@@ -438,6 +477,7 @@ export function createLojaScreen({ game, toast }) {
   function render() {
     dirty = false;
     quadros = 0;
+    prateleiraSegurada = false;
     bars = [];
     tempos = [];
     const keepY = scroll.scrollY;
@@ -449,7 +489,7 @@ export function createLojaScreen({ game, toast }) {
       const wl = Math.floor(R.w * 0.46);
       const gap = 12;
       const wr = R.w - wl - gap;
-      const sceneH = Math.min(R.h, 400);
+      const sceneH = Math.min(R.h, 300);
       sceneHolder.addChild(buildScene(wl, sceneH));
       if (R.h - sceneH >= 96) {            // sobra espaço embaixo da cena (desktop): estatísticas
         const st = buildStats(wl);
@@ -502,6 +542,13 @@ export function createLojaScreen({ game, toast }) {
     show() { marcar(); },
     update() {
       if (!root.visible) return;
+      const agora = performance.now();
+      const dt = Math.min(64, agora - (ultimoQuadro || agora));
+      ultimoQuadro = agora;
+      if (!prateleiraSegurada && Math.abs(prateleiraVel) > 0.01 && refs.prateleira) {   // inércia depois de soltar a prateleira
+        refs.prateleira.mover(prateleiraVel * dt);
+        prateleiraVel *= 0.94 ** (dt / 16);
+      }
       if (dirty) render();
       else { quadros += 1; paintBars(); if (tempos.length && (quadros % 15 === 0)) paintTempos(); }
     },
@@ -518,6 +565,9 @@ export function createLojaScreen({ game, toast }) {
       opcaoCentro: (i) => (refs.opcoes[i] ? global(refs.opcoes[i]) : null),
       filaCentro: (i) => { const f = refs.fila[i]; return f ? f.c.toGlobal({ x: f.size / 2, y: f.size / 2 }) : null; },
       renderAgora: render,
+      // a prateleira: quanto já rolou, quanto dá para rolar e o ponto do meio dela (para arrastar nos testes)
+      prateleira: () => (refs.prateleira ? { x: prateleiraX, maxX: refs.prateleira.maxX } : null),
+      prateleiraCentro: () => (refs.cena && !refs.cena.c.destroyed ? refs.cena.c.toGlobal({ x: refs.cena.w / 2, y: 34 }) : null),
     },
   };
 }
