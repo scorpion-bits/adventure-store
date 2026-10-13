@@ -49,10 +49,10 @@ test.describe('oficina (retrato)', () => {
     await clicar(page, 'filtro');
     await clicar(page, 'filtro:fazer');
     expect(await receitas()).toBe(0);
-    // com os materiais da adaga ela aparece
+    // com 2 de cobre e 1 de carvão aparecem a adaga, o anel e as moedas de cobre (só o que cabe nesses materiais)
     await page.evaluate(() => { window.__loja.giveMaterial('cobre', 2); window.__loja.giveMaterial('carvao', 1); });
     await pronta(page);
-    expect((await nomes()).filter((n) => n.startsWith('produzir:'))).toEqual(['produzir:r_adaga_bronze']);
+    expect((await nomes()).filter((n) => n.startsWith('produzir:')).sort()).toEqual(['produzir:r_adaga_bronze', 'produzir:r_anel_cobre', 'produzir:r_moedas_cobre']);
     await page.screenshot({ path: shotPath('portrait-oficina-fazer') });
     // por nível, e de volta para "Todas"
     await clicar(page, 'filtro');

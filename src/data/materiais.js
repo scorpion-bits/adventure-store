@@ -19,6 +19,9 @@ export const MATERIAIS = [
   { id: 'frasco', nome: 'Frasco de vidro', valor: 3, regiao: 'vila' },
   { id: 'leite', nome: 'Leite', valor: 4, regiao: 'vila' },
   { id: 'peixe', nome: 'Peixe fresco', valor: 6, regiao: 'vila' },
+  { id: 'arroz', nome: 'Arroz', valor: 4, regiao: 'vila' },
+  { id: 'sal', nome: 'Sal', valor: 3, regiao: 'vila' },
+  { id: 'polvora', nome: 'Pólvora', valor: 6, regiao: 'vila' },
   // ---- Floresta Sussurrante ----
   { id: 'pele_lobo', nome: 'Pele de lobo', valor: 9, regiao: 'floresta' },
   { id: 'madeira_nobre', nome: 'Madeira nobre', valor: 12, regiao: 'floresta' },
@@ -28,6 +31,9 @@ export const MATERIAIS = [
   { id: 'pena', nome: 'Pena', valor: 7, regiao: 'floresta' },
   { id: 'garra', nome: 'Garra de fera', valor: 10, regiao: 'floresta' },
   { id: 'teia', nome: 'Teia de aranha', valor: 15, regiao: 'floresta' },
+  { id: 'bambu', nome: 'Bambu', valor: 7, regiao: 'floresta' },
+  { id: 'resina', nome: 'Resina de pinheiro', valor: 9, regiao: 'floresta' },
+  { id: 'ginseng', nome: 'Raiz de ginseng', valor: 16, regiao: 'floresta' },
   // ---- Montanhas de Ferro ----
   { id: 'aco', nome: 'Barra de aço', valor: 18, regiao: 'montanhas' },
   { id: 'mithril', nome: 'Barra de mithril', valor: 45, regiao: 'montanhas' },
@@ -36,6 +42,9 @@ export const MATERIAIS = [
   { id: 'gema_bruta', nome: 'Gema bruta', valor: 35, regiao: 'montanhas' },
   { id: 'quartzo', nome: 'Quartzo', valor: 14, regiao: 'montanhas' },
   { id: 'pedra_runica', nome: 'Pedra rúnica', valor: 26, regiao: 'montanhas' },
+  { id: 'jade', nome: 'Jade bruto', valor: 30, regiao: 'montanhas' },
+  { id: 'enxofre', nome: 'Enxofre', valor: 14, regiao: 'montanhas' },
+  { id: 'safira_bruta', nome: 'Safira bruta', valor: 40, regiao: 'montanhas' },
   // ---- Deserto de Cinzas ----
   { id: 'especiaria', nome: 'Especiaria', valor: 14, regiao: 'deserto' },
   { id: 'seda', nome: 'Seda', valor: 28, regiao: 'deserto' },
@@ -43,6 +52,9 @@ export const MATERIAIS = [
   { id: 'cristal_solar', nome: 'Cristal solar', valor: 30, regiao: 'deserto' },
   { id: 'vidro_fino', nome: 'Vidro fino', valor: 16, regiao: 'deserto' },
   { id: 'incenso', nome: 'Incenso', valor: 20, regiao: 'deserto' },
+  { id: 'ambar', nome: 'Âmbar', valor: 34, regiao: 'deserto' },
+  { id: 'papiro', nome: 'Papiro', valor: 22, regiao: 'deserto' },
+  { id: 'areia_dourada', nome: 'Areia dourada', valor: 26, regiao: 'deserto' },
   // ---- Pântano Esmeralda ----
   { id: 'lodo', nome: 'Lodo', valor: 8, regiao: 'pantano' },
   { id: 'veneno', nome: 'Veneno', valor: 20, regiao: 'pantano' },
@@ -50,6 +62,9 @@ export const MATERIAIS = [
   { id: 'musgo', nome: 'Musgo luminoso', valor: 9, regiao: 'pantano' },
   { id: 'raiz_negra', nome: 'Raiz negra', valor: 24, regiao: 'pantano' },
   { id: 'essencia_brejo', nome: 'Essência do brejo', valor: 38, regiao: 'pantano' },
+  { id: 'turfa', nome: 'Turfa', valor: 10, regiao: 'pantano' },
+  { id: 'flor_carnivora', nome: 'Flor carnívora', valor: 28, regiao: 'pantano' },
+  { id: 'perola_negra', nome: 'Pérola negra', valor: 36, regiao: 'pantano' },
   // ---- Cume do Dragão ----
   { id: 'escama_dragao', nome: 'Escama de dragão', valor: 120, regiao: 'dragao' },
   { id: 'brasa_eterna', nome: 'Brasa eterna', valor: 85, regiao: 'dragao' },
@@ -57,4 +72,7 @@ export const MATERIAIS = [
   { id: 'ouro_dragao', nome: 'Ouro de dragão', valor: 65, regiao: 'dragao' },
   { id: 'ferro_celeste', nome: 'Ferro celeste', valor: 100, regiao: 'dragao' },
   { id: 'sangue_dragao', nome: 'Sangue de dragão', valor: 150, regiao: 'dragao' },
+  { id: 'coracao_dragao', nome: 'Coração de dragão', valor: 140, regiao: 'dragao' },
+  { id: 'chifre_dragao', nome: 'Chifre de dragão', valor: 95, regiao: 'dragao' },
+  { id: 'perola_ardente', nome: 'Pérola ardente', valor: 110, regiao: 'dragao' },
 ];

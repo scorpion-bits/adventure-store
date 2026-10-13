@@ -7,17 +7,22 @@ export const ICONES = {
   // ---------- materiais: vila ----------
   barra_ferro: 'fb221', carvao: 'fb210', madeira: 'fb252', couro_cru: 'fb204', erva_curativa: 'fb241', cristal_mana: 'fb255',
   farinha: 'fb478', carne: 'fb488', cobre: 'fb203', linho: 'fb113', la: 'fb235', pedra: 'fb316', mel: 'fb502', baga: 'fb436',
-  frasco: 'fb50', leite: 'fb538', peixe: 'fb361',
+  frasco: 'fb50', leite: 'fb538', peixe: 'fb361', arroz: 'fb456', sal: 'fb430', polvora: 'fb461',
   // ---------- materiais: floresta ----------
   pele_lobo: 'fb220', madeira_nobre: 'fb253', seiva: 'fb246', cogumelo: 'fb247', flor_lunar: 'fb245', pena: 'fb7', garra: 'fb232', teia: 'fb211',
+  bambu: 'fb452', resina: 'fb450', ginseng: 'fb457',
   // ---------- materiais: montanhas ----------
   aco: 'fb218', mithril: 'fb219', prata: 'fb152', ouro_barra: 'fb150', gema_bruta: 'fb214', quartzo: 'fb26', pedra_runica: 'fb324',
+  jade: 'fb167', enxofre: 'fb198', safira_bruta: 'fb165',
   // ---------- materiais: deserto ----------
   especiaria: 'fb468', seda: 'fb111', presa_escorpiao: 'fb233', cristal_solar: 'fb171', vidro_fino: 'fb168', incenso: 'fb84',
+  ambar: 'fb432', papiro: 'fb105', areia_dourada: 'fb417',
   // ---------- materiais: pântano ----------
   lodo: 'fb193', veneno: 'fb57', cogumelo_azul: 'fb249', musgo: 'fb242', raiz_negra: 'fb251', essencia_brejo: 'fb335',
+  turfa: 'fb372', flor_carnivora: 'fb263', perola_negra: 'fb384',
   // ---------- materiais: dragão ----------
   escama_dragao: 'fb234', brasa_eterna: 'fb164', osso_draconico: 'fb222', ouro_dragao: 'fb131', ferro_celeste: 'fb217', sangue_dragao: 'fb163',
+  coracao_dragao: 'fb659', chifre_dragao: 'fb208', perola_ardente: 'fb386',
 
   // ---------- armas ----------
   clava_madeira: 'fb1468', adaga_bronze: 'fb1444', arco_curto: 'fb1483', espada_ferro: 'fb1447', lanca_ferro: 'fb1460',

@@ -6,7 +6,7 @@ para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/)
 
 > Estado atual: **mini-jogo de memória** (Mercado → Mini-jogo, ganha um pouco de material), estoque dos fornecedores a cada 3 h com compra urgente, mais batedores cedo e filtro de receitas na Oficina. Antes, M12 (balanceamento): simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
 > 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 30 aventureiros (cada um com o seu retrato do pack: humanos, orcs, sapos, slimes, golens...) em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
-> aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
+> aleatórios, mapa com expedições, 198 itens, 175 receitas, 68 materiais, 15 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
@@ -87,6 +87,17 @@ retrato pode servir a mais de um aventureiro); `npm run pack:ninja` (pack origin
 o atlas em `src/assets/retratos/`; o mesmo comando gera os emotes das reações em `src/assets/emotes/`. Os retratos aparecem em múltiplos inteiros (76, 114, 152 px). Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem retratos desenhados por código.
 
 **Itens do pack Ninja:** ~86 itens do catálogo (armas ninja, comidas, sementes, dados, baús, gemas lapidadas, cartas...) usam ícones 16×16 do Ninja Adventure, só os que não repetiam algo que o jogo já tinha. No `src/data/icones.js` o quadro se chama `nj_<Pasta>_<Nome>` (ex.: `nj_Weapons_Katana`); `npm run pack:ninja` gera o atlas em `src/assets/itens/`. Parte tem receita (oficina) e parte vem de dois fornecedores novos da vila, a Sementeira do Vale e o Correio do Vale.
+
+**Níveis dos itens e materiais regionais:** o `nivelRep` de um item é a reputação em que os clientes passam a pedi-lo, então ele precisa
+ser possível de fazer nessa reputação. A regra (conferida por `tests/unit/crafts.test.mjs`): para todo item com receita, `nivelRep` >= a reputação em que o
+ofício abre (`oficios[].nivelRep` em `meta.js`) e >= a maior reputação dos materiais (a do fornecedor e a da região dele). Por isso o
+aço (montanhas) leva as armas de aço para a reputação 10, o aço, a prata e o ouro abrem a joalheria "de verdade" na 10, e assim por diante.
+Itens vendidos prontos por fornecedor seguem a reputação do fornecedor (a única exceção são os do Mercador Errante, que também saem de expedições),
+e o capítulo de um lendário só pede um item depois da reputação dele. Há **18 materiais regionais** de personalidade (3 por região):
+vila (arroz, sal, pólvora), floresta (bambu, resina, ginseng), montanhas (jade, enxofre, safira bruta), deserto (âmbar, papiro, areia dourada),
+pântano (turfa, flor carnívora, pérola negra) e dragão (coração, chifre e pérola ardente), usados para que receitas parecidas
+(comidas, armas ninja, gemas lapidadas) não repitam os mesmos ingredientes: o teste também falha se duas receitas tiverem exatamente os mesmos materiais.
+A razão entre o que a receita rende e o que custa fica acima de 1,2x (mediana por volta de 2,7x).
 
 **Mapa-múndi:** a aba Mapa do Mercado é uma imagem grande (arrastável, em escala 2×) feita com os tilesets do Ninja Adventure: `scripts/pack-mapa.mjs` (`npm run pack:mapa`, pack em `assets-src/ninja`) pinta o mar, uma ilha por região (bloco de terreno do TilesetField, em cores diferentes) e os enfeites, e grava `src/assets/mapa/mapa.png` + `mapa.json` (onde fica a ilha e o pino de cada região). Também gera `batedores.png` (a caminhada de 6 personagens). `src/ui/mundo.js` mostra o mapa: névoa nas regiões fechadas, pino com anel de progresso, "!" quando os batedores voltam e os batedores andando pelo caminho (vão na primeira metade do tempo da expedição, voltam na segunda). Tocar numa região abre a janela dela (`src/ui/mapa.js`): materiais, achados raros e expedições.
 
