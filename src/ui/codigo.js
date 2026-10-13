@@ -4,14 +4,13 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, labelButton, wasDragged } from './ui.js';
 import { iconSprite } from '../assets.js';
-import { iniciarPartida, finalizarPartida, dicas, cofreDe, unidadesPorEspaco, cargasAgora, msParaProxima } from '../core/codigo.js';
+import { iniciarPartida, finalizarPartida, marcas, dicas, cofreDe, unidadesPorEspaco, cargasAgora, msParaProxima } from '../core/codigo.js';
 import { fmt, fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
 const GAP = 6;
-const PEG = 9;                       // diâmetro de cada bolinha de dica
 
-export function createCodigo({ game, toast, pedirRender }) {
+export function createCodigo({ game, toast, pedirRender, outroEmJogo }) {
   const j = {
     fase: 'lobby',                   // 'lobby' | 'jogando' | 'fim'
     partida: null,
@@ -26,6 +25,7 @@ export function createCodigo({ game, toast, pedirRender }) {
 
   // ---------- partida ----------
   function comecar() {
+    if (outroEmJogo?.()) { sfx.deny(); toast('Termine a outra partida antes de começar esta', C.warn); return; }
     const p = iniciarPartida(game);
     if (!p.ok) {
       sfx.deny();
@@ -73,7 +73,7 @@ export function createCodigo({ game, toast, pedirRender }) {
     if (j.fase !== 'jogando' || j.atual.includes(null)) { sfx.deny(); return; }
     const pecas = j.atual.slice();
     const d = dicas(j.partida.segredo, pecas);
-    j.palpites.push({ pecas, ...d });
+    j.palpites.push({ pecas, marcas: marcas(j.partida.segredo, pecas), ...d });
     j.atual = Array(j.partida.espacos).fill(null);
     if (d.certos === j.partida.espacos) { sfx.sell(); haptic(10); setTimeout(() => terminar(), 500); pedirRender(); return; }
     sfx.tap();
@@ -82,40 +82,34 @@ export function createCodigo({ game, toast, pedirRender }) {
   }
 
   // ---------- desenho ----------
-  // bolinhas de dica: cheia verde = lugar certo; anel dourado = material certo em outro lugar; apagada = nada
-  function pegs(certos, quase, total) {
-    const g = new Graphics();
-    const colunas = total <= 3 ? total : 3;
-    for (let i = 0; i < total; i++) {
-      const x = (i % colunas) * (PEG + 4) + PEG / 2;
-      const y = Math.floor(i / colunas) * (PEG + 4) + PEG / 2;
-      if (i < certos) g.circle(x, y, PEG / 2).fill(C.good);
-      else if (i < certos + quase) g.circle(x, y, PEG / 2 - 1).stroke({ width: 2, color: C.gold });
-      else g.circle(x, y, 2).fill({ color: 0xffffff, alpha: 0.18 });
-    }
-    return { g, w: colunas * (PEG + 4) - 4, h: Math.ceil(total / colunas) * (PEG + 4) - 4 };
-  }
+  // cores das peças conferidas: verde = lugar certo; amarelo = material certo em outro lugar; cinza = não está no cofre
+  const COR = {
+    certo: { fundo: 0x2f5a30, borda: C.good, icone: 1 },
+    quase: { fundo: 0x5e4a1c, borda: C.gold, icone: 1 },
+    nada: { fundo: 0x241a14, borda: 0x6b5a4a, icone: 0.45 },
+  };
 
-  function peca(material, tam, { vazio = false, destaque = false } = {}) {
+  function peca(material, tam, { vazio = false, marca = null } = {}) {
     const c = new Container();
     const bg = new Graphics();
     if (vazio) {
       bg.roundRect(0, 0, tam, tam, 10).fill({ color: 0x000000, alpha: 0.25 }).stroke({ width: 2, color: C.accent, alpha: 0.35 });
-    } else {
-      bg.roundRect(0, 0, tam, tam, 10).fill(C.parchment).stroke({ width: 2, color: destaque ? C.gold : 0x7a4e2d, alpha: 0.9 });
-      const ic = iconSprite('material', material, Math.round(tam * 0.7));
-      ic.position.set((tam - ic.width) / 2, (tam - ic.height) / 2);
-      c.addChild(bg, ic);
+      c.addChild(bg);
       return c;
     }
-    c.addChild(bg);
+    const cor = marca ? COR[marca] : null;
+    bg.roundRect(0, 0, tam, tam, 10).fill(cor ? cor.fundo : C.parchment).stroke({ width: marca ? 3 : 2, color: cor ? cor.borda : 0x7a4e2d, alpha: 0.95 });
+    const ic = iconSprite('material', material, Math.round(tam * 0.7));
+    ic.position.set((tam - ic.width) / 2, (tam - ic.height) / 2);
+    ic.alpha = cor ? cor.icone : 1;
+    c.addChild(bg, ic);
     return c;
   }
 
-  const linhaDePecas = (lista, tam, vaziosToques = null, reg = null, prefixo = '') => {
+  const linhaDePecas = (lista, tam, vaziosToques = null, reg = null, prefixo = '', marcasDaLinha = null) => {
     const c = new Container();
     lista.forEach((m, i) => {
-      const p = peca(m, tam, { vazio: m === null });
+      const p = peca(m, tam, { vazio: m === null, marca: marcasDaLinha?.[i] ?? null });
       p.position.set(i * (tam + GAP), 0);
       if (vaziosToques && m !== null) {
         p.eventMode = 'static';
@@ -137,7 +131,7 @@ export function createCodigo({ game, toast, pedirRender }) {
     const cofre = cofreDe(game);
     const t = txt('Código do Ferreiro', C.text, 17, true);
     t.position.set(14, 12);
-    const d = para(`O cofre guarda uma sequência secreta de ${cofre.espacos} materiais. Monte um palpite e veja as dicas: bolinha verde = material no lugar certo; anel dourado = material certo, mas em outro lugar. Descubra o código em até ${cfg().tentativas} tentativas. Sem tempo: pense à vontade.`, C.dim, 13, w - 28);
+    const d = para(`O cofre guarda uma sequência secreta de ${cofre.espacos} materiais. Monte um palpite e toque em Conferir: cada peça fica verde (material no lugar certo), amarela (material certo, mas em outro lugar) ou cinza (não está no cofre). Descubra o código em até ${cfg().tentativas} tentativas. Sem tempo: pense à vontade.`, C.dim, 13, w - 28);
     d.position.set(14, t.y + t.height + 4);
     c.addChild(t, d);
     let y = d.y + d.height + 10;
@@ -208,7 +202,7 @@ export function createCodigo({ game, toast, pedirRender }) {
     painel.addChild(slots.c);
     y += tam + 12;
 
-    const dica = txt('toque num material para colocar; toque numa peça colocada para tirar', C.faint, 10);
+    const dica = txt('toque num material para colocar; toque numa peça colocada para tirar', C.faint, 11);
     dica.position.set((w - dica.width) / 2, y);
     painel.addChild(dica);
     y += dica.height + 8;
@@ -252,26 +246,41 @@ export function createCodigo({ game, toast, pedirRender }) {
     drawCard(bg, w, y, { fill: C.cardHi, accent: restantes <= 2 ? C.bad : C.accent });
     itens.push({ c: painel, h: y });
 
-    // ----- palpites anteriores (o mais novo primeiro) -----
+    // ----- palpites anteriores (o mais novo primeiro): cada peça é pintada pelo resultado -----
+    {
+      const leg = new Container();
+      const itensLeg = [['certo', 'lugar certo'], ['quase', 'material certo, lugar errado'], ['nada', 'não está no cofre']];
+      let lx = 0;
+      let ly = 0;
+      for (const [m, texto] of itensLeg) {
+        const sw = new Graphics().roundRect(0, 0, 14, 14, 4).fill(COR[m].fundo).stroke({ width: 2, color: COR[m].borda });
+        const t = txt(texto, C.dim, 11);
+        const largura = 14 + 5 + t.width + 14;
+        if (lx + largura > w && lx > 0) { lx = 0; ly += 20; }
+        sw.position.set(lx, ly + 1);
+        t.position.set(lx + 19, ly);
+        leg.addChild(sw, t);
+        lx += largura;
+      }
+      itens.push({ c: leg, h: ly + 20 });
+    }
     if (j.palpites.length) {
-      const rot = txt('Palpites e dicas  (● lugar certo   ○ material certo, lugar errado)', C.faint, 11, true);
-      itens.push({ c: rot, h: rot.height + 2 });
-      const mini = Math.min(34, Math.floor((w - 28 - 90 - GAP * (espacos - 1)) / espacos));
+      const mini = Math.min(38, Math.floor((w - 28 - 32 - 118 - GAP * (espacos - 1)) / espacos));
       for (let k = j.palpites.length - 1; k >= 0; k--) {
         const g = j.palpites[k];
         const linha = new Container();
         const fundo = new Graphics();
-        const h = mini + 16;
+        const h = mini + 18;
         drawCard(fundo, w, h, { fill: C.card, fillAlpha: 0.9, radius: 10, shadow: false });
-        const num = txt(`${k + 1}`, C.faint, 12, true);
-        num.position.set(10, (h - num.height) / 2);
-        const pecas = linhaDePecas(g.pecas, mini);
-        pecas.c.position.set(30, 8);
-        const dg = pegs(g.certos, g.quase, espacos);
-        dg.g.position.set(w - 14 - dg.w, (h - dg.h) / 2);
-        const resumo = txt(`${g.certos} no lugar${g.quase ? ` · ${g.quase} fora` : ''}`, C.dim, 10);
-        resumo.position.set(w - 14 - dg.w - 8 - resumo.width, (h - resumo.height) / 2);
-        linha.addChild(fundo, num, pecas.c, resumo, dg.g);
+        const num = txt(`${k + 1}`, C.faint, 13, true);
+        num.position.set(12, (h - num.height) / 2);
+        const pecas = linhaDePecas(g.pecas, mini, null, null, '', g.marcas);
+        pecas.c.position.set(34, 9);
+        const certos = txt(`${g.certos} no lugar certo`, g.certos ? C.good : C.faint, 11, true);
+        const fora = txt(`${g.quase} no lugar errado`, g.quase ? C.gold : C.faint, 11, true);
+        certos.position.set(w - 12 - certos.width, h / 2 - certos.height - 1);
+        fora.position.set(w - 12 - fora.width, h / 2 + 1);
+        linha.addChild(fundo, num, pecas.c, certos, fora);
         itens.push({ c: linha, h });
       }
     }

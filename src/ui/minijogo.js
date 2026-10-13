@@ -13,7 +13,7 @@ const COLUNAS = 4;
 const GAP = 8;
 const TEMPO_ERRO_MS = 700;           // quanto tempo um par errado fica à mostra antes de virar de volta
 
-export function createMinijogo({ game, toast, pedirRender }) {
+export function createMinijogo({ game, toast, pedirRender, outroEmJogo }) {
   const j = {
     fase: 'lobby',                   // 'lobby' | 'jogando' | 'fim'
     partida: null,
@@ -32,6 +32,7 @@ export function createMinijogo({ game, toast, pedirRender }) {
 
   // ---------- partida ----------
   function comecar() {
+    if (outroEmJogo?.()) { sfx.deny(); toast('Termine a outra partida antes de começar esta', C.warn); return; }
     const p = iniciarPartida(game);
     if (!p.ok) { sfx.deny(); toast('Sem partidas por agora: elas voltam com o tempo', C.warn); return; }
     Object.assign(j, { fase: 'jogando', partida: p, viradas: [], achadas: new Set(), erros: 0, restanteMs: p.segundos * 1000, comecou: false, esconderEm: 0, resultado: null });

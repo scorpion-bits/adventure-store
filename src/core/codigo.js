@@ -15,19 +15,27 @@ export const msParaProxima = (game) => cargas.msParaProxima(game, 'codigo');
 export const cofreDe = (game) => C(game).niveis.find((t) => game.nivel() <= t.ate) ?? C(game).niveis.at(-1);
 export const unidadesPorEspaco = (game) => 1 + Math.floor(game.nivel() / C(game).nivelPorUnidade);
 
-// Dicas de um palpite: `certos` = no lugar certo; `quase` = material certo em outro lugar (cada material do segredo conta uma vez).
-export function dicas(segredo, palpite) {
-  let certos = 0;
-  const restoSegredo = new Map();
-  const restoPalpite = new Map();
+// Marca cada peça do palpite: 'certo' (material no lugar certo), 'quase' (material que está no segredo, mas em outro lugar) ou
+// 'nada' (não há mais dele no segredo). Cada material do segredo só vale uma vez (como no Wordle).
+export function marcas(segredo, palpite) {
+  const r = palpite.map(() => 'nada');
+  const sobra = new Map();
   segredo.forEach((m, i) => {
-    if (palpite[i] === m) { certos += 1; return; }
-    restoSegredo.set(m, (restoSegredo.get(m) ?? 0) + 1);
-    if (palpite[i] !== undefined) restoPalpite.set(palpite[i], (restoPalpite.get(palpite[i]) ?? 0) + 1);
+    if (palpite[i] === m) r[i] = 'certo';
+    else sobra.set(m, (sobra.get(m) ?? 0) + 1);
   });
-  let quase = 0;
-  for (const [m, q] of restoPalpite) quase += Math.min(q, restoSegredo.get(m) ?? 0);
-  return { certos, quase };
+  palpite.forEach((m, i) => {
+    if (r[i] === 'certo') return;
+    const q = sobra.get(m) ?? 0;
+    if (q > 0) { r[i] = 'quase'; sobra.set(m, q - 1); }
+  });
+  return r;
+}
+
+// Dicas de um palpite em números: `certos` = no lugar certo; `quase` = material certo em outro lugar.
+export function dicas(segredo, palpite) {
+  const m = marcas(segredo, palpite);
+  return { certos: m.filter((x) => x === 'certo').length, quase: m.filter((x) => x === 'quase').length };
 }
 
 // Começa uma partida (gasta uma). Devolve { ok, paleta, espacos, tentativas, segredo, unidades, repete } ou { ok: false, motivo }.
