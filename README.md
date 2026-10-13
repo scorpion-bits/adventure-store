@@ -81,9 +81,12 @@ Os números de balanceamento (preços, qualidades, temperamentos, reputação) f
 número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o pack original em `assets-src/raven`,
 fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
 
-**Retratos dos aventureiros:** vêm do pack "Free 39 Portraits Pixel Art" (CraftPix, 32×32). O mapa aventureiro → retrato fica em `src/data/retratos.js`
-(o mesmo retrato pode servir a mais de um aventureiro); `npm run pack:retratos` (pack original em `assets-src/retratos`, fora do git) gera o atlas em
-`src/assets/retratos/`. Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem mais retratos desenhados por código.
+**Retratos dos aventureiros:** vêm do pack "Ninja Adventure" (Pixel-boy e AAA, CC0, 38×38). São ~150 personagens (humanos, criaturas, animais
+e chefes). O mapa aventureiro → retrato fica em `src/data/retratos.js` (a chave é a pasta do pack: `c_Knight`, `m_Slime`, `b_DragonBlue`, `a_Cat`; o mesmo
+retrato pode servir a mais de um aventureiro); `npm run pack:ninja` (pack original em `assets-src/ninja`, fora do git) **tira o fundo** dos retratos e gera
+o atlas em `src/assets/retratos/`; o mesmo comando gera os emotes das reações em `src/assets/emotes/`. Os retratos aparecem em múltiplos inteiros (76, 114, 152 px). Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem retratos desenhados por código.
+
+**Itens do pack Ninja:** ~86 itens do catálogo (armas ninja, comidas, sementes, dados, baús, gemas lapidadas, cartas...) usam ícones 16×16 do Ninja Adventure, só os que não repetiam algo que o jogo já tinha. No `src/data/icones.js` o quadro se chama `nj_<Pasta>_<Nome>` (ex.: `nj_Weapons_Katana`); `npm run pack:ninja` gera o atlas em `src/assets/itens/`. Parte tem receita (oficina) e parte vem de dois fornecedores novos da vila, a Sementeira do Vale e o Correio do Vale.
 
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,
