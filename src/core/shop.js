@@ -5,6 +5,7 @@ import { lerChave } from '../data/index.js';
 import { precoPedido } from './economy.js';
 import { proximaLenda, capituloAtual, qualidadeMinima } from './legends.js';
 import { proximoEspecial } from './especial.js';
+import { oficioAberto, nivelOficio } from './craft.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -38,11 +39,32 @@ export const itensPedidos = (game, adv, nivelRef = game.nivel()) => {
   return naFaixa.length ? naFaixa : doTipo;
 };
 
-const clienteElegivel = (game, a) => {
-  if (a.lendario) return false;                      // lendários só aparecem pela regra própria (legends.js)
-  const regiao = game.data.regioes[a.regiao];
-  return (a.nivelRep ?? 1) <= game.nivel() && (regiao?.nivelRep ?? 1) <= game.nivel() && itensPedidos(game, a).length > 0;
+// O que o jogador tem à mão: itens no estoque (qualquer qualidade), já sendo feitos (fila da oficina ou prontos para coletar)
+// ou que dá para começar agora (ofício aberto, nível e materiais no depósito).
+// Devolve Map id -> 'estoque' | 'producao' | 'fazivel'. Os pedidos tendem a ir para esses itens (veja `vies` em meta.js), sem excluir os outros.
+export function oferta(game) {
+  const m = new Map();
+  for (const r of game.data.listas.receitas) {
+    if (oficioAberto(game, r.oficio) && nivelOficio(game, r.oficio) >= r.nivel && Object.entries(r.materiais).every(([mat, q]) => (game.state.materiais[mat] ?? 0) >= q)) m.set(r.item, 'fazivel');
+  }
+  for (const r of game.state.producao) { const it = game.data.receitas[r.receita]?.item; if (it) m.set(it, 'producao'); }
+  for (const p of game.state.prontos) { const it = game.data.receitas[p.receita]?.item; if (it) m.set(it, 'producao'); }
+  for (const [chave, q] of Object.entries(game.state.estoque)) if (q > 0) m.set(chave.split(':')[0], 'estoque');
+  return m;
+}
+const pesoItem = (game, ofertas, id) => {
+  const V = game.data.meta.loja.vies;
+  const o = ofertas.get(id);
+  return o === 'estoque' ? V.estoque : o === 'producao' ? V.producao : o === 'fazivel' ? V.fazivel : 1;
 };
+
+// nível de reputação e região já abertos (lendários só aparecem pela regra própria, em legends.js)
+const liberado = (game, a) => {
+  if (a.lendario) return false;
+  const regiao = game.data.regioes[a.regiao];
+  return (a.nivelRep ?? 1) <= game.nivel() && (regiao?.nivelRep ?? 1) <= game.nivel();
+};
+const clienteElegivel = (game, a) => liberado(game, a) && itensPedidos(game, a).length > 0;
 
 // Monta um cliente (pedido e paciência) para um aventureiro específico. Não o coloca na fila.
 export function criarCliente(game, advId) {
@@ -56,8 +78,13 @@ export function criarCliente(game, advId) {
   ).t;
   const pedido = { tipo };
   const possiveis = itensPedidos(game, adv);
-  if (tipo === 'item' && possiveis.length) pedido.item = game.rng.pick(possiveis).id;
-  else if (tipo === 'categoria') pedido.cat = game.rng.pick(adv.prefere);
+  const tenho = oferta(game);
+  if (tipo === 'item' && possiveis.length) pedido.item = game.rng.weighted(possiveis, (it) => pesoItem(game, tenho, it.id)).id;
+  else if (tipo === 'categoria') {
+    // categorias em que o jogador tem algo à mão pesam mais, as outras continuam possíveis
+    const comOferta = new Set([...tenho.keys()].map((id) => game.data.itens[id]?.cat));
+    pedido.cat = game.rng.weighted(adv.prefere, (c) => (comOferta.has(c) ? 1 + game.data.meta.loja.vies.categoria : 1));
+  }
   else if (tipo === 'item') pedido.tipo = 'surpresa';
 
   const temp = game.data.meta.temperamentos.find((t) => t.id === adv.temperamento);
@@ -106,8 +133,18 @@ export function gerarCliente(game, { semLendas = false } = {}) {
       }
     }
   }
-  const adv = game.rng.weighted(game.data.listas.aventureiros.filter((a) => clienteElegivel(game, a)), (a) => a.peso ?? 1);
-  return adv ? criarCliente(game, adv.id) : null;
+  // quem pode pedir algo que o jogador tem à mão chega com mais frequência; os demais continuam chegando
+  const tenho = oferta(game);
+  const bonus = game.data.meta.loja.vies.cliente;
+  const elegiveis = [];
+  for (const a of game.data.listas.aventureiros) {
+    if (!liberado(game, a)) continue;
+    const itens = itensPedidos(game, a);
+    if (!itens.length) continue;
+    elegiveis.push({ a, peso: (a.peso ?? 1) * (tenho.size && itens.some((it) => tenho.has(it.id)) ? 1 + bonus : 1) });
+  }
+  const sorteado = game.rng.weighted(elegiveis, (x) => x.peso);
+  return sorteado ? criarCliente(game, sorteado.a.id) : null;
 }
 
 // Um dos clientes mais ricos que já podem aparecer (eventos de "cliente importante").

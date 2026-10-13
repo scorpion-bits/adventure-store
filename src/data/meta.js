@@ -172,6 +172,10 @@ export const META = {
     pacienciaBase: 75000,       // quanto um cliente espera na fila antes de ir embora
     // chance de cada tipo de pedido
     pedido: { item: 0.55, categoria: 0.3, surpresa: 0.15 },
+    // os pedidos tendem ao que o jogador tem à mão, sem tirar os clientes que querem outra coisa (o mínimo é sempre 1):
+    // item/producao/fazivel: peso de um item no estoque, na fila da oficina (ou pronto para coletar) ou que dá para começar agora;
+    // cliente: bônus (1 + x) no peso de quem pode pedir algo que o jogador tem; categoria: bônus nas categorias em que o jogador tem algo
+    vies: { estoque: 5, producao: 3, fazivel: 2, cliente: 1, categoria: 2 },
     // ajustes na chance de compra
     substituto: 0.55,           // ofereceu outro item que não o pedido
     preferido: 1.1,             // item de uma categoria que ele prefere

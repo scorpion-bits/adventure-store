@@ -8,7 +8,7 @@ import { DATA } from '../../src/data/index.js';
 import { repParaNivel } from '../../src/core/economy.js';
 import {
   gerarCliente, chegar, opcoes, avaliar, vender, dispensar, passarNaFrente, tickLoja,
-  capacidadeFila, pedidoTexto, intervaloChegada,
+  capacidadeFila, pedidoTexto, intervaloChegada, itensPedidos, oferta,
 } from '../../src/core/shop.js';
 
 const novo = (seed = 1, mexer) => {
@@ -236,4 +236,31 @@ test('ninguém pede pelo nome um item que só existe como achado raro de expedi�
   for (const adv of g.data.listas.aventureiros) {
     for (const it of itensPedidos(g, adv)) assert.ok(obtivel(g, it.id), `${adv.id} pediria ${it.id}`);
   }
+});
+
+test('os pedidos tendem ao que o jogador tem à mão, mas continuam vindo clientes que querem outra coisa', () => {
+  const N = 4000;
+  const comEstoque = ['espada_ferro:1', 'pocao_cura:1', 'arco_curto:1', 'escudo_madeira:1', 'ensopado:1'];
+  const ids = comEstoque.map((k) => k.split(':')[0]);
+  const medir = (estoque) => {
+    const g = novo(7, (s) => { s.rep = repParaNivel(5); s.estoque = {}; for (const k of estoque) s.estoque[k] = 2; });
+    let item = 0;
+    let noEstoque = 0;
+    for (let i = 0; i < N; i++) {
+      const c = gerarCliente(g);
+      if (c.pedido.tipo === 'item') { item += 1; if (ids.includes(c.pedido.item)) noEstoque += 1; }
+    }
+    return noEstoque / item;
+  };
+  const sem = medir([]);
+  const com = medir(comEstoque);
+  assert.ok(com > sem * 2.2, `pedidos por item no estoque: ${com.toFixed(3)} (antes ${sem.toFixed(3)})`);
+  assert.ok(com < 0.6, `a maior parte ainda pede o que não há (${com.toFixed(3)} pedem o do estoque)`);
+});
+
+test('o que está sendo feito na oficina também pesa nos pedidos', () => {
+  const g = novo(3, (s) => { s.rep = repParaNivel(5); s.producao.push({ uid: 1, receita: 'r_espada_ferro', oficio: 'ferraria', qtd: 1, duracao: 1, inicio: null, fim: null }); });
+  assert.equal(oferta(g).get('espada_ferro'), 'producao');
+  g.state.estoque['espada_ferro:1'] = 1;
+  assert.equal(oferta(g).get('espada_ferro'), 'estoque', 'no estoque vale mais que em produção');
 });
