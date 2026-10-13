@@ -26,7 +26,7 @@ test('sem ouro, o objetivo é o que está mais perto de dar para comprar', () =>
   assert.equal(o.pronto, false);
   assert.ok(o.progresso > 0 && o.progresso < 1);
   assert.match(o.detalhe, /de ouro/);
-  assert.ok(o.aba, 'sempre diz para onde ir');
+  assert.ok(o.aba && o.alvo, 'sempre diz para onde ir e o que destacar');
 });
 
 test('com ouro de sobra a compra mais barata fica pronta e leva à aba certa', () => {
@@ -87,9 +87,48 @@ test('o objetivo é sempre bem formado, em qualquer ponto do jogo', () => {
     for (const ouro of [0, 80, 5000, 5e6]) {
       const o = proximoObjetivo(novo(nivel, ouro));
       if (!o) continue;
-      assert.ok(o.titulo && o.detalhe && o.aba, `${nivel}/${ouro}`);
+      assert.ok(o.titulo && o.detalhe && (o.aba || o.dica), `${nivel}/${ouro}`);
       assert.ok(o.progresso >= 0 && o.progresso <= 1, `${nivel}/${ouro} progresso ${o.progresso}`);
       assert.equal(typeof o.pronto, 'boolean');
     }
   }
+});
+
+test('cada objetivo aponta o botão exato: melhoria da loja, da árvore de um ofício, ofício, funcionário e expansão', () => {
+  const g = novo(30, 1e9);
+  const vistos = new Map();
+  for (let i = 0; i < 400; i++) {
+    const o = proximoObjetivo(g);
+    if (!o || o.tipo === 'nivel' || o.tipo === 'expansao') break;
+    vistos.set(o.tipo === 'melhoria' && o.oficio ? 'melhoria-oficio' : o.tipo, o);
+    const r = o.tipo === 'melhoria' ? comprarMelhoria(g, o.id) : o.tipo === 'oficio' ? desbloquearOficio(g, o.id) : contratar(g, o.id);
+    assert.equal(r.ok, true);
+  }
+  const loja = vistos.get('melhoria');
+  assert.ok(loja, 'viu uma melhoria da loja');
+  assert.equal(loja.aba, 'melhorias');
+  assert.equal(loja.sub, 'loja');
+  assert.equal(loja.alvo, `comprar:${loja.id}`);
+  const arvore = vistos.get('melhoria-oficio');
+  assert.ok(arvore, 'viu uma melhoria da árvore de um ofício');
+  assert.equal(arvore.sub, 'oficios');
+  assert.ok(g.data.meta.oficios.some((x) => x.id === arvore.oficio), 'diz de qual ofício');
+  assert.equal(arvore.alvo, `comprar:${arvore.id}`);
+  const of = vistos.get('oficio');
+  assert.equal(of.aba, 'oficina');
+  assert.equal(of.oficio, of.id);
+  assert.equal(of.alvo, 'desbloquear');
+  const eq = vistos.get('equipe');
+  assert.equal(eq.sub, 'equipe');
+  assert.equal(eq.alvo, `contratar:${eq.id}`);
+});
+
+test('o objetivo de nível não leva a lugar nenhum, mas explica quanto falta', () => {
+  const g = novo(1, 0);
+  for (const m of g.data.listas.melhorias) if ((m.nivelRep ?? 1) <= 1) g.state.melhorias[m.id] = true;
+  for (const o of g.data.meta.oficios) if (o.nivelRep <= 1) g.state.oficios[o.id] = { nivel: 1, xp: 0 };
+  const o = proximoObjetivo(g);
+  assert.equal(o.tipo, 'nivel');
+  assert.equal(o.aba, undefined);
+  assert.match(o.dica, /Faltam [\d.,]+ pontos de reputação para o nível 2/);
 });

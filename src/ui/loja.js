@@ -327,7 +327,12 @@ export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
     c.eventMode = 'static';
     c.cursor = 'pointer';
     c.hitArea = new Rectangle(0, 0, w, OBJ_H);
-    c.on('pointertap', () => { if (!wasDragged()) { sfx.tap(); ir?.(o.aba, o.sub); } });
+    c.on('pointertap', () => {
+      if (wasDragged()) return;
+      sfx.tap();
+      if (o.aba) ir?.(o.aba, o.sub, { oficio: o.oficio, alvo: o.alvo });
+      else if (o.dica) toast(o.dica, C.accent);          // objetivo de reputação: não há para onde ir, só explica
+    });
     refs.objetivo = { c, w, h: OBJ_H };
     return c;
   }
