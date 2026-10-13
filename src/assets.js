@@ -15,17 +15,20 @@ import RETRATOS_ATLAS from './assets/retratos/retratos.json';
 import RETRATOS_URL from './assets/retratos/retratos.png';
 import EMOTES from './assets/emotes/emotes.json';
 import EMOTES_URL from './assets/emotes/emotes.png';
+import ITENS_NJ from './assets/itens/itens.json';
+import ITENS_NJ_URL from './assets/itens/itens.png';
 
 let renderer = null;
 const cache = new Map();
 // Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
 const atlas = { 32: new Map(), 64: new Map() };
 const retratosArte = new Map();       // chave do retrato (ex.: c_Knight) -> Texture (pack Ninja Adventure, 38 px, fundo transparente)
+const itensNinja = new Map();         // quadro 'nj_Pasta_Nome' -> Texture (ícones 16x16 do pack Ninja Adventure, em atlas próprio)
 const emotesArte = new Map();         // número do emote (1 a 30) -> Texture (14x13)
 
 // Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
 const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
-const quadroDoAtlas = (nome) => atlas[tamanhoDaArte()].get(nome) ?? null;
+const quadroDoAtlas = (nome) => (nome.startsWith('nj_') ? itensNinja.get(nome) : atlas[tamanhoDaArte()].get(nome)) ?? null;
 
 const CAT_COR = {
   armas: 0xb35a4a, armaduras: 0x6d86a8, pocoes: 0x4fae7a, magia: 0x8a6fd0,
@@ -40,10 +43,15 @@ export function initAssets(app) {
 // Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
 export async function carregarAtlas() {
   try {
-    const [t32, t64, tRet, tEmo] = await Promise.all([
+    const [t32, t64, tRet, tEmo, tNj] = await Promise.all([
       Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL),
-      Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null),
+      Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null), Assets.load(ITENS_NJ_URL).catch(() => null),
     ]);
+    if (tNj) {
+      tNj.source.scaleMode = 'nearest';
+      const T = ITENS_NJ.tamanho;
+      for (const [nome, [cx, cy]] of Object.entries(ITENS_NJ.quadros)) itensNinja.set(nome, new Texture({ source: tNj.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
+    }
     if (tRet) {
       tRet.source.scaleMode = 'nearest';
       const T = RETRATOS_ATLAS.tamanho;

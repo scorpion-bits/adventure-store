@@ -16,8 +16,8 @@ for (const dpr of [1, 3]) {
       test.slow();      // 3x de densidade: cada captura é pesada no GL por software
       const errors = await openGame(page);
       expect(await page.evaluate(() => window.__loja.icones.quadros())).toBeGreaterThanOrEqual(160);
-      const origens = await page.evaluate(() => ['espada_ferro', 'pocao_cura', 'barra_ferro', 'ovo_dragao', 'banquete'].map((id) => window.__loja.icones.origem(id)));
-      expect(origens).toEqual(['atlas', 'atlas', 'atlas', 'atlas', 'atlas']);
+      const origens = await page.evaluate(() => ['espada_ferro', 'pocao_cura', 'barra_ferro', 'ovo_dragao', 'banquete', 'katana', 'sushi', 'bau_tesouro'].map((id) => window.__loja.icones.origem(id)));
+      expect(origens).toEqual(Array(8).fill('atlas'));
       expect(await page.evaluate(() => window.__loja.icones.origem('id_que_nao_existe'))).toBe('provisorio');
       await page.screenshot({ path: shotPath(`portrait-loja-icones-${dpr}x`) });
 

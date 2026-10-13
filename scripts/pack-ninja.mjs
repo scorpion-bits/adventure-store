@@ -5,11 +5,14 @@
 // Gera:
 //  - src/assets/retratos/retratos.png e .json: um quadro de 38x38 por retrato usado em src/data/retratos.js, com o FUNDO REMOVIDO
 //    (os retratos do pack são opacos, com o fundo numa cor única; ela é apagada a partir das bordas e o contorno escuro do desenho fica);
-//  - src/assets/emotes/emotes.png e .json: os 30 balões de emoção (14x13).
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+//  - src/assets/emotes/emotes.png e .json: os 30 balões de emoção (14x13);
+//  - src/assets/itens/itens.png e .json: os ícones 'nj_<Pasta>_<Nome>' usados em src/data/icones.js, cada um numa célula de 16x16
+//    (Pasta e Nome de Items/<Pasta>/<Nome>.png, ou Items/Weapons/<Nome>/Sprite.png; espaços do nome somem: 'Dice 20' vira Dice20).
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { lerPng, gravarPng } from './lib/png.mjs';
 import { RETRATOS } from '../src/data/retratos.js';
+import { ICONES } from '../src/data/icones.js';
 
 let raiz = resolve(process.argv[2] ?? 'assets-src/ninja');
 if (existsSync(resolve(raiz, 'Ninja Adventure - Asset Pack'))) raiz = resolve(raiz, 'Ninja Adventure - Asset Pack');
@@ -98,3 +101,54 @@ mkdirSync(resolve('src/assets/emotes'), { recursive: true });
 writeFileSync(resolve('src/assets/emotes/emotes.png'), gravarPng({ w: ew, h: eh, px: eAtlas }));
 writeFileSync(resolve('src/assets/emotes/emotes.json'), `${JSON.stringify({ largura: EW, altura: EH, colunas: ECOLUNAS, quadros: equadros })}\n`);
 console.log(`Atlas de emotes: ${emotes.length} emotes, ${ew}x${eh}.`);
+
+// ---------- ícones de itens (Items/<Pasta>/<Nome>.png e Items/Weapons/<Nome>/Sprite.png, até 16x16) ----------
+const IC = 16;
+const ICOLUNAS = 16;
+const pastaItens = resolve(raiz, 'Items');
+const arquivosItens = {};
+for (const pasta of readdirSync(pastaItens)) {
+  const dir = resolve(pastaItens, pasta);
+  if (!statSync(dir).isDirectory()) continue;
+  for (const nome of readdirSync(dir)) {
+    const cam = resolve(dir, nome);
+    if (statSync(cam).isDirectory()) {
+      if (existsSync(resolve(cam, 'Sprite.png'))) arquivosItens[`nj_${pasta}_${nome.replace(/ /g, '')}`] = resolve(cam, 'Sprite.png');
+    } else if (nome.endsWith('.png')) {
+      arquivosItens[`nj_${pasta}_${nome.slice(0, -4).replace(/ /g, '')}`] = cam;
+    }
+  }
+}
+const usadosItens = [...new Set(Object.values(ICONES))].filter((q) => q.startsWith('nj_')).sort();
+const semArte = usadosItens.filter((q) => !arquivosItens[q]);
+if (semArte.length) {
+  console.error(`Não achei os ícones: ${semArte.join(', ')}.`);
+  process.exit(1);
+}
+const ilinhas = Math.ceil(usadosItens.length / ICOLUNAS);
+const iw = ICOLUNAS * IC;
+const ih = ilinhas * IC;
+const iAtlas = Buffer.alloc(iw * ih * 4);
+const iquadros = {};
+// folhas com várias imagens lado a lado: só o primeiro quadro (largura em pixels) é o ícone
+const PRIMEIRO_QUADRO = { nj_Treasure_BigTreasureChest: 16, nj_Treasure_LittleTreasureChest: 16, nj_Treasure_Coin2: 10 };
+usadosItens.forEach((q, i) => {
+  let img = lerPng(readFileSync(arquivosItens[q]));
+  if (PRIMEIRO_QUADRO[q]) {
+    const fw = PRIMEIRO_QUADRO[q];
+    const px = Buffer.alloc(fw * img.h * 4);
+    for (let y = 0; y < img.h; y++) img.px.copy(px, y * fw * 4, y * img.w * 4, (y * img.w + fw) * 4);
+    img = { w: fw, h: img.h, px };
+  }
+  if (img.w > IC || img.h > IC) throw new Error(`${q}: ${img.w}x${img.h} é maior que ${IC}x${IC}.`);
+  const cx = i % ICOLUNAS;
+  const cy = Math.floor(i / ICOLUNAS);
+  iquadros[q] = [cx, cy];
+  const dx = Math.floor((IC - img.w) / 2);
+  const dy = Math.floor((IC - img.h) / 2);
+  for (let y = 0; y < img.h; y++) img.px.copy(iAtlas, (((cy * IC + dy + y) * iw) + cx * IC + dx) * 4, y * img.w * 4, (y + 1) * img.w * 4);
+});
+mkdirSync(resolve('src/assets/itens'), { recursive: true });
+writeFileSync(resolve('src/assets/itens/itens.png'), gravarPng({ w: iw, h: ih, px: iAtlas }));
+writeFileSync(resolve('src/assets/itens/itens.json'), `${JSON.stringify({ tamanho: IC, colunas: ICOLUNAS, linhas: ilinhas, quadros: iquadros })}\n`);
+console.log(`Atlas de ícones de itens: ${usadosItens.length} ícones, ${iw}x${ih}.`);

@@ -1,6 +1,7 @@
-// Ligação entre itens/materiais e a arte: { idDoItem: 'fbNN' }, onde NN é o número do ícone no pack
-// "Raven Fantasy Icons" (Clockwork Raven Studios). Quem não estiver aqui usa um ícone provisório desenhado por código.
-// Depois de mudar esta lista, rode `npm run pack:icons` para atualizar o atlas (src/assets/atlas/).
+// Ligação entre itens/materiais e a arte: { idDoItem: quadro }. Há dois atlas:
+//  - "fbNN": o número do ícone no pack "Raven Fantasy Icons" (Clockwork Raven Studios); rode `npm run pack:icons` depois de mudar;
+//  - "nj_<Pasta>_<Nome>": um ícone 16x16 do pack Ninja Adventure (CC0), do atlas src/assets/itens; rode `npm run pack:ninja`.
+// Quem não estiver aqui usa um ícone provisório desenhado por código.
 // Os retratos dos aventureiros vêm do pack (data/retratos.js), não daqui.
 export const ICONES = {
   // ---------- materiais: vila ----------
@@ -50,4 +51,35 @@ export const ICONES = {
   // ---------- curiosidades ----------
   dente_lobo: 'fb230', osso_antigo: 'fb231', pena_grifo: 'fb239', geodo: 'fb209', cranio_antigo: 'fb225', moeda_antiga: 'fb129',
   mapa_tesouro: 'fb109', chave_misteriosa: 'fb77', estatueta_jade: 'fb1', relicario: 'fb6', orbe_cristal: 'fb336', ovo_dragao: 'fb236',
+
+  // ---------- pack Ninja Adventure (CC0): quadros "nj_<Pasta>_<Nome>" do atlas src/assets/itens (npm run pack:ninja) ----------
+  forcado: 'nj_Weapons_Fork', machadinha: 'nj_Weapons_AxeTool', bastao: 'nj_Weapons_Stick',
+  arco_bambu: 'nj_Weapons_Bow2', arco_composto: 'nj_Weapons_Bow', nunchaku: 'nj_Weapons_Ninjaku',
+  chicote: 'nj_Weapons_Whip', florete: 'nj_Weapons_Rapier', sai: 'nj_Weapons_Sai',
+  machado_duplo: 'nj_Weapons_Axe', katana: 'nj_Weapons_Katana', montante: 'nj_Weapons_BigSword',
+  flechas: 'nj_Projectile_Arrow', shuriken: 'nj_Projectile_Shuriken', kunai: 'nj_Projectile_Kunai',
+  abrolho: 'nj_Projectile_Caltrop', bomba: 'nj_Projectile_Bomb', dinamite: 'nj_Projectile_Dynamite',
+  caixa_dinamite: 'nj_Projectile_CrateDynamite', kit_primeiros_socorros: 'nj_Potion_Medipack', agua_benta: 'nj_Potion_WaterPot',
+  elixir_coracao: 'nj_Potion_Heart', pergaminho_branco: 'nj_Scroll_ScrollEmpty', pergaminho_identificacao: 'nj_Scroll_Scroll',
+  pergaminho_crescimento: 'nj_Scroll_ScrollPlant', pergaminho_muralha: 'nj_Scroll_ScrollRock', livro_feiticos: 'nj_Weapons_Book',
+  enxada: 'nj_Tool_Hoe', regador: 'nj_Tool_WateringCan', caixote: 'nj_Object_CrateEmpty',
+  bigorna: 'nj_Tool_Anvil', pote_barro: 'nj_Potion_EmptyPot', balde_agua: 'nj_Resource_Water',
+  bolsa_couro: 'nj_Object_Bag', bolsa_moedas: 'nj_Object_MoneyBag', jarra_leite: 'nj_Potion_MilkPot',
+  coxa_assada: 'nj_Food_Meat', bife_grelhado: 'nj_Food_Beaf', peixe_frito: 'nj_Food_Fish',
+  biscoito_sorte: 'nj_Food_FortuneCookie', macarrao: 'nj_Food_Noodle', onigiri: 'nj_Food_Onigiri',
+  sushi: 'nj_Food_Sushi', sushi_rolo: 'nj_Food_Sushi2', yakitori: 'nj_Food_Yakitori',
+  aneis_lula: 'nj_Food_Calamari', camarao_frito: 'nj_Food_Shrimp', polvo_cozido: 'nj_Food_Octopus',
+  cabaca_licor: 'nj_Object_Gourd', cha_verde: 'nj_Food_TeaLeaf', noz_macadamia: 'nj_Food_Nut',
+  castanha_rubra: 'nj_Food_Nut2', amendoa: 'nj_Food_SeedLarge', pinhao: 'nj_Food_SeedLargeWhite',
+  semente_abobora: 'nj_Food_Seed1', semente_rabanete: 'nj_Food_Seed2', semente_tomate: 'nj_Food_Seed3',
+  broto_cenoura: 'nj_Food_SeedBig1', broto_nabo: 'nj_Food_SeedBig2', broto_beterraba: 'nj_Food_SeedBig3',
+  dado_6: 'nj_Object_Dice6', dado_4: 'nj_Object_Dice4', dado_8: 'nj_Object_Dice8',
+  dado_20: 'nj_Object_Dice20', ampulheta: 'nj_Object_Hourglass', flauta_pa: 'nj_Object_PanFlute',
+  diario: 'nj_Object_Book', carta_lacrada: 'nj_Other_Letter', carta_amor: 'nj_Other_Letter2',
+  carta_guilda: 'nj_Other_Letter3', selo_cera: 'nj_Other_Stamp', galho_macieira: 'nj_Resource_Branch',
+  moedas_cobre: 'nj_Treasure_Coin2', moeda_prata: 'nj_Treasure_SilverCoin', moeda_ouro: 'nj_Treasure_GoldCoin',
+  taca_prata: 'nj_Treasure_SilverCup', calice_ouro: 'nj_Treasure_GoldCup', chave_prata: 'nj_Treasure_SilverKey',
+  chave_ouro: 'nj_Treasure_GoldKey', bau_pequeno: 'nj_Treasure_LittleTreasureChest', bau_tesouro: 'nj_Treasure_BigTreasureChest',
+  topazio: 'nj_Resource_GemYellow', ametista: 'nj_Resource_GemPurple', rubi: 'nj_Resource_GemRed',
+  esmeralda: 'nj_Resource_GemGreen', femur_fossil: 'nj_Weapons_Bone',
 };

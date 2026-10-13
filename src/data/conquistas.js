@@ -55,6 +55,8 @@ export const CONQUISTAS = [
     [25, 'Colecionador', 'Descubra 25 itens.'],
     [50, 'Catálogo crescendo', 'Descubra 50 itens.'],
     [80, 'Enciclopédia ambulante', 'Descubra 80 itens.'],
+    [130, 'Biblioteca de tudo', 'Descubra 130 itens.'],
+    [170, 'Quase um museu', 'Descubra 170 itens.'],
     ['todos', 'Nada me escapa', 'Descubra todos os itens.'],
   ]),
   ...serie('aventureiros', 30, [
