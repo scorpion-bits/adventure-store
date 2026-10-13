@@ -1,5 +1,5 @@
 // Motor de animações simples: interpola propriedades numéricas de objetos Pixi.
-// Propriedades aceitas: x, y, alpha, rotation e "scale" (uniforme).
+// Propriedades aceitas: x, y, alpha, rotation, "scale" (uniforme) e "scaleX" (só na largura, para virar cartas).
 // Com "Animações" desligadas nas configurações (ou prefers-reduced-motion), tudo chega ao valor final no quadro seguinte.
 import { settings } from '../settings.js';
 
@@ -16,9 +16,10 @@ export const ease = {
 
 const running = [];
 
-const read = (target, key) => (key === 'scale' ? target.scale.x : target[key]);
+const read = (target, key) => (key === 'scale' || key === 'scaleX' ? target.scale.x : target[key]);
 const write = (target, key, value) => {
   if (key === 'scale') target.scale.set(value);
+  else if (key === 'scaleX') target.scale.x = value;
   else target[key] = value;
 };
 

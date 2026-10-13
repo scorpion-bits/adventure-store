@@ -44,6 +44,8 @@ export const SEQUENCIAS = {
       texto: 'Toque em +1 para comprar uma unidade. O "Máx" compra o que o ouro e o estoque do fornecedor permitirem.' },
     { id: 'mercado-mapa', aba: 'mercado', sub: 'mapa', botao: 'Entendi',
       texto: 'No Mapa, batedores buscam materiais por você, mesmo com o jogo fechado. Regiões novas abrem com reputação.' },
+    { id: 'mercado-minijogo', aba: 'mercado', sub: 'minijogo', botao: 'Entendi',
+      texto: 'Sem material? No Mini-jogo você acha pares de cartas e ganha um pouco de cada material. São poucas partidas, que voltam com o tempo.' },
   ],
   aventureiros: [
     { id: 'aventureiros-bonus', aba: 'aventureiros', sub: 'hoje', espera: ['bonusDiario'], alvo: 'bonus',

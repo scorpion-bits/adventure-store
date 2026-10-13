@@ -3,6 +3,7 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
+import { createMinijogo } from './minijogo.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
 import { fmt } from '../format.js';
@@ -26,6 +27,7 @@ export function createMercadoScreen({ game, toast, modal }) {
   let tempos = [];
   let relogio = 0;
   const marcar = () => { dirty = true; };
+  const minijogo = createMinijogo({ game, toast, pedirRender: () => marcar() });
   for (const ev of ['ouro', 'materiais', 'estoque', 'dia', 'rep', 'expedicao', 'expedicaoColetada', 'mods']) game.on(ev, marcar);
   game.on('expedicaoPronta', (e) => {
     sfx.ready();
@@ -37,8 +39,8 @@ export function createMercadoScreen({ game, toast, modal }) {
   function barraSub(w) {
     const c = new Container();
     const gap = 6;
-    const itens = [{ id: 'fornecedores', nome: 'Fornecedores' }, { id: 'mapa', nome: 'Mapa e expedições' }];
-    const cw = (w - gap) / itens.length;
+    const itens = [{ id: 'fornecedores', nome: 'Fornecedores' }, { id: 'mapa', nome: 'Mapa' }, { id: 'minijogo', nome: 'Mini-jogo' }];
+    const cw = (w - gap * (itens.length - 1)) / itens.length;
     itens.forEach((it, i) => {
       const b = new Container();
       const bg = new Graphics();
@@ -193,7 +195,9 @@ export function createMercadoScreen({ game, toast, modal }) {
     const sb = barraSub(w);
     scroll.add(sb.c, sb.h);
 
-    if (sub === 'mapa') {
+    if (sub === 'minijogo') {
+      minijogo.montar(scroll, w, (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; });
+    } else if (sub === 'mapa') {
       montarMapa(scroll, { game, w, reg: (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; }, toast, modal, tempos, barras });
     } else {
       const dep = cartaoDeposito(w);
@@ -236,11 +240,13 @@ export function createMercadoScreen({ game, toast, modal }) {
       // chegou a hora de mais estoque dos fornecedores: refaz a lista
       estoqueVisto += dt;
       if (estoqueVisto > 5000) { estoqueVisto = 0; const f = liberacaoAgora(game).f; if (f !== fracaoVista) { fracaoVista = f; marcar(); } }
+      if (sub === 'minijogo') minijogo.update(dt);
       if (relogio >= 250) { relogio = 0; if (barras.length || tempos.length) pintarMapa(game, barras, tempos); }
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
+      minijogo: minijogo.hooks,
       ofertas: (fornecedorId) => ofertas(game, game.data.fornecedores[fornecedorId]),
       nomes: () => Object.keys(refs),
       retangulo: (nome) => retanguloGlobal(refs[nome]),
