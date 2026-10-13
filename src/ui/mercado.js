@@ -7,7 +7,7 @@ import { createMinijogo } from './minijogo.js';
 import { createCodigo } from './codigo.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
-import { espacoLivre } from '../core/estoque.js';
+import { espacoLivre, totalEstoque, capacidadeEstoque } from '../core/estoque.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -70,7 +70,11 @@ export function createMercadoScreen({ game, toast, modal }) {
     const lista = deposito(game);
     const titulo = txt('Depósito', C.text, 16, true);
     titulo.position.set(14, 12);
-    c.addChild(bg, titulo);
+    // espaço nas prateleiras da Loja: itens prontos comprados dos fornecedores vão para lá
+    const cheia = espacoLivre(game) <= 0;
+    const prat = txt(`Prateleiras ${totalEstoque(game)}/${capacidadeEstoque(game)}`, cheia ? C.warn : C.dim, 12, true);
+    prat.position.set(w - prat.width - 14, 15);
+    c.addChild(bg, titulo, prat);
     let y = 12 + titulo.height + 8;
     if (!lista.length) {
       const t = para('Vazio. Compre materiais dos fornecedores abaixo para produzir na Oficina.', C.dim, 13, w - 28);
