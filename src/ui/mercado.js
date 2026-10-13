@@ -34,7 +34,7 @@ export function createMercadoScreen({ game, toast, modal }) {
   const codigo = createCodigo({ game, toast, pedirRender: () => marcar(), outroEmJogo: () => minijogo.emJogo() });
   for (const ev of ['ouro', 'materiais', 'estoque', 'dia', 'rep', 'expedicao', 'expedicaoColetada', 'mods']) game.on(ev, marcar);
   game.on('expedicaoPronta', (e) => {
-    sfx.ready();
+    sfx.volta();
     toast(`Os batedores voltaram de ${game.data.regioes[e.regiao]?.nome ?? 'viagem'}!`, C.good);
     marcar();
   });

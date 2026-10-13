@@ -30,7 +30,7 @@ export function cartaoRegiao(r, w, ctx) {
     b.addChild(t1, t2, t3);
     b.tap(() => {
       const r = iniciarExpedicao(game, regiaoId, tier.id);
-      if (r.ok) { sfx.buy(); haptic(8); toast(`Batedores a caminho: ${game.data.regioes[regiaoId].nome}`, C.accent); aoIniciar?.(); }
+      if (r.ok) { sfx.partida(); haptic(8); toast(`Batedores a caminho: ${game.data.regioes[regiaoId].nome}`, C.accent); aoIniciar?.(); }
       else { sfx.deny(); toast(MOTIVOS[r.motivo] ?? 'Não foi possível', C.bad); }
     });
     return b;
@@ -106,7 +106,7 @@ export function cartaoRegiao(r, w, ctx) {
       b.tap(() => {
         const res = coletarExpedicao(game, ativa.uid);
         if (!res.ok) return;
-        sfx.levelUp(); haptic(10);
+        sfx.coleta(); haptic(10);
         const total = Object.values(res.materiais).reduce((a, b2) => a + b2, 0);
         toast(`+${fmt(total)} materiais${Object.keys(res.itens).length ? ' e um achado raro!' : ''}`, C.good);
         modal?.open({

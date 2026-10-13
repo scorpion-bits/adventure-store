@@ -138,6 +138,26 @@ export const sfx = {
     noise({ dur: 1.1, from: 200, to: 6000, gain: 0.09, q: 0.7 });
     [60, 67, 72, 79].forEach((n, i) => tone({ freq: NOTE(n), dur: 1.1, type: 'sine', gain: 0.11, delay: 0.3 + i * 0.05 }));
   },
+  // batedores partiram: sopro de vento e três notas curtas subindo, como passos
+  partida() {
+    if (!ready() || throttled('partida', 200)) return;
+    noise({ dur: 0.4, from: 300, to: 1800, gain: 0.05, q: 0.7 });
+    [62, 67, 71].forEach((n, i) => tone({ freq: NOTE(n), dur: 0.1, type: 'triangle', gain: 0.11, delay: i * 0.09 }));
+  },
+  // batedores voltaram: um toque de corneta (duas notas, a segunda mais longa)
+  volta() {
+    if (!ready() || throttled('volta', 300)) return;
+    tone({ freq: NOTE(67), dur: 0.18, type: 'sawtooth', gain: 0.045 });
+    tone({ freq: NOTE(67) * 2, dur: 0.18, type: 'sine', gain: 0.04 });
+    tone({ freq: NOTE(72), dur: 0.5, type: 'sawtooth', gain: 0.05, delay: 0.16 });
+    tone({ freq: NOTE(72) * 2, dur: 0.5, type: 'sine', gain: 0.045, delay: 0.16 });
+  },
+  // coletar o que os batedores trouxeram: remexer na bolsa e moedas caindo
+  coleta() {
+    if (!ready() || throttled('coleta', 200)) return;
+    noise({ dur: 0.22, from: 900, to: 2400, gain: 0.05, q: 1.2 });
+    [96, 100, 103].forEach((n, i) => tone({ freq: NOTE(n), dur: 0.2, type: 'square', gain: 0.04, delay: 0.14 + i * 0.07 }));
+  },
   // janelas
   open() {
     if (!ready() || throttled('open', 80)) return;
