@@ -2,31 +2,14 @@
 // aquele material (pouco, e só de regiões que a reputação já abriu). As partidas são limitadas e voltam com o tempo.
 // Lógica pura (recebe `game`): o tabuleiro e o prêmio saem daqui; a interface cuida das cartas e do tempo.
 import { regiaoAberta } from './expeditions.js';
+import * as cargas from './cargas.js';
 
 const M = (game) => game.data.meta.minijogo;
 
-// ---------- partidas guardadas (recarregam sozinhas, também com o jogo fechado) ----------
-export function atualizarCargas(game) {
-  const s = game.state.minijogo;
-  const max = M(game).max;
-  const passo = M(game).recargaMin * 60_000;
-  const agora = game.clock.now();
-  if (s.cargas >= max) { s.cargas = max; s.desde = agora; return s; }
-  const ganhos = Math.floor(Math.max(0, agora - s.desde) / passo);
-  if (ganhos > 0) {
-    s.cargas = Math.min(max, s.cargas + ganhos);
-    s.desde = s.cargas >= max ? agora : s.desde + ganhos * passo;
-  }
-  return s;
-}
-
-export const cargasAgora = (game) => atualizarCargas(game).cargas;
-// ms até voltar a próxima partida (0 se está cheio)
-export function msParaProxima(game) {
-  const s = atualizarCargas(game);
-  if (s.cargas >= M(game).max) return 0;
-  return Math.max(0, s.desde + M(game).recargaMin * 60_000 - game.clock.now());
-}
+// ---------- partidas guardadas (veja cargas.js) ----------
+export const atualizarCargas = (game) => cargas.atualizarCargas(game, 'minijogo');
+export const cargasAgora = (game) => cargas.cargasAgora(game, 'minijogo');
+export const msParaProxima = (game) => cargas.msParaProxima(game, 'minijogo');
 
 // ---------- tabuleiro e prêmio ----------
 export const tabuleiroDe = (game) => M(game).tabuleiros.find((t) => game.nivel() <= t.ate) ?? M(game).tabuleiros.at(-1);
@@ -37,15 +20,12 @@ export const materiaisPossiveis = (game) => game.data.listas.materiais.filter((m
 
 // Começa uma partida (gasta uma). Devolve { ok, cartas: [{ material }], pares, segundos, unidades } ou { ok: false, motivo }.
 export function iniciarPartida(game) {
-  if (cargasAgora(game) < 1) return { ok: false, motivo: 'sem-partidas' };
+  if (!cargas.gastarCarga(game, 'minijogo')) return { ok: false, motivo: 'sem-partidas' };
   const t = tabuleiroDe(game);
   const pool = materiaisPossiveis(game);
   const n = Math.min(t.n, pool.length);
   const escolhidos = game.rng.shuffle(pool).slice(0, n).map((m) => m.id);
   const cartas = game.rng.shuffle(escolhidos.flatMap((id) => [{ material: id }, { material: id }]));
-  const s = game.state.minijogo;
-  s.cargas -= 1;
-  s.desde = s.cargas + 1 >= M(game).max ? game.clock.now() : s.desde;       // saiu do cheio: a recarga começa agora
   game.emit('minijogo');
   return { ok: true, cartas, pares: n, segundos: t.seg, unidades: unidadesPorPar(game) };
 }

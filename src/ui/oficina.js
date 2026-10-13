@@ -471,6 +471,7 @@ export function createOficinaScreen({ game, toast }) {
       nomes: () => Object.keys(refs),
       retangulo: (nome) => retanguloGlobal(refs[nome]),
       selecionar: (id) => { sel = id; marcar(); },
+      selecionarOficio: (id) => { if (sel !== id) { sel = id; filtroAberto = false; marcar(); } },
       oficioSelecionado: () => sel,
       centro: (nome) => global(refs[nome]),
       renderAgora: render,

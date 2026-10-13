@@ -4,6 +4,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
 import { createMinijogo } from './minijogo.js';
+import { createCodigo } from './codigo.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
 import { fmt } from '../format.js';
@@ -28,6 +29,8 @@ export function createMercadoScreen({ game, toast, modal }) {
   let relogio = 0;
   const marcar = () => { dirty = true; };
   const minijogo = createMinijogo({ game, toast, pedirRender: () => marcar() });
+  const codigo = createCodigo({ game, toast, pedirRender: () => marcar() });
+  let jogoSel = 'memoria';      // qual mini-jogo aparece na sub-aba: 'memoria' | 'codigo'
   for (const ev of ['ouro', 'materiais', 'estoque', 'dia', 'rep', 'expedicao', 'expedicaoColetada', 'mods']) game.on(ev, marcar);
   game.on('expedicaoPronta', (e) => {
     sfx.ready();
@@ -39,7 +42,7 @@ export function createMercadoScreen({ game, toast, modal }) {
   function barraSub(w) {
     const c = new Container();
     const gap = 6;
-    const itens = [{ id: 'fornecedores', nome: 'Fornecedores' }, { id: 'mapa', nome: 'Mapa' }, { id: 'minijogo', nome: 'Mini-jogo' }];
+    const itens = [{ id: 'fornecedores', nome: 'Fornecedores' }, { id: 'mapa', nome: 'Mapa' }, { id: 'minijogo', nome: 'Mini-jogos' }];
     const cw = (w - gap * (itens.length - 1)) / itens.length;
     itens.forEach((it, i) => {
       const b = new Container();
@@ -58,6 +61,35 @@ export function createMercadoScreen({ game, toast, modal }) {
       c.addChild(b);
     });
     return { c, h: 38 };
+  }
+
+  // escolhe qual mini-jogo mostrar (não dá para trocar no meio de uma partida)
+  function seletorDeJogo(w) {
+    const c = new Container();
+    const gap = 6;
+    const itens = [{ id: 'memoria', nome: 'Memória' }, { id: 'codigo', nome: 'Código do Ferreiro' }];
+    const cw = (w - gap) / 2;
+    itens.forEach((it, i) => {
+      const b = new Container();
+      const bg = new Graphics();
+      const on = it.id === jogoSel;
+      bg.roundRect(0, 0, cw, 34, 10).fill({ color: on ? C.accent : C.card, alpha: on ? 0.2 : 0.8 }).stroke({ width: 1, color: on ? C.accent : 0xffffff, alpha: on ? 0.7 : 0.08 });
+      const t = txt(it.nome, on ? C.text : C.dim, 12, true);
+      t.position.set((cw - t.width) / 2, (34 - t.height) / 2);
+      b.addChild(bg, t);
+      b.position.set(i * (cw + gap), 0);
+      b.eventMode = 'static';
+      b.cursor = 'pointer';
+      b.hitArea = new Rectangle(0, 0, cw, 34);
+      b.on('pointertap', () => {
+        if (wasDragged() || jogoSel === it.id) return;
+        if (minijogo.emJogo() || codigo.emJogo()) { sfx.deny(); toast('Termine a partida antes de trocar de jogo', C.warn); return; }
+        jogoSel = it.id; sfx.tap(); marcar();
+      });
+      refs[`jogo:${it.id}`] = { c: b, w: cw, h: 34 };
+      c.addChild(b);
+    });
+    return { c, h: 34 };
   }
 
   function cartaoDeposito(w) {
@@ -196,7 +228,10 @@ export function createMercadoScreen({ game, toast, modal }) {
     scroll.add(sb.c, sb.h);
 
     if (sub === 'minijogo') {
-      minijogo.montar(scroll, w, (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; });
+      const reg = (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; };
+      const sj = seletorDeJogo(w);
+      scroll.add(sj.c, sj.h);
+      (jogoSel === 'codigo' ? codigo : minijogo).montar(scroll, w, reg);
     } else if (sub === 'mapa') {
       montarMapa(scroll, { game, w, reg: (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; }, toast, modal, tempos, barras });
     } else {
@@ -240,13 +275,15 @@ export function createMercadoScreen({ game, toast, modal }) {
       // chegou a hora de mais estoque dos fornecedores: refaz a lista
       estoqueVisto += dt;
       if (estoqueVisto > 5000) { estoqueVisto = 0; const f = liberacaoAgora(game).f; if (f !== fracaoVista) { fracaoVista = f; marcar(); } }
-      if (sub === 'minijogo') minijogo.update(dt);
+      if (sub === 'minijogo') (jogoSel === 'codigo' ? codigo : minijogo).update(dt);
       if (relogio >= 250) { relogio = 0; if (barras.length || tempos.length) pintarMapa(game, barras, tempos); }
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
       minijogo: minijogo.hooks,
+      codigo: codigo.hooks,
+      jogoSelecionado: () => jogoSel,
       ofertas: (fornecedorId) => ofertas(game, game.data.fornecedores[fornecedorId]),
       nomes: () => Object.keys(refs),
       retangulo: (nome) => retanguloGlobal(refs[nome]),

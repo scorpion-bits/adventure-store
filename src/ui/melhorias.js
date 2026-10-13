@@ -539,6 +539,7 @@ export function createMelhoriasScreen({ game, toast, modal }) {
       nomes: () => Object.keys(refs),
       retangulo: (nome) => retanguloGlobal(refs[nome]),
       irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },
+      selecionarOficio: (id) => { if (oficioSel !== id) { oficioSel = id; marcar(); } },
 
       centro: (nome) => global(refs[nome]),
       renderAgora: render,

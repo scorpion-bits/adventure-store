@@ -11,6 +11,7 @@ import { createToasts } from './ui/toast.js';
 import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
 import { abrirBackup } from './ui/backup-dialog.js';
+import { createDestaque } from './ui/destaque.js';
 import { unlockAudio, getAudioContext, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
@@ -113,6 +114,13 @@ async function start() {
     telas: () => Object.fromEntries(TABS.map((t, i) => [t.id, screens[i]?.hooks])),
   });
   app.stage.addChild(tutorial.root);
+  const destaque = createDestaque({
+    telas: () => Object.fromEntries(TABS.map((t, i) => [t.id, screens[i]?.hooks])),
+    rolagens: () => Object.fromEntries(TABS.map((t, i) => [t.id, screens[i]?.scroll])),
+    conteudo: () => L.content,
+    abaAtual: () => TABS[active].id,
+  });
+  app.stage.addChild(destaque.root);
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
@@ -122,12 +130,19 @@ async function start() {
   let active = 0;
   let L = null;
 
-  // leva o jogador a uma aba (e sub-aba) por pedido da interface, ex.: o cartão de objetivo
-  function irPara(aba, sub) {
+  // leva o jogador a uma aba por pedido da interface (ex.: o cartão de objetivo): abre a sub-aba e o ofício certos, rola até o
+  // botão e o destaca com um anel. `extra`: { oficio, alvo (nome do botão registrado na tela) }
+  function irPara(aba, sub, extra = {}) {
     const i = TABS.findIndex((t) => t.id === aba);
     if (i < 0) return;
     if (i !== active) selectTab(i);
-    if (sub) setTimeout(() => screens[i].hooks?.irParaSub?.(sub), 60);
+    destaque.parar();
+    setTimeout(() => {
+      const hooks = screens[i].hooks;
+      if (extra.oficio) hooks?.selecionarOficio?.(extra.oficio);
+      if (sub) hooks?.irParaSub?.(sub);
+      if (extra.alvo) destaque.mostrar(aba, extra.alvo);
+    }, 80);
   }
 
   function selectTab(i, { silent = false } = {}) {
@@ -206,6 +221,7 @@ async function start() {
     eventos.update();
     lendas.update();
     tutorial.update(t.deltaMS);
+    destaque.update(t.deltaMS);
     screens.forEach((sc) => sc.update?.(t.deltaMS));
     updateTweens(t.deltaMS);
     updateScrolls(t.deltaMS);
@@ -280,6 +296,7 @@ async function start() {
       mercado: screens[2].hooks,
       oficina: screens[1].hooks,
       tutorial: tutorial.hooks,
+      destaque: { alvo: () => destaque.ativo() },
       eventos: { ...eventos.hooks, disparar: (id) => dispararEvento(game, id) },
       melhorias: screens[4].hooks,
       aventureiros: screens[3].hooks,

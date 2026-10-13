@@ -7,14 +7,16 @@ import { repParaNivel } from './economy.js';
 import { estadoExpansao } from './prestige.js';
 import { fmt } from '../format.js';
 
-// destino de cada tipo na interface: { aba, sub }
+// Para onde o toque no objetivo leva: aba, sub-aba, ofício (quando a compra está na árvore de um ofício) e o botão exato
+// a destacar (o nome registrado na tela, veja `reg(...)` em ui/melhorias.js e ui/oficina.js).
 const DESTINO = {
-  melhoria: (m) => (m.grupo === 'loja' ? { aba: 'melhorias', sub: 'loja' } : { aba: 'melhorias', sub: 'oficios' }),
-  oficio: () => ({ aba: 'oficina' }),
-  equipe: () => ({ aba: 'melhorias', sub: 'equipe' }),
-  regiao: () => ({ aba: 'mercado', sub: 'mapa' }),
-  expansao: () => ({ aba: 'melhorias', sub: 'expandir' }),
-  nivel: () => ({ aba: 'melhorias', sub: 'loja' }),
+  melhoria: (m) => (m.grupo === 'loja'
+    ? { aba: 'melhorias', sub: 'loja', alvo: `comprar:${m.id}` }
+    : { aba: 'melhorias', sub: 'oficios', oficio: m.grupo, alvo: `comprar:${m.id}` }),
+  oficio: (o) => ({ aba: 'oficina', oficio: o.id, alvo: 'desbloquear' }),
+  equipe: (f) => ({ aba: 'melhorias', sub: 'equipe', alvo: `contratar:${f.id}` }),
+  expansao: () => ({ aba: 'melhorias', sub: 'expandir', alvo: 'expandir' }),
+  nivel: () => ({}),      // reputação não se compra: não há para onde ir (o cartão só explica quanto falta)
 };
 
 export function proximoObjetivo(game) {
@@ -64,6 +66,7 @@ export function proximoObjetivo(game) {
       tipo: 'nivel', id: `nivel-${alvo}`, titulo: `Chegar ao nível ${alvo} de reputação`,
       detalhe: `abre ${nomes.slice(0, 2).join(' e ')}${nomes.length > 2 ? ` e mais ${nomes.length - 2}` : ''}`,
       progresso: Math.min(1, Math.max(0, (rep - de) / Math.max(1, para - de))), pronto: false, nivelRep: alvo,
+      dica: `Faltam ${fmt(Math.max(1, Math.ceil(para - rep)))} pontos de reputação para o nível ${alvo}. Vendendo você chega lá!`,
       ...DESTINO.nivel(),
     });
   }
