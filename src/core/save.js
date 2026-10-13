@@ -62,6 +62,9 @@ export function migrate(state) {
   return s;
 }
 
+// Dado um save já lido (objeto), migra e completa os campos que faltam. Usado ao carregar e ao importar um backup.
+export const normalizar = (raw, now = Date.now()) => withDefaults(migrate({ versao: 1, ...raw }), defaultState(now));
+
 // Lê o save. Devolve { state, origem: 'novo' | 'carregado' | 'corrompido' }.
 export function loadState(storage, now = Date.now()) {
   let text = null;
@@ -70,7 +73,7 @@ export function loadState(storage, now = Date.now()) {
   try {
     const raw = JSON.parse(text);
     if (!isObj(raw)) throw new Error('save não é um objeto');
-    const s = withDefaults(migrate({ versao: 1, ...raw }), defaultState(now));
+    const s = normalizar(raw, now);
     return { state: s, origem: 'carregado' };
   } catch {
     try { storage.setItem(`${SAVE_KEY}-corrompido`, text); } catch { /* sem espaço */ }

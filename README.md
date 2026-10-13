@@ -135,6 +135,14 @@ sozinhos (`withDefaults`), nunca quebram. Mudança que precisa transformar dados
 `portrait` (celular em pé, abas embaixo), `landscape` (celular deitado, abas num trilho à esquerda) e
 `desktop` (o mesmo do retrato, mais largo e centralizado). Respeita as áreas seguras (notch).
 
+### Backup do progresso (levar o save para outro aparelho)
+
+Em **Configurações → Backup do progresso**: *Exportar* gera um código de texto (`LOJA1-…`, ~1 KB) para copiar e mandar para si
+mesmo, ou um arquivo `.txt`; *Importar* aceita o código colado ou o arquivo, mostra o que achou (nível, ouro, dias) e só
+substitui o progresso do aparelho depois de um segundo toque. O código tem verificação: se vier cortado ou alterado, é recusado.
+O núcleo está em `src/core/backup.js` (testado em `tests/unit/backup.test.mjs`); a janela é HTML por cima do jogo
+(`src/ui/backup-dialog.js`), porque o Pixi não tem campo de texto.
+
 ### Música
 
 A trilha é opcional. Coloque arquivos `.mp3` (o formato mais seguro: o Safari do iPhone não lê `.ogg`), `.ogg` ou `.wav`

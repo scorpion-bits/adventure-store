@@ -47,7 +47,7 @@ function volumeRow(w, label, key, after) {
   return row;
 }
 
-export function settingsContent(scroll, w, { onReset, onTutorial } = {}) {
+export function settingsContent(scroll, w, { onReset, onTutorial, onBackup } = {}) {
   scroll.add(toggleRow(w, 'Efeitos sonoros', 'sound', () => applyVolume()), ROW_H);
   scroll.add(volumeRow(w, 'Volume dos efeitos', 'volume', () => applyVolume()), ROW_H);
   if (hasMusic()) {
@@ -67,6 +67,12 @@ export function settingsContent(scroll, w, { onReset, onTutorial } = {}) {
       const dica = para('Para instalar no iPhone ou iPad: toque em Compartilhar e depois em "Adicionar à Tela de Início".', C.dim, 13, w);
       scroll.add(dica, dica.height + 6);
     }
+  }
+
+  if (onBackup) {
+    const bk = labelButton('Backup do progresso', w, 48, { tint: C.info });
+    bk.tap(onBackup);
+    scroll.add(bk, 48);
   }
 
   if (onTutorial) {

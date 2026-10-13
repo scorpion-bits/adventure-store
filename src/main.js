@@ -10,6 +10,7 @@ import { createModal } from './ui/modal.js';
 import { createToasts } from './ui/toast.js';
 import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
+import { abrirBackup } from './ui/backup-dialog.js';
 import { unlockAudio, getAudioContext, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
@@ -89,6 +90,12 @@ async function start() {
   let apagando = false;
   const guardar = () => (apagando ? false : saveState(storage, game.state, clock.now()));
   const apagarProgresso = () => { apagando = true; clearSave(storage); location.reload(); };
+  // importar um backup: grava o save recebido no lugar do atual e recarrega (o `pagehide` não pode regravar o estado velho por cima)
+  const substituirProgresso = (novo) => {
+    apagando = true;
+    if (!saveState(storage, novo, clock.now())) { apagando = false; toasts.show('Não consegui gravar o save importado neste navegador.', 0xe27d6a); return; }
+    location.reload();
+  };
 
   // camadas, de baixo para cima
   const screensLayer = new Container();
@@ -109,11 +116,19 @@ async function start() {
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  screens = createScreens({ toast: toasts.show, game, modal });
+  screens = createScreens({ toast: toasts.show, game, modal, ir: irPara });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
   let L = null;
+
+  // leva o jogador a uma aba (e sub-aba) por pedido da interface, ex.: o cartão de objetivo
+  function irPara(aba, sub) {
+    const i = TABS.findIndex((t) => t.id === aba);
+    if (i < 0) return;
+    if (i !== active) selectTab(i);
+    if (sub) setTimeout(() => screens[i].hooks?.irParaSub?.(sub), 60);
+  }
 
   function selectTab(i, { silent = false } = {}) {
     if (!silent) sfx.tap();
@@ -129,11 +144,16 @@ async function start() {
     s.show();
   }
 
+  function abrirJanelaBackup() {
+    guardar();
+    return abrirBackup({ getState: () => game.state, onImportar: substituirProgresso });
+  }
+
   function openSettings() {
     sfx.tap();
     modal.open({
       title: 'Configurações',
-      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso, onTutorial: () => { modal.close(); tutorial.reiniciar(); tutorial.abaAtual(TABS[active].id); } }),
+      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso, onBackup: () => { modal.close(); abrirJanelaBackup(); }, onTutorial: () => { modal.close(); tutorial.reiniciar(); tutorial.abaAtual(TABS[active].id); } }),
     });
   }
 
@@ -252,6 +272,7 @@ async function start() {
       tabCenter: (i) => tabbar.cellCenter(i),
       gearCenter: () => topbar.gearCenter(),
       openSettings,
+      abrirBackup: abrirJanelaBackup,
       closeModal: () => modal.close(),
       modalOpen: () => modal.isOpen(),
       toast: (text) => toasts.show(text),
