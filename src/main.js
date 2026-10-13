@@ -116,11 +116,19 @@ async function start() {
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  screens = createScreens({ toast: toasts.show, game, modal });
+  screens = createScreens({ toast: toasts.show, game, modal, ir: irPara });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
   let L = null;
+
+  // leva o jogador a uma aba (e sub-aba) por pedido da interface, ex.: o cartão de objetivo
+  function irPara(aba, sub) {
+    const i = TABS.findIndex((t) => t.id === aba);
+    if (i < 0) return;
+    if (i !== active) selectTab(i);
+    if (sub) setTimeout(() => screens[i].hooks?.irParaSub?.(sub), 60);
+  }
 
   function selectTab(i, { silent = false } = {}) {
     if (!silent) sfx.tap();

@@ -11,6 +11,7 @@ import { temaAtual } from '../core/upgrades.js';
 import { capacidadeEstoque, totalEstoque } from '../core/estoque.js';
 import { descreverEfeito } from '../core/mods.js';
 import { sazonaisAtivos } from '../core/seasons.js';
+import { proximoObjetivo } from '../core/objetivo.js';
 import { fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -22,7 +23,7 @@ const NIVEIS = [
 const COR_REACAO = { adora: C.good, aceita: 0xb7d68a, hesita: C.warn, recusa: C.bad };
 const sinal = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '±0');
 
-export function createLojaScreen({ game, toast }) {
+export function createLojaScreen({ game, toast, ir }) {
   const root = new Container();
   const sceneHolder = new Container();
   const scroll = createScroll(300);
@@ -41,7 +42,8 @@ export function createLojaScreen({ game, toast }) {
   let prateleiraVel = 0;
   let prateleiraSegurada = false;   // dedo na prateleira: sem inércia
   let ultimoQuadro = 0;
-  const refs = { precos: {}, fila: [], opcoes: [], frente: null, dispensar: null };
+  const refs = { precos: {}, fila: [], opcoes: [], frente: null, dispensar: null, objetivo: null };
+  let objetivoAtual = null;
   const marcar = () => { dirty = true; };
 
   for (const ev of ['fila', 'estoque', 'venda', 'recusa', 'dispensou', 'saiu', 'bonus']) game.on(ev, marcar);
@@ -205,6 +207,40 @@ export function createLojaScreen({ game, toast }) {
       dica.position.set(w - dica.width - 10, h - 15);
       c.addChild(dica);
     }
+    return c;
+  }
+
+  // ---------- próximo objetivo: uma linha discreta com barra de progresso, logo abaixo da cena ----------
+  const OBJ_H = 34;
+  function buildObjetivo(w, o) {
+    const c = new Container();
+    const bg = new Graphics();
+    drawCard(bg, w, OBJ_H, { fill: C.card, fillAlpha: 0.7, radius: 10, shadow: false, borderAlpha: 0.05 });
+    const cor = o.pronto ? C.good : C.gold;
+    const rotulo = txt('Objetivo', C.faint, 11, true);
+    rotulo.position.set(12, 7);
+    const seta = txt('›', o.pronto ? C.good : C.dim, 16, true);
+    seta.position.set(w - 12 - seta.width, 4);
+    const detalhe = txt(o.pronto ? 'Pronto!' : o.detalhe, o.pronto ? C.good : C.dim, 11, o.pronto);
+    detalhe.position.set(seta.x - 8 - detalhe.width, 9);
+    // o título cede espaço ao detalhe: se não couber, é encurtado com reticências
+    const titulo = txt(o.titulo, C.text, 13, true);
+    const x0 = rotulo.x + rotulo.width + 8;
+    const maxW = Math.max(40, detalhe.x - 10 - x0);
+    if (titulo.width > maxW) {
+      let t = o.titulo;
+      while (t.length > 4 && titulo.width > maxW) { t = t.slice(0, -2); titulo.text = `${t.trimEnd()}…`; }
+    }
+    titulo.position.set(x0, 6);
+    const trilho = new Graphics().roundRect(12, OBJ_H - 8, w - 24, 3, 1.5).fill({ color: 0x000000, alpha: 0.35 });
+    const barra = new Graphics();
+    if (o.progresso > 0) barra.roundRect(12, OBJ_H - 8, Math.max(3, (w - 24) * o.progresso), 3, 1.5).fill(cor);
+    c.addChild(bg, trilho, barra, rotulo, titulo, detalhe, seta);
+    c.eventMode = 'static';
+    c.cursor = 'pointer';
+    c.hitArea = new Rectangle(0, 0, w, OBJ_H);
+    c.on('pointertap', () => { if (!wasDragged()) { sfx.tap(); ir?.(o.aba, o.sub); } });
+    refs.objetivo = { c, w, h: OBJ_H };
     return c;
   }
 
@@ -484,6 +520,9 @@ export function createLojaScreen({ game, toast }) {
     const wide = R.w >= 640;
     sceneHolder.removeChildren().forEach((ch) => ch.destroy({ children: true }));
     scroll.clear();
+    // o objetivo só aparece depois da introdução (o tutorial já guia os primeiros passos)
+    objetivoAtual = game.state.tutorial.feito ? proximoObjetivo(game) : null;
+    refs.objetivo = null;
 
     if (wide) {
       const wl = Math.floor(R.w * 0.46);
@@ -491,9 +530,16 @@ export function createLojaScreen({ game, toast }) {
       const wr = R.w - wl - gap;
       const sceneH = Math.min(R.h, 300);
       sceneHolder.addChild(buildScene(wl, sceneH));
-      if (R.h - sceneH >= 96) {            // sobra espaço embaixo da cena (desktop): estatísticas
+      let yAbaixo = sceneH + 10;
+      if (objetivoAtual) {
+        const ob = buildObjetivo(wl, objetivoAtual);
+        ob.position.set(0, yAbaixo);
+        sceneHolder.addChild(ob);
+        yAbaixo += OBJ_H + 10;
+      }
+      if (R.h - yAbaixo >= 96) {           // sobra espaço embaixo da cena (desktop): estatísticas
         const st = buildStats(wl);
-        st.position.set(0, sceneH + 12);
+        st.position.set(0, yAbaixo + 2);
         sceneHolder.addChild(st);
       }
       scroll.root.position.set(wl + gap, 0);
@@ -503,6 +549,7 @@ export function createLojaScreen({ game, toast }) {
       scroll.root.position.set(0, 0);
       const sceneH = Math.min(240, Math.max(190, Math.round(R.h * 0.32)));
       scroll.add(buildScene(R.w, sceneH), sceneH);
+      if (objetivoAtual) scroll.add(buildObjetivo(R.w, objetivoAtual), OBJ_H);
       for (const it of atendimento(R.w)) scroll.add(it.c, it.h);
       scroll.resize(R.h, R.w);
     }
@@ -565,6 +612,9 @@ export function createLojaScreen({ game, toast }) {
       opcaoCentro: (i) => (refs.opcoes[i] ? global(refs.opcoes[i]) : null),
       filaCentro: (i) => { const f = refs.fila[i]; return f ? f.c.toGlobal({ x: f.size / 2, y: f.size / 2 }) : null; },
       renderAgora: render,
+      // o cartão de objetivo: o que sugere agora (ou null) e o ponto do meio dele
+      objetivo: () => objetivoAtual,
+      objetivoCentro: () => (refs.objetivo && !refs.objetivo.c.destroyed ? global(refs.objetivo) : null),
       // a prateleira: quanto já rolou, quanto dá para rolar e o ponto do meio dela (para arrastar nos testes)
       prateleira: () => (refs.prateleira ? { x: prateleiraX, maxX: refs.prateleira.maxX } : null),
       prateleiraCentro: () => (refs.cena && !refs.cena.c.destroyed ? refs.cena.c.toGlobal({ x: refs.cena.w / 2, y: 34 }) : null),
