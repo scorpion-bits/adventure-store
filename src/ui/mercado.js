@@ -7,6 +7,7 @@ import { createMinijogo } from './minijogo.js';
 import { createCodigo } from './codigo.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
+import { espacoLivre } from '../core/estoque.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -100,7 +101,8 @@ export function createMercadoScreen({ game, toast, modal }) {
   function botaoCompra(rotulo, w, o, f, tipo, urgente) {
     const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o, urgente);
     const disp = urgente ? o.urgente : o.restante;
-    const pode = tipo === 'max' ? n > 0 : disp > 0;
+    const semEspaco = !!game.data.itens[o.material] && espacoLivre(game) <= 0;
+    const pode = !semEspaco && (tipo === 'max' ? n > 0 : disp > 0);
     const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: !pode ? C.dim : urgente ? C.bad : C.accent });
     if (!pode) b.setDisabled(true);
     b.tap(() => {
@@ -111,7 +113,7 @@ export function createMercadoScreen({ game, toast, modal }) {
         toast(`−${fmt(r.custo)} ouro · +${r.qtd} ${o.nome}`, urgente ? C.bad : C.accent);
       } else {
         sfx.deny();
-        toast(r.motivo === 'sem-ouro' ? 'Ouro insuficiente' : 'Sem estoque no fornecedor', C.bad);
+        toast(r.motivo === 'sem-ouro' ? 'Ouro insuficiente' : r.motivo === 'prateleiras-cheias' ? 'Prateleiras cheias: venda algo ou amplie o estoque' : 'Sem estoque no fornecedor', C.bad);
       }
     });
     return b;
