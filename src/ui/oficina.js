@@ -289,6 +289,10 @@ export function createOficinaScreen({ game, toast }) {
     return { c, h: hh };
   }
 
+  // receitas de um ofício, do nível mais baixo ao mais alto; no mesmo nível, do item mais barato ao mais caro
+  const receitasDe = (oficio) => game.data.listas.receitas.filter((r) => r.oficio === oficio)
+    .sort((a, b) => a.nivel - b.nivel || (game.data.itens[a.item]?.valor ?? 0) - (game.data.itens[b.item]?.valor ?? 0));
+
   // ---------- filtros das receitas ----------
   // "Dá para fazer": nível e materiais em dia (a fila cheia não conta: é questão de esperar)
   const daParaFazer = (r) => oficioAberto(game, r.oficio) && nivelOficio(game, r.oficio) >= r.nivel && Object.keys(faltando(game, r)).length === 0;
@@ -386,7 +390,7 @@ export function createOficinaScreen({ game, toast }) {
     if (!oficioAberto(game, sel)) {
       const p = painelFechado(w, def);
       scroll.add(p.c, p.h);
-      const receitas = game.data.listas.receitas.filter((r) => r.oficio === sel);
+      const receitas = receitasDe(sel);
       if (receitas.length) {
         const t = txt(`Receitas (${receitas.length}): abra o ofício para produzir`, C.dim, 12, true);
         scroll.add(t, t.height);
@@ -413,7 +417,7 @@ export function createOficinaScreen({ game, toast }) {
         scroll.add(t, t.height);
         for (const j of jobs) { const l = linhaProducao(w, j); scroll.add(l.c, l.h); }
       }
-      const todas = game.data.listas.receitas.filter((x) => x.oficio === sel);
+      const todas = receitasDe(sel);
       const t = txt('Receitas', C.dim, 12, true);
       scroll.add(t, t.height);
       const barra = barraFiltros(w, todas);

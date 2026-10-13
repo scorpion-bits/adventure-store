@@ -21,6 +21,23 @@ const clicar = async (page, nome) => {
 test.describe('oficina (retrato)', () => {
   test.use({ viewport: VIEWPORTS.portrait });
 
+  test('as receitas aparecem do nível mais baixo ao mais alto de cada ofício', async ({ page }) => {
+    const errors = await openGame(page);
+    await abrirOficina(page);
+    for (const ofi of ['ferraria', 'joalheria']) {
+      await page.evaluate((o) => { const g = window.__loja.game; g.state.oficios[o] ??= { nivel: 1, xp: 0 }; window.__loja.oficina.selecionarOficio(o); }, ofi);
+      await pronta(page);
+      await quadros(page, 3);
+      const niveis = await page.evaluate(() => {
+        const d = window.__loja.game.data;
+        return window.__loja.oficina.nomes().filter((n) => n.startsWith('produzir:')).map((n) => d.receitas[n.slice(9)].nivel);
+      });
+      expect(niveis.length).toBeGreaterThan(5);
+      expect(niveis, `${ofi} em ordem de nível`).toEqual([...niveis].sort((a, b) => a - b));
+    }
+    expect(errors).toEqual([]);
+  });
+
   test('filtro das receitas: um botão que abre as opções (categoria, nível e "dá para fazer") e fecha ao escolher', async ({ page }) => {
     const errors = await openGame(page);
     await abrirOficina(page);
