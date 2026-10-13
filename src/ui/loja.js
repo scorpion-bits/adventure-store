@@ -14,6 +14,7 @@ import { sazonaisAtivos } from '../core/seasons.js';
 import { proximoObjetivo } from '../core/objetivo.js';
 import { fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
+import { settings } from '../settings.js';
 
 const NIVEIS = [
   { id: 'barato', nome: 'Barato', cor: C.info },
@@ -23,7 +24,7 @@ const NIVEIS = [
 const COR_REACAO = { adora: C.good, aceita: 0xb7d68a, hesita: C.warn, recusa: C.bad };
 const sinal = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '±0');
 
-export function createLojaScreen({ game, toast, ir }) {
+export function createLojaScreen({ game, toast, ir, alvoOuro, pulsarOuro }) {
   const root = new Container();
   const sceneHolder = new Container();
   const scroll = createScroll(300);
@@ -44,6 +45,14 @@ export function createLojaScreen({ game, toast, ir }) {
   let ultimoQuadro = 0;
   const refs = { precos: {}, fila: [], opcoes: [], frente: null, dispensar: null, objetivo: null };
   let objetivoAtual = null;
+
+  // ---------- vida da loja: o estado das animações fica aqui, fora da cena (que é refeita a cada evento) ----------
+  const VEL_ANDAR = 0.22;          // px por ms de quem anda na fila
+  const visual = new Map();        // uid do cliente -> { x, tx, ty, size, fase, andando } (a posição de verdade na tela)
+  let saindo = [];                 // clientes indo embora: { adv, x, y, size, vel, t }
+  let bolhas = [];                 // balõezinhos de reação: { tipo, cx, y, t }
+  let moedas = [];                 // moedinhas voando para o contador de ouro (vivem em `fx`)
+  let tempoAnim = 0;
   const marcar = () => { dirty = true; };
 
   for (const ev of ['fila', 'estoque', 'venda', 'recusa', 'dispensou', 'saiu', 'bonus']) game.on(ev, marcar);
@@ -77,10 +86,73 @@ export function createLojaScreen({ game, toast, ir }) {
   }
   game.on('venda', (v) => { if (v.preco > 0) flutuar(`+${fmt(v.preco)}`, C.gold); });
 
+  // ---------- reações e saídas ----------
+  // o cliente que sai (comprou, recusou, cansou de esperar ou foi dispensado) anda para fora da loja, com um balão de reação
+  function sair(cli, tipo, vel = 0.2) {
+    if (!cli || !settings.motion || !root.visible) return null;
+    const e = visual.get(cli.uid);
+    if (!e) return null;
+    saindo.push({ adv: cli.adv, x: e.x, y: e.ty, size: e.size, vel, t: 0 });
+    bolhas.push({ tipo, cx: e.x + e.size / 2, y: e.ty - 4, t: 0 });
+    visual.delete(cli.uid);
+    return e;
+  }
+  game.on('venda', (v) => {
+    const e = sair(v.cli, v.nivelPreco === 'barato' ? 'coracao' : 'estrela');
+    if (e && v.preco > 0) soltarMoedas(e, v.preco);
+  });
+  game.on('recusa', (r) => { sair(r.cli, 'bravo'); });
+  game.on('dispensou', ({ cli }) => { sair(cli, 'suspiro'); });
+  game.on('saiu', ({ cli }) => { sair(cli, 'bravo', 0.3); });
+
+  // moedinhas que saem do balcão e voam, em arco, até o contador de ouro do topo
+  function soltarMoedas(e, preco) {
+    const cena = refs.cena;
+    const alvo = alvoOuro?.();
+    if (!cena || cena.c.destroyed || !alvo) return;
+    const de = fx.toLocal(cena.c.toGlobal({ x: e.x + e.size / 2, y: e.ty + e.size / 2 }));
+    const ate = fx.toLocal(alvo);
+    const n = Math.min(6, 2 + Math.floor(preco / 60));
+    for (let i = 0; i < n; i++) {
+      const s = guiPronto() ? guiSprite('moeda', 2) : new Graphics().circle(0, 0, 5).fill(C.gold);
+      s.alpha = 0;
+      fx.addChild(s);
+      moedas.push({ s, x0: de.x + (i - n / 2) * 4, y0: de.y, x1: ate.x, y1: ate.y, t: -i * 80, dur: 620 });
+    }
+  }
+
+  // desenha o balãozinho de reação (coração, estrela, "!" ou reticências)
+  function desenharBolha(tipo) {
+    const c = new Container();
+    const g = new Graphics();
+    g.roundRect(0, 0, 22, 20, 6).fill({ color: 0x1b130f, alpha: 0.88 }).stroke({ width: 1, color: 0xffffff, alpha: 0.25 });
+    g.poly([8, 19, 11, 24, 14, 19]).fill({ color: 0x1b130f, alpha: 0.88 });
+    const ic = new Graphics();
+    if (tipo === 'coracao') {
+      ic.circle(8.6, 8, 3).circle(13.4, 8, 3).fill(0xff6f8b);
+      ic.poly([5.7, 9.4, 11, 15, 16.3, 9.4]).fill(0xff6f8b);
+    } else if (tipo === 'estrela') {
+      ic.star(11, 10, 5, 6.2, 2.9).fill(C.gold);
+    } else if (tipo === 'bravo') {
+      ic.roundRect(9.6, 3.5, 2.8, 8, 1.2).fill(C.bad);
+      ic.circle(11, 15, 1.7).fill(C.bad);
+    } else {
+      ic.circle(6, 10, 1.6).circle(11, 10, 1.6).circle(16, 10, 1.6).fill(C.dim);
+    }
+    c.addChild(g, ic);
+    c.scale.set(1.4);
+    c.eventMode = 'none';
+    return c;
+  }
+
   // ---------- cena ----------
   function buildScene(w, h) {
     const c = new Container();
     refs.cena = { c, w, h };
+    // quem entra e sai andando não pode passar da moldura da cena (na tela larga ela fica ao lado da coluna do atendimento)
+    const moldura = new Graphics().roundRect(0, 0, w, h, 14).fill(0xffffff);
+    c.addChild(moldura);
+    c.mask = moldura;
     const bg = new Graphics();
     const cor = temaAtual(game).cores;
     const floorY = 62;                     // a parede só tem a prateleira; o resto é palco dos clientes
@@ -169,30 +241,46 @@ export function createLojaScreen({ game, toast, ir }) {
     // fila no balcão: o primeiro (maior) é atendido
     const fila = game.state.fila;
     refs.fila = [];
+    refs.saindo = [];
     const counterY = h - 34;
     const n = fila.length;
     // os retratos de 32 px ficam nítidos em múltiplos inteiros: o cliente da vez é grande (96 ou 128) e os de trás têm 32
     const big = Math.max(32, Math.floor(Math.min(h >= 280 ? 128 : 96, h - floorY - 20) / 32) * 32);
     const small = 32;
     const step = n > 1 ? Math.min(small + 4, (w - 24 - big - 8) / (n - 1)) : 0;
+    const naFila = new Set();
     fila.forEach((cli, i) => {
       const size = i === 0 ? big : small;
       const x = i === 0 ? 14 : 14 + big + 8 + (i - 1) * step;
       const y = counterY - size + 14;
+      // quem acabou de chegar entra andando pela direita; quem já estava continua de onde estava
+      let e = visual.get(cli.uid);
+      if (!e) { e = { x: settings.motion ? w + 12 : x, fase: Math.random() * 1000 }; visual.set(cli.uid, e); }
+      Object.assign(e, { tx: x, ty: y, size, andando: Math.abs(x - e.x) > 0.5 });
+      naFila.add(cli.uid);
       const p = new Container();
       const spr = portraitSprite(cli.adv, size);
       p.addChild(spr);
-      p.position.set(x, y);
+      p.position.set(Math.round(e.x), y);
       p.eventMode = 'static';
       p.cursor = i === 0 ? 'default' : 'pointer';
       p.hitArea = { contains: (px, py) => px >= 0 && py >= 0 && px <= size && py <= size };
       if (i > 0) p.on('pointertap', () => { if (!wasDragged()) { passarNaFrente(game, cli.uid); sfx.tap(); } });
       const bar = new Graphics();
-      bar.position.set(x, y - 7);
+      bar.position.set(Math.round(e.x), y - 7);
       c.addChild(p, bar);
       bars.push({ g: bar, cli, w: size });
-      refs.fila.push({ cli, c: p, size });
+      refs.fila.push({ cli, c: p, size, bar, e });
     });
+    for (const uid of [...visual.keys()]) if (!naFila.has(uid)) visual.delete(uid);
+    // quem está indo embora (ainda aparece, andando para a esquerda) e os balões de reação
+    for (const gh of saindo) {
+      const spr = portraitSprite(gh.adv, gh.size);
+      spr.position.set(Math.round(gh.x), gh.y);
+      c.addChild(spr);
+      refs.saindo.push({ gh, c: spr });
+    }
+    refs.bolhas = bolhas.map((b) => { const bc = desenharBolha(b.tipo); c.addChild(bc); return { b, c: bc }; });
     // balcão (cobre os pés dos clientes)
     const counter = new Graphics();
     counter.roundRect(6, counterY, w - 12, 20, 4).fill(cor.balcao);
@@ -558,6 +646,50 @@ export function createLojaScreen({ game, toast, ir }) {
     paintTempos();
   }
 
+  // um passo das animações: quem anda na fila, quem está saindo, os balões e as moedinhas
+  function animar(dt) {
+    tempoAnim += dt;
+    const movimento = settings.motion;
+    const frente = game.state.fila[0];
+    for (const r of refs.fila ?? []) {
+      const e = r.e;
+      const dx = e.tx - e.x;
+      e.andando = movimento && Math.abs(dx) > 0.5;
+      e.x = e.andando ? e.x + Math.sign(dx) * Math.min(Math.abs(dx), VEL_ANDAR * dt) : e.tx;
+      let dy = 0;
+      if (e.andando) dy = -Math.round(Math.abs(Math.sin((tempoAnim + e.fase) / 70)) * 3);                       // pulinhos de quem anda
+      else if (movimento && r.cli === frente) dy = Math.floor((tempoAnim + e.fase) / 520) % 2 ? -1 : 0;        // o cliente da vez "respira"
+      const x = Math.round(e.x);
+      r.c.position.set(x, e.ty + dy);
+      r.bar.position.set(x, e.ty + dy - 7);
+    }
+    for (const gh of saindo) { gh.t += dt; gh.x -= gh.vel * dt; }
+    saindo = saindo.filter((gh) => gh.x > -gh.size - 8);
+    for (const r of refs.saindo ?? []) {
+      const gh = r.gh;
+      const hop = -Math.round(Math.abs(Math.sin((tempoAnim + gh.size * 7) / 70)) * 3);
+      r.c.position.set(Math.round(gh.x), gh.y + hop);
+      r.c.alpha = Math.max(0, Math.min(1, (gh.x + gh.size) / 48));
+    }
+    for (const b of bolhas) b.t += dt;
+    bolhas = bolhas.filter((b) => b.t < 1100);
+    for (const r of refs.bolhas ?? []) {
+      const b = r.b;
+      r.c.position.set(Math.round(b.cx - 15), Math.round(b.y - 34 - Math.min(10, b.t / 70)));
+      r.c.alpha = b.t < 800 ? Math.min(1, b.t / 120) : Math.max(0, 1 - (b.t - 800) / 300);
+    }
+    for (let i = moedas.length - 1; i >= 0; i--) {
+      const m = moedas[i];
+      m.t += dt;
+      if (m.t < 0) continue;
+      const p = Math.min(1, m.t / m.dur);
+      const q = p * p * (3 - 2 * p);
+      m.s.alpha = 1;
+      m.s.position.set(m.x0 + (m.x1 - m.x0) * q, m.y0 + (m.y1 - m.y0) * q - Math.sin(Math.PI * p) * 46);
+      if (p >= 1) { m.s.destroy(); moedas.splice(i, 1); pulsarOuro?.(); sfx.tick?.(); }
+    }
+  }
+
   function paintTempos() {
     const agora = game.clock.now();
     for (const x of tempos) {
@@ -596,13 +728,14 @@ export function createLojaScreen({ game, toast, ir }) {
         refs.prateleira.mover(prateleiraVel * dt);
         prateleiraVel *= 0.94 ** (dt / 16);
       }
+      animar(dt);
       if (dirty) render();
       else { quadros += 1; paintBars(); if (tempos.length && (quadros % 15 === 0)) paintTempos(); }
     },
     // atalhos para os testes e para depurar
     hooks: {
       // false enquanto há um redesenho pendente ou o Pixi ainda não desenhou um quadro depois dele (toques errariam o alvo)
-      pronta: () => !dirty && quadros >= 2,
+      pronta: () => !dirty && quadros >= 2 && !(refs.fila ?? []).some((r) => r.e?.andando),
       selecionada: () => sel,
       resultado: () => resultado,
       nomes: () => Object.keys(refs.precos).map((n) => `preco:${n}`),
@@ -612,6 +745,8 @@ export function createLojaScreen({ game, toast, ir }) {
       opcaoCentro: (i) => (refs.opcoes[i] ? global(refs.opcoes[i]) : null),
       filaCentro: (i) => { const f = refs.fila[i]; return f ? f.c.toGlobal({ x: f.size / 2, y: f.size / 2 }) : null; },
       renderAgora: render,
+      // a vida da cena: quantos andam na fila, saem, reagem ou têm moedinhas voando
+      vida: () => ({ andando: (refs.fila ?? []).filter((r) => r.e?.andando).length, saindo: saindo.length, bolhas: bolhas.length, moedas: moedas.length }),
       // o cartão de objetivo: o que sugere agora (ou null) e o ponto do meio dele
       objetivo: () => objetivoAtual,
       objetivoCentro: () => (refs.objetivo && !refs.objetivo.c.destroyed ? global(refs.objetivo) : null),

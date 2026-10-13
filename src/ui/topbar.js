@@ -106,5 +106,11 @@ export function createTopBar({ onSettings }) {
       }
     },
     gearCenter: () => ({ x: gear.x + 20, y: gear.y + 20 }),
+    // onde as moedinhas da venda chegam (ponto na tela) e um "pulinho" do contador a cada uma
+    ouroCentro: () => goldBox.toGlobal({ x: 20, y: 18 }),
+    pulsar() {
+      goldTxt.scale.set(1.08);
+      tween(goldTxt, { scale: 1 }, 160);
+    },
   };
 }

@@ -116,7 +116,7 @@ async function start() {
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  screens = createScreens({ toast: toasts.show, game, modal, ir: irPara });
+  screens = createScreens({ toast: toasts.show, game, modal, ir: irPara, alvoOuro: () => topbar.ouroCentro(), pulsarOuro: () => topbar.pulsar() });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
