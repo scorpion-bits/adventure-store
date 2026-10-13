@@ -128,6 +128,19 @@ export const META = {
     tabuleiros: [{ ate: 7, n: 6, seg: 60 }, { ate: 19, n: 8, seg: 75 }, { ate: 999, n: 10, seg: 90 }],
   },
 
+  // ---------- mini-jogo de lógica: o Código do Ferreiro (Mercado -> Mini-jogos) ----------
+  // Um cofre guarda uma sequência secreta de materiais; o jogador tenta palpites e recebe dicas (lugar certo / material certo no lugar
+  // errado). `niveis`: o cofre cresce com a reputação (espaços, quantos materiais diferentes, se o material pode repetir).
+  // Abrir rende os materiais do segredo (por espaço); abrir em até `rapidoAte` tentativas dobra o prêmio.
+  codigo: {
+    max: 3, recargaMin: 150, tentativas: 8, rapidoAte: 5, nivelPorUnidade: 15,
+    niveis: [
+      { ate: 7, espacos: 3, cores: 4, repete: false },
+      { ate: 19, espacos: 4, cores: 5, repete: true },
+      { ate: 999, espacos: 5, cores: 6, repete: true },
+    ],
+  },
+
   // ---------- lendários ----------
   // chance: probabilidade de, a cada chegada de cliente, vir um lendário elegível; cooldownMin: minutos entre visitas do mesmo lendário
   lendarios: { chance: 0.07, cooldownMin: 8, pacienciaMult: 1.7 },

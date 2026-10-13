@@ -45,7 +45,7 @@ export const SEQUENCIAS = {
     { id: 'mercado-mapa', aba: 'mercado', sub: 'mapa', botao: 'Entendi',
       texto: 'No Mapa, batedores buscam materiais por você, mesmo com o jogo fechado. Regiões novas abrem com reputação.' },
     { id: 'mercado-minijogo', aba: 'mercado', sub: 'minijogo', botao: 'Entendi',
-      texto: 'Sem material? No Mini-jogo você acha pares de cartas e ganha um pouco de cada material. São poucas partidas, que voltam com o tempo.' },
+      texto: 'Sem material? Nos Mini-jogos você ganha um pouco: ache pares de cartas ou abra o cofre do Código do Ferreiro. São poucas partidas, que voltam com o tempo.' },
   ],
   aventureiros: [
     { id: 'aventureiros-bonus', aba: 'aventureiros', sub: 'hoje', espera: ['bonusDiario'], alvo: 'bonus',
