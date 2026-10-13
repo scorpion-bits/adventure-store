@@ -137,13 +137,14 @@ sozinhos (`withDefaults`), nunca quebram. Mudança que precisa transformar dados
 
 ### Música
 
-A trilha é opcional. Coloque arquivos `.mp3`, `.ogg` ou `.wav` em `src/assets/music/`: o jogo toca um deles
+A trilha é opcional. Coloque arquivos `.mp3` (o formato mais seguro: o Safari do iPhone não lê `.ogg`), `.ogg` ou `.wav`
+em `src/assets/music/`: o jogo toca um deles
 em loop (sorteado a cada abertura) e a janela de configurações ganha os controles de música.
 Sem arquivos, não há música e nada quebra.
 
-Por enquanto toca uma faixa provisória, `taverna-ao-entardecer.ogg` (ambiente medieval, ré dórico, ~2 min em loop sem
+Por enquanto toca uma faixa provisória, `taverna-ao-entardecer.mp3` (ambiente medieval, ré dórico, ~2 min em loop sem
 emenda), gerada por `python3 scripts/gerar-musica.py saida.wav` (precisa de numpy; depois
-`ffmpeg -i saida.wav -c:a libvorbis -q:a 3 saida.ogg`). **Para trocar pela música final: coloque o arquivo novo em
+`ffmpeg -i saida.wav -c:a libmp3lame -b:a 112k saida.mp3`). **Para trocar pela música final: coloque o arquivo novo em
 `src/assets/music/` e apague a provisória** (se houver mais de um arquivo, o jogo sorteia um a cada abertura).
 
 ## Arte de terceiros

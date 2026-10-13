@@ -10,7 +10,7 @@ import { createModal } from './ui/modal.js';
 import { createToasts } from './ui/toast.js';
 import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
-import { unlockAudio, sfx } from './audio/sfx.js';
+import { unlockAudio, getAudioContext, sfx } from './audio/sfx.js';
 import { startMusic } from './audio/music.js';
 import { createGame, diaDeJogo } from './core/game.js';
 import { loadState, saveState, clearSave } from './core/save.js';
@@ -194,12 +194,16 @@ async function start() {
   // Esc fecha a janela aberta (janelas de evento, que exigem uma escolha, ignoram)
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.isOpen()) modal.close(); });
 
-  // áudio só depois do primeiro gesto
+  // áudio só depois de um gesto do jogador. Cada navegador aceita um evento diferente (no celular, `pointerdown` não conta:
+  // vale o toque soltar), então tenta em todos até o áudio estar mesmo rodando.
+  const GESTOS = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
   const unlock = () => {
     unlockAudio();
     startMusic();
+    const ctx = getAudioContext();
+    if (ctx?.state === 'running') for (const g of GESTOS) window.removeEventListener(g, unlock);
   };
-  window.addEventListener('pointerdown', unlock, { once: true });
+  for (const g of GESTOS) window.addEventListener(g, unlock);
 
   // tira a tela de carregamento
   const boot = document.getElementById('boot');

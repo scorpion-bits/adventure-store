@@ -2,7 +2,7 @@
 """Gera a trilha provisória "Taverna ao entardecer": ambiente medieval em ré dórico, 6/8, em loop sem emenda.
 
 Alaúde (cordas dedilhadas sintetizadas), flauta, pad e um pouco de reverb. Tudo sintetizado por código com numpy,
-sem amostras de terceiros. Uso: python3 scripts/gerar-musica.py saida.wav  (depois: ffmpeg -i saida.wav -c:a libvorbis -q:a 3 saida.ogg)
+sem amostras de terceiros. Uso: python3 scripts/gerar-musica.py saida.wav  (depois: ffmpeg -i saida.wav -c:a libmp3lame -b:a 112k saida.mp3)
 Precisa de numpy. A semente fixa (7) faz a faixa sair sempre igual.
 """
 import sys
