@@ -5,7 +5,7 @@ import { defaultState } from '../../src/core/state.js';
 import { createRng } from '../../src/core/rng.js';
 import { createClock } from '../../src/core/time.js';
 import { repParaNivel } from '../../src/core/economy.js';
-import { dicas, iniciarPartida, finalizarPartida, cofreDe, cargasAgora, msParaProxima, unidadesPorEspaco } from '../../src/core/codigo.js';
+import { dicas, marcas, iniciarPartida, finalizarPartida, cofreDe, cargasAgora, msParaProxima, unidadesPorEspaco } from '../../src/core/codigo.js';
 
 const T0 = new Date(2026, 7, 4, 12).getTime();
 const novo = (nivel = 1, seed = 1) => {
@@ -122,4 +122,26 @@ test('o prêmio por espaço sobe com a reputação', () => {
   assert.equal(unidadesPorEspaco(novo(1).game), 1);
   assert.equal(unidadesPorEspaco(novo(15).game), 2);
   assert.equal(unidadesPorEspaco(novo(30).game), 3);
+});
+
+test('marcas: cada peça do palpite fica certa, quase ou nada, e bate com as dicas em números', () => {
+  assert.deepEqual(marcas(['a', 'b', 'c'], ['a', 'c', 'd']), ['certo', 'quase', 'nada']);
+  assert.deepEqual(marcas(['a', 'b', 'c'], ['a', 'b', 'c']), ['certo', 'certo', 'certo']);
+  // o segredo tem um "a" só: o primeiro "a" fora do lugar conta, os outros não
+  assert.deepEqual(marcas(['x', 'a', 'y'], ['a', 'a', 'a']), ['nada', 'certo', 'nada']);
+  assert.deepEqual(marcas(['a', 'x', 'y'], ['z', 'a', 'a']), ['nada', 'quase', 'nada']);
+  assert.deepEqual(marcas(['a', 'a', 'b', 'b'], ['b', 'b', 'a', 'a']), ['quase', 'quase', 'quase', 'quase']);
+  // com sorteios: as marcas e as dicas sempre concordam
+  const rng = createRng(11);
+  for (let i = 0; i < 300; i++) {
+    const n = 3 + (i % 3);
+    const mats = ['a', 'b', 'c', 'd', 'e'];
+    const seg = Array.from({ length: n }, () => rng.pick(mats));
+    const pal = Array.from({ length: n }, () => rng.pick(mats));
+    const m = marcas(seg, pal);
+    const d = dicas(seg, pal);
+    assert.equal(m.filter((x) => x === 'certo').length, d.certos);
+    assert.equal(m.filter((x) => x === 'quase').length, d.quase);
+    pal.forEach((x, k) => { if (m[k] === 'certo') assert.equal(seg[k], x); });
+  }
 });

@@ -10,13 +10,9 @@ async function abrirCodigo(page) {
   await page.waitForFunction(() => window.__loja.tab() === 'mercado');
   await pronta(page);
   await quadros(page, 3);
-  let c = await page.evaluate(() => window.__loja.mercado.centro('sub:minijogo'));
+  const c = await page.evaluate(() => window.__loja.mercado.centro('sub:minijogo'));
   await page.mouse.click(c.x, c.y);
   await page.waitForFunction(() => window.__loja.mercado.sub() === 'minijogo');
-  await pronta(page);
-  c = await page.evaluate(() => window.__loja.mercado.centro('jogo:codigo'));
-  await page.mouse.click(c.x, c.y);
-  await page.waitForFunction(() => window.__loja.mercado.jogoSelecionado() === 'codigo');
   await pronta(page);
 }
 const tocar = async (page, nome) => {
@@ -41,13 +37,17 @@ const montar = async (page, materiais) => {
 test.describe('Código do Ferreiro (retrato)', () => {
   test.use({ viewport: VIEWPORTS.portrait });
 
-  test('o saguão mostra os dois jogos, as partidas guardadas e o botão Jogar', async ({ page }) => {
+  test('os dois jogos aparecem um embaixo do outro na mesma aba, cada um com as suas partidas e o botão Jogar', async ({ page }) => {
     const errors = await openGame(page);
     await abrirCodigo(page);
     await page.screenshot({ path: shotPath('portrait-codigo-saguao') });
     expect(await cod(page, 'fase')).toBe('lobby');
     const nomes = await page.evaluate(() => window.__loja.mercado.nomes());
-    expect(nomes).toEqual(expect.arrayContaining(['codigo:jogar', 'jogo:memoria', 'jogo:codigo']));
+    expect(nomes).toEqual(expect.arrayContaining(['minijogo:jogar', 'codigo:jogar']));
+    expect(nomes.some((n) => n.startsWith('jogo:')), 'não há mais seletor de jogo').toBe(false);
+    // a memória vem primeiro; o código fica logo abaixo
+    const [m, k] = await Promise.all([page.evaluate(() => window.__loja.mercado.retangulo('minijogo:jogar')), page.evaluate(() => window.__loja.mercado.retangulo('codigo:jogar'))]);
+    expect(k.y).toBeGreaterThan(m.y);
     expect(errors).toEqual([]);
   });
 
@@ -79,7 +79,7 @@ test.describe('Código do Ferreiro (retrato)', () => {
     await tocar(page, 'codigo:conferir');
     const h = await cod(page, 'historico');
     expect(h).toHaveLength(1);
-    expect(h[0]).toMatchObject({ certos: 1, quase: 2 });
+    expect(h[0]).toMatchObject({ certos: 1, quase: 2, marcas: ['quase', 'quase', 'certo'] });
     expect(await cod(page, 'palpite')).toEqual([null, null, null]);
     await page.screenshot({ path: shotPath('portrait-codigo-dicas') });
 
@@ -99,16 +99,16 @@ test.describe('Código do Ferreiro (retrato)', () => {
     expect(errors).toEqual([]);
   });
 
-  test('não dá para trocar de jogo no meio da partida; desistir mostra o segredo e dá o consolo', async ({ page }) => {
+  test('só uma partida de cada vez (o outro jogo some da tela); desistir mostra o segredo e dá o consolo', async ({ page }) => {
     const errors = await openGame(page);
     await abrirCodigo(page);
     await jogar(page);
     const segredo = await cod(page, 'segredo');
-    // tenta trocar para a memória: fica no código
-    const c = await page.evaluate(() => window.__loja.mercado.centro('jogo:memoria'));
-    await page.mouse.click(c.x, c.y);
-    await quadros(page, 3);
-    expect(await page.evaluate(() => window.__loja.mercado.jogoSelecionado())).toBe('codigo');
+    // durante a partida do código, a memória some da tela (só uma partida de cada vez) e não gasta nada
+    const nomes = await page.evaluate(() => window.__loja.mercado.nomes());
+    expect(nomes.includes('minijogo:jogar'), 'a memória não aparece durante a partida').toBe(false);
+    expect(await page.evaluate(() => window.__loja.state().minijogo.cargas)).toBe(3);
+    expect(await cod(page, 'fase')).toBe('jogando');
     // um palpite com o primeiro espaço certo e o resto errado
     const paleta = await cod(page, 'paleta');
     const outro = (i) => paleta.find((m) => m !== segredo[i]);
@@ -119,10 +119,10 @@ test.describe('Código do Ferreiro (retrato)', () => {
     const r = await cod(page, 'resultado');
     expect(r).toMatchObject({ aberto: false, desistiu: true, total: 1 });
     expect(r.segredo).toEqual(segredo);
-    // depois do fim dá para trocar de jogo
+    // depois do fim a memória já pode começar
     await tocar(page, 'codigo:voltar');
-    await tocar(page, 'jogo:memoria');
-    expect(await page.evaluate(() => window.__loja.mercado.jogoSelecionado())).toBe('memoria');
+    await tocar(page, 'minijogo:jogar');
+    await page.waitForFunction(() => window.__loja.mercado.minijogo.fase() === 'jogando');
     expect(errors).toEqual([]);
   });
 });
