@@ -15,6 +15,10 @@ import RETRATOS_ATLAS from './assets/retratos/retratos.json';
 import RETRATOS_URL from './assets/retratos/retratos.png';
 import EMOTES from './assets/emotes/emotes.json';
 import EMOTES_URL from './assets/emotes/emotes.png';
+import MAPA from './assets/mapa/mapa.json';
+import MAPA_URL from './assets/mapa/mapa.png';
+import BATEDORES from './assets/mapa/batedores.json';
+import BATEDORES_URL from './assets/mapa/batedores.png';
 import ITENS_NJ from './assets/itens/itens.json';
 import ITENS_NJ_URL from './assets/itens/itens.png';
 
@@ -24,7 +28,9 @@ const cache = new Map();
 const atlas = { 32: new Map(), 64: new Map() };
 const retratosArte = new Map();       // chave do retrato (ex.: c_Knight) -> Texture (pack Ninja Adventure, 38 px, fundo transparente)
 const itensNinja = new Map();         // quadro 'nj_Pasta_Nome' -> Texture (ícones 16x16 do pack Ninja Adventure, em atlas próprio)
-const emotesArte = new Map();         // número do emote (1 a 30) -> Texture (14x13)
+const emotesArte = new Map();
+let mapaArte = null;                  // a imagem do mapa-múndi (pack Ninja, gerada por `npm run pack:mapa`)
+const batedoresArte = new Map();      // `${personagem}:${direcao}:${passo}` -> Texture 16x16         // número do emote (1 a 30) -> Texture (14x13)
 
 // Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
 const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
@@ -43,10 +49,19 @@ export function initAssets(app) {
 // Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
 export async function carregarAtlas() {
   try {
-    const [t32, t64, tRet, tEmo, tNj] = await Promise.all([
+    const [t32, t64, tRet, tEmo, tNj, tMapa, tBat] = await Promise.all([
       Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL),
       Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null), Assets.load(ITENS_NJ_URL).catch(() => null),
+      Assets.load(MAPA_URL).catch(() => null), Assets.load(BATEDORES_URL).catch(() => null),
     ]);
+    if (tMapa) { tMapa.source.scaleMode = 'nearest'; mapaArte = tMapa; }
+    if (tBat) {
+      tBat.source.scaleMode = 'nearest';
+      const T = BATEDORES.tamanho;
+      BATEDORES.personagens.forEach((_, i) => {
+        for (let d = 0; d < 4; d++) for (let p = 0; p < 4; p++) batedoresArte.set(`${i}:${d}:${p}`, new Texture({ source: tBat.source, frame: new Rectangle(d * T, i * 4 * T + p * T, T, T) }));
+      });
+    }
     if (tNj) {
       tNj.source.scaleMode = 'nearest';
       const T = ITENS_NJ.tamanho;
@@ -233,5 +248,24 @@ export function portraitSprite(advId, size = 76) {
   const s = new Sprite(portraitTexture(advId));
   s.width = size;
   s.height = size;
+  return s;
+}
+
+// ---------- mapa-múndi ----------
+export const mapaPronto = () => !!mapaArte;
+export const mapaDados = MAPA;                 // { largura, altura, tile, regioes: { id: { ilha: [x, y, w, h], hub: [x, y] } } } em pixels da imagem
+export const batedoresQtd = () => BATEDORES.personagens.length;
+// imagem do mapa em escala inteira `escala` (pixel-art nítida)
+export function mapaSprite(escala = 2) {
+  const s = new Sprite(mapaArte ?? Texture.EMPTY);
+  s.scale.set(escala);
+  return s;
+}
+// quadro da caminhada de um batedor: personagem (0..n-1), direção (0 de frente, 1 de costas, 2 esquerda, 3 direita), passo (0..3)
+export function batedorSprite(personagem, escala = 2) {
+  const s = new Sprite(batedoresArte.get(`${personagem % batedoresQtd()}:0:0`) ?? Texture.EMPTY);
+  s.scale.set(escala);
+  s.anchor.set(0.5, 1);
+  s.pose = (direcao, passo) => { s.texture = batedoresArte.get(`${personagem % batedoresQtd()}:${direcao}:${passo & 3}`) ?? Texture.EMPTY; };
   return s;
 }

@@ -12,6 +12,7 @@
     "pack:icons": "node scripts/pack-icons.mjs",
     "pack:gui": "node scripts/pack-gui.mjs",
     "pack:ninja": "node scripts/pack-ninja.mjs",
+    "pack:mapa": "node scripts/pack-mapa.mjs",
     "icons:app": "node scripts/make-app-icons.mjs",
     "validate": "node scripts/validate-data.mjs",
     "sim": "node scripts/balance-sim.mjs",
