@@ -88,6 +88,8 @@ o atlas em `src/assets/retratos/`; o mesmo comando gera os emotes das reações 
 
 **Itens do pack Ninja:** ~86 itens do catálogo (armas ninja, comidas, sementes, dados, baús, gemas lapidadas, cartas...) usam ícones 16×16 do Ninja Adventure, só os que não repetiam algo que o jogo já tinha. No `src/data/icones.js` o quadro se chama `nj_<Pasta>_<Nome>` (ex.: `nj_Weapons_Katana`); `npm run pack:ninja` gera o atlas em `src/assets/itens/`. Parte tem receita (oficina) e parte vem de dois fornecedores novos da vila, a Sementeira do Vale e o Correio do Vale.
 
+**Mapa-múndi:** a aba Mapa do Mercado é uma imagem grande (arrastável, em escala 2×) feita com os tilesets do Ninja Adventure: `scripts/pack-mapa.mjs` (`npm run pack:mapa`, pack em `assets-src/ninja`) pinta o mar, uma ilha por região (bloco de terreno do TilesetField, em cores diferentes) e os enfeites, e grava `src/assets/mapa/mapa.png` + `mapa.json` (onde fica a ilha e o pino de cada região). Também gera `batedores.png` (a caminhada de 6 personagens). `src/ui/mundo.js` mostra o mapa: névoa nas regiões fechadas, pino com anel de progresso, "!" quando os batedores voltam e os batedores andando pelo caminho (vão na primeira metade do tempo da expedição, voltam na segunda). Tocar numa região abre a janela dela (`src/ui/mapa.js`): materiais, achados raros e expedições.
+
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,
 a interface volta às formas desenhadas por código. A opção "Animações" das configurações (e `prefers-reduced-motion`) desliga as animações.

@@ -43,7 +43,7 @@ export const SEQUENCIAS = {
     { id: 'mercado-comprar', aba: 'mercado', espera: ['compra'], alvo: { termina: ':x1' },
       texto: 'Toque em +1 para comprar uma unidade. O "Máx" compra o que o ouro e o estoque do fornecedor permitirem.' },
     { id: 'mercado-mapa', aba: 'mercado', sub: 'mapa', botao: 'Entendi',
-      texto: 'No Mapa, batedores buscam materiais por você, mesmo com o jogo fechado. Regiões novas abrem com reputação.' },
+      texto: 'No Mapa, arraste para explorar e toque numa região para mandar batedores buscar materiais, mesmo com o jogo fechado. Regiões sob névoa abrem com reputação.' },
     { id: 'mercado-minijogo', aba: 'mercado', sub: 'minijogo', botao: 'Entendi',
       texto: 'Sem material? Nos Mini-jogos você ganha um pouco: ache pares de cartas ou abra o cofre do Código do Ferreiro. São poucas partidas, que voltam com o tempo.' },
   ],
