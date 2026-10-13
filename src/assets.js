@@ -5,12 +5,12 @@
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { DATA, raridade } from './data/index.js';
 import { FONT_DISPLAY } from './ui/theme.js';
-import { portraitPixels } from './ui/portrait-art.js';
 import ATLAS from './assets/atlas/icones.json';
 import ATLAS_32_URL from './assets/atlas/icones-32.png';
 import ATLAS_64_URL from './assets/atlas/icones-64.png';
 import GUI from './assets/gui/gui.json';
 import GUI_URL from './assets/gui/gui.png';
+import { retratoDe } from './data/retratos.js';
 import RETRATOS_ATLAS from './assets/retratos/retratos.json';
 import RETRATOS_URL from './assets/retratos/retratos.png';
 
@@ -18,7 +18,7 @@ let renderer = null;
 const cache = new Map();
 // Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
 const atlas = { 32: new Map(), 64: new Map() };
-const retratosArte = new Map();       // id do aventureiro -> Texture (pack de retratos, 32 px)
+const retratosArte = new Map();       // número do retrato -> Texture (pack de retratos, 32 px)
 
 // Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
 const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
@@ -41,7 +41,7 @@ export async function carregarAtlas() {
     if (tRet) {
       tRet.source.scaleMode = 'nearest';
       const T = RETRATOS_ATLAS.tamanho;
-      for (const [id, [cx, cy]] of Object.entries(RETRATOS_ATLAS.quadros)) retratosArte.set(id, new Texture({ source: tRet.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
+      for (const [numero, [cx, cy]] of Object.entries(RETRATOS_ATLAS.quadros)) retratosArte.set(numero, new Texture({ source: tRet.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
     }
     for (const [tam, tex] of [[32, t32], [64, t64]]) {
       tex.source.scaleMode = 'nearest';                     // pixel-art: sem suavizar
@@ -134,7 +134,7 @@ export function guiPainel(nome, w, h, escala = 2, { repetir = false } = {}) {
 }
 
 // O retrato do aventureiro vem do pack (retratos.json); sem ele, do desenho por código.
-export const retratoDoPack = (advId) => retratosArte.has(advId);
+export const retratoDoPack = (advId) => retratosArte.has(retratoDe(advId, [...retratosArte.keys()]));
 
 // De onde vem a imagem de um item/material: 'atlas' (arte do pack) ou 'provisorio' (desenhada por código).
 export const origemTextura = (id) => (DATA.icones[id] && quadroDoAtlas(DATA.icones[id]) ? 'atlas' : 'provisorio');
@@ -186,25 +186,17 @@ export function iconSprite(tipo, id, size = 32) {
 }
 
 // ---------- retratos de aventureiros ----------
-const ESCALA_RETRATO = 4;
-
-// Textura do retrato (pixel-art, "nearest"). Usa a arte do atlas se houver um quadro `retrato_<id>` em data/icones.js.
+// Textura do retrato (pixel-art, "nearest"): o do pack mapeado em data/retratos.js ou, para quem não tem, um do pack escolhido pelo id.
+// Só se o atlas não carregar aparece um quadrado simples com a inicial.
 export function portraitTexture(advId) {
   const key = `retrato:${advId}`;
   if (cache.has(key)) return cache.get(key);
-  const pack = retratosArte.get(advId);
+  const numero = retratoDe(advId, [...retratosArte.keys()].sort());
+  const pack = numero ? retratosArte.get(numero) : null;
   if (pack) { cache.set(key, pack); return pack; }
-  const arte = DATA.icones[`retrato_${advId}`] ? quadroDoAtlas(DATA.icones[`retrato_${advId}`]) : null;
-  if (arte) { cache.set(key, arte); return arte; }
   if (!renderer) return Texture.EMPTY;
   const adv = DATA.aventureiros[advId];
-  const cor = DATA.meta.classes.find((c) => c.id === adv?.classe)?.cor;
-  const { grade, pixels } = portraitPixels(advId, adv?.classe, cor);
-  const g = new Graphics();
-  for (const [x, y, c] of pixels) g.rect(x * ESCALA_RETRATO, y * ESCALA_RETRATO, ESCALA_RETRATO, ESCALA_RETRATO).fill(c);
-  const tex = renderer.generateTexture({ target: g, resolution: 1, frame: new Rectangle(0, 0, grade * ESCALA_RETRATO, grade * ESCALA_RETRATO) });
-  tex.source.scaleMode = 'nearest';
-  g.destroy();
+  const tex = placeholder(adv?.nome, DATA.meta.classes.find((c) => c.id === adv?.classe)?.cor ?? PADRAO, 0xffffff);
   cache.set(key, tex);
   return tex;
 }

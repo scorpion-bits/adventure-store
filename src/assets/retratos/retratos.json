@@ -3,165 +3,165 @@
  "colunas": 8,
  "linhas": 5,
  "quadros": {
-  "aprendiz_guerreiro": [
-   0,
-   0
-  ],
-  "arqueira_novata": [
-   1,
-   0
-  ],
-  "maga_estudante": [
-   2,
-   0
-  ],
-  "ladino_sorrateiro": [
-   3,
-   0
-  ],
-  "clerigo_viajante": [
-   4,
-   0
-  ],
-  "bardo_cantor": [
-   5,
-   0
-  ],
-  "cacador_lobos": [
-   6,
-   0
-  ],
-  "alquimista_errante": [
-   7,
-   0
-  ],
-  "soldado_guarda": [
-   0,
-   1
-  ],
-  "batedor_carteira": [
+  "10": [
    1,
    1
   ],
-  "novica_templo": [
+  "11": [
    2,
    1
   ],
-  "patrulheira_bosque": [
+  "12": [
    3,
    1
   ],
-  "mago_bosque": [
+  "13": [
    4,
    1
   ],
-  "ladino_copa": [
+  "14": [
    5,
    1
   ],
-  "druida": [
+  "15": [
    6,
    1
   ],
-  "trovador": [
+  "16": [
    7,
    1
   ],
-  "rastreador": [
+  "17": [
    0,
    2
   ],
-  "herbalista": [
+  "18": [
    1,
    2
   ],
-  "cavaleiro_errante": [
+  "19": [
    2,
    2
   ],
-  "mestre_runas": [
+  "20": [
    3,
    2
   ],
-  "atirador_montanha": [
+  "21": [
    4,
    2
   ],
-  "javali_berserker": [
+  "22": [
    5,
    2
   ],
-  "contrabandista": [
+  "23": [
    6,
    2
   ],
-  "fundidor": [
+  "24": [
    7,
    2
   ],
-  "gladiador_cinzas": [
+  "25": [
    0,
    3
   ],
-  "sacerdote_sol": [
+  "26": [
    1,
    3
   ],
-  "alquimista_deserto": [
+  "27": [
    2,
    3
   ],
-  "bruxo_brejo": [
+  "28": [
    3,
    3
   ],
-  "poeta_brejo": [
+  "29": [
    4,
    3
   ],
-  "campeao_arena": [
+  "30": [
    5,
    3
   ],
-  "ser_aldric": [
+  "31": [
    6,
    3
   ],
-  "lyra_seda": [
+  "32": [
    7,
    3
   ],
-  "merlindo": [
+  "33": [
    0,
    4
   ],
-  "irmao_anselmo": [
+  "34": [
    1,
    4
   ],
-  "selene_lua": [
+  "35": [
    2,
    4
   ],
-  "thorin_rubro": [
+  "36": [
    3,
    4
   ],
-  "zahir": [
+  "37": [
    4,
    4
   ],
-  "morwen": [
+  "38": [
    5,
    4
   ],
-  "kael": [
+  "39": [
    6,
    4
   ],
-  "rainha_isolde": [
+  "40": [
    7,
    4
+  ],
+  "01": [
+   0,
+   0
+  ],
+  "02": [
+   1,
+   0
+  ],
+  "03": [
+   2,
+   0
+  ],
+  "04": [
+   3,
+   0
+  ],
+  "05": [
+   4,
+   0
+  ],
+  "06": [
+   5,
+   0
+  ],
+  "07": [
+   6,
+   0
+  ],
+  "08": [
+   7,
+   0
+  ],
+  "09": [
+   0,
+   1
   ]
  }
 }

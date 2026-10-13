@@ -234,17 +234,11 @@ export function validar(data = DATA) {
   // cada categoria precisa ter ao menos um item (senão "pedido por categoria" trava)
   for (const c of meta.categorias) exige(listas.itens.some((i) => i.cat === c.id), `categoria "${c.id}" não tem nenhum item`);
 
-  // retratos: todo aventureiro tem o seu (do pack), sem repetir, e só existe retrato para quem existe
-  const usadosRetrato = new Map();
-  for (const a of listas.aventureiros) {
-    exige(data.retratos[a.id], `aventureiro ${a.id}: sem retrato em data/retratos.js`);
-    const n = data.retratos[a.id];
-    if (n) {
-      exige(!usadosRetrato.has(n), `retrato ${n} usado por ${usadosRetrato.get(n)} e por ${a.id}`);
-      usadosRetrato.set(n, a.id);
-    }
+  // retratos: o mapa só pode apontar para aventureiros que existem e para arquivos do pack (Icons_NN); quem não está no mapa recebe um do pack
+  for (const [id, n] of Object.entries(data.retratos)) {
+    exige(data.aventureiros[id], `data/retratos.js: "${id}" não é um aventureiro`);
+    exige(/^\d{2}$/.test(n), `data/retratos.js: "${id}" tem o retrato "${n}" (esperava o número com 2 dígitos, ex.: "07")`);
   }
-  for (const id of Object.keys(data.retratos)) exige(data.aventureiros[id], `data/retratos.js: "${id}" não é um aventureiro`);
 
   // ---------- metas de conteúdo ----------
   const m = meta.metas;

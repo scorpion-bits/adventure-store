@@ -1,7 +1,7 @@
 // Ligação entre itens/materiais e a arte: { idDoItem: 'fbNN' }, onde NN é o número do ícone no pack
 // "Raven Fantasy Icons" (Clockwork Raven Studios). Quem não estiver aqui usa um ícone provisório desenhado por código.
 // Depois de mudar esta lista, rode `npm run pack:icons` para atualizar o atlas (src/assets/atlas/).
-// Retratos de aventureiros usam a chave "retrato_<id>" (hoje desenhados por código).
+// Os retratos dos aventureiros vêm do pack (data/retratos.js), não daqui.
 export const ICONES = {
   // ---------- materiais: vila ----------
   barra_ferro: 'fb221', carvao: 'fb210', madeira: 'fb252', couro_cru: 'fb204', erva_curativa: 'fb241', cristal_mana: 'fb255',

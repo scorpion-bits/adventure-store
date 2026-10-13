@@ -82,8 +82,8 @@ número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o
 fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
 
 **Retratos dos aventureiros:** vêm do pack "Free 39 Portraits Pixel Art" (CraftPix, 32×32). O mapa aventureiro → retrato fica em `src/data/retratos.js`
-(o validador exige um retrato por aventureiro, sem repetir); `npm run pack:retratos` (pack original em `assets-src/retratos`, fora do git) gera o atlas em
-`src/assets/retratos/`. Quem ficar sem retrato usa o retrato desenhado por código (`src/ui/portrait-art.js`).
+(o mesmo retrato pode servir a mais de um aventureiro); `npm run pack:retratos` (pack original em `assets-src/retratos`, fora do git) gera o atlas em
+`src/assets/retratos/`. Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem mais retratos desenhados por código.
 
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,
