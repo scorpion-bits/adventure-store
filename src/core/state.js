@@ -44,6 +44,7 @@ export function defaultState(now = Date.now()) {
     eventos: { proximo: META.eventos.primeiroMin, ultimo: {}, pendente: null },   // relógio (ms), quando cada evento foi visto, evento esperando resposta
     bonus: [],                       // efeitos temporários: { rotulo, efeito, ate (ms) }
 
+    minijogo: { cargas: META.minijogo.max, desde: now, partidas: 0, pares: 0, perfeitas: 0 },   // partidas guardadas, desde quando a próxima recarrega, totais
     mercado: { data: '', comprado: {} },   // compras de hoje por fornecedor: { "fornecedor:material": qtd }
 
     stats: { vendas: 0, recusas: 0, ouroTotal: 0, comprados: 0, encomendas: 0, produzidos: 0, expedicoes: 0, capitulos: 0, caros: 0, baratos: 0, maiorVenda: 0, qualidadeMax: 0, eventos: 0, melhorSequencia: 0 },

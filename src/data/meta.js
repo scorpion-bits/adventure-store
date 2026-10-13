@@ -119,6 +119,15 @@ export const META = {
     ],
   },
 
+  // ---------- mini-jogo de memória (Mercado -> Mini-jogo) ----------
+  // max: partidas guardadas; recargaMin: minutos para voltar uma partida; tabuleiros: do menor para o maior, valem até a reputação `ate`
+  // (n pares de cartas, `seg` segundos); cada par acertado rende `unidades` do material do par (mais 1 a cada `nivelPorUnidade` de reputação);
+  // acertar tudo com poucos erros (`perfeitoErros`) dobra o prêmio
+  minijogo: {
+    max: 3, recargaMin: 120, nivelPorUnidade: 15, perfeitoErros: 2,
+    tabuleiros: [{ ate: 7, n: 6, seg: 60 }, { ate: 19, n: 8, seg: 75 }, { ate: 999, n: 10, seg: 90 }],
+  },
+
   // ---------- lendários ----------
   // chance: probabilidade de, a cada chegada de cliente, vir um lendário elegível; cooldownMin: minutos entre visitas do mesmo lendário
   lendarios: { chance: 0.07, cooldownMin: 8, pacienciaMult: 1.7 },
@@ -163,7 +172,7 @@ export const META = {
 
   // ---------- metas mínimas de conteúdo (conferidas por `npm run validate -- --metas`) ----------
   metas: {
-    itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 40, lendarios: 10,
+    itens: 100, eventos: 30, expedicoes: 1, lendarios: 10, receitas: 60, melhoriasPorOficio: 20, aventureiros: 30, lendarios: 10,
     regioes: 6, fornecedores: 12, eventos: 30, conquistas: 80, heranca: 10,
   },
 };

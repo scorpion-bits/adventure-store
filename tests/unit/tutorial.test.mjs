@@ -6,7 +6,7 @@ import { defaultState } from '../../src/core/state.js';
 import { withDefaults } from '../../src/core/save.js';
 
 const ABAS = ['loja', 'oficina', 'mercado', 'aventureiros', 'melhorias'];
-const SUBS = { mercado: ['fornecedores', 'mapa'], aventureiros: ['hoje', 'colecao', 'lendarios'], melhorias: ['loja', 'equipe', 'oficios', 'conquistas', 'expandir'] };
+const SUBS = { mercado: ['fornecedores', 'mapa', 'minijogo'], aventureiros: ['hoje', 'colecao', 'lendarios'], melhorias: ['loja', 'equipe', 'oficios', 'conquistas', 'expandir'] };
 const EVENTOS_DO_JOGO = ['venda', 'recusa', 'compra', 'produziu', 'coletou', 'bonusDiario'];
 
 test('cada sequência é curta, e cada passo tem texto, aba válida e uma saída (botão ou ação)', () => {

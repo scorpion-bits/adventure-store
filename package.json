@@ -11,6 +11,7 @@
     "publish:site": "node scripts/publish-site.mjs",
     "pack:icons": "node scripts/pack-icons.mjs",
     "pack:gui": "node scripts/pack-gui.mjs",
+    "pack:retratos": "node scripts/pack-retratos.mjs",
     "icons:app": "node scripts/make-app-icons.mjs",
     "validate": "node scripts/validate-data.mjs",
     "sim": "node scripts/balance-sim.mjs",

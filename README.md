@@ -4,8 +4,8 @@ Jogo de gerenciar uma loja de aventureiros, da Scorpion Bits. Roda no navegador,
 para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/) + [Vite](https://vite.dev/).
 (O nome é provisório.) O plano completo de construção está em [`PLANO.md`](PLANO.md).
 
-> Estado atual: **M12 (balanceamento)**: simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
-> 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 52 aventureiros em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
+> Estado atual: **mini-jogo de memória** (Mercado → Mini-jogo, ganha um pouco de material), estoque dos fornecedores a cada 3 h com compra urgente, mais batedores cedo e filtro de receitas na Oficina. Antes, M12 (balanceamento): simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
+> 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 30 aventureiros (cada um com o seu retrato do pack: humanos, orcs, sapos, slimes, golens...) em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
 > aleatórios, mapa com expedições, 112 itens, 106 receitas, 13 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
@@ -81,6 +81,10 @@ Os números de balanceamento (preços, qualidades, temperamentos, reputação) f
 número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o pack original em `assets-src/raven`,
 fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
 
+**Retratos dos aventureiros:** vêm do pack "Free 39 Portraits Pixel Art" (CraftPix, 32×32). O mapa aventureiro → retrato fica em `src/data/retratos.js`
+(o mesmo retrato pode servir a mais de um aventureiro); `npm run pack:retratos` (pack original em `assets-src/retratos`, fora do git) gera o atlas em
+`src/assets/retratos/`. Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem mais retratos desenhados por código.
+
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,
 a interface volta às formas desenhadas por código. A opção "Animações" das configurações (e `prefers-reduced-motion`) desliga as animações.
@@ -90,6 +94,13 @@ rendimento) mais um nó final por ofício a partir de tabelas no topo do arquivo
 Melhorias avulsas (da loja, ou especiais) entram como objetos nas listas, usando os efeitos de `src/core/mods.js`.
 
 `npm run validate -- --metas` confere as metas de quantidade (hoje todas atingidas).
+
+### Mini-jogo de memória
+
+Em *Mercado → Mini-jogo*: vire as cartas e ache os pares; cada par rende **1 unidade daquele material** (mais 1 a cada 15 de reputação, e dobrado se
+acertar tudo com no máximo 2 erros). Os materiais sorteados são só os das regiões que a reputação já abriu, e o tabuleiro cresce (6, 8 e 10 pares).
+São **3 partidas guardadas**, que voltam uma a cada 2 horas (também com o jogo fechado), então é um complemento: uma expedição curta traz o mesmo
+que uma partida perfeita. Os números ficam em `minijogo` de `src/data/meta.js`; a lógica em `src/core/minigame.js` e a tela em `src/ui/minijogo.js`.
 
 ### Balanceamento e ritmo de jogo
 

@@ -130,8 +130,9 @@ export function createLojaScreen({ game, toast }) {
     refs.fila = [];
     const counterY = h - 34;
     const n = fila.length;
-    const big = Math.min(64, h - floorY - 20);
-    const small = Math.round(big * 0.75);
+    // os retratos de 32 px ficam nítidos em múltiplos inteiros: 64 (cliente da vez) ou 32 (os de trás)
+    const big = Math.max(32, Math.floor(Math.min(64, h - floorY - 20) / 32) * 32);
+    const small = 32;
     const step = n > 1 ? Math.min(small + 4, (w - 24 - big - 8) / (n - 1)) : 0;
     fila.forEach((cli, i) => {
       const size = i === 0 ? big : small;

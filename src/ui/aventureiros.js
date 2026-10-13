@@ -73,15 +73,15 @@ export function createAventureirosScreen({ game, modal, toast }) {
     const bloqueada = !concluida && game.nivel() < necessario;
     const c = new Container();
     const bg = new Graphics();
-    const retrato = portraitSprite(def.id, 56);
+    const retrato = portraitSprite(def.id, 64);
     retrato.position.set(12, 12);
     if (bloqueada) retrato.alpha = 0.4;
     const nome = txt(bloqueada ? '???' : adv.nome, bloqueada ? C.dim : C.text, 16, true);
-    nome.position.set(80, 12);
+    nome.position.set(88, 12);
     const titulo = txt(def.titulo, bloqueada ? C.faint : C.gold, 12, true);
-    titulo.position.set(80, 12 + nome.height + 1);
+    titulo.position.set(88, 12 + nome.height + 1);
     c.addChild(bg, retrato, nome, titulo);
-    let y = Math.max(12 + 56 + 8, titulo.y + titulo.height + 6);
+    let y = Math.max(12 + 64 + 8, titulo.y + titulo.height + 6);
 
     const resumo = para(bloqueada ? 'Uma lenda que ainda não chegou à sua loja.' : def.resumo, C.dim, 12, w - 28);
     resumo.position.set(14, y);
@@ -199,19 +199,19 @@ export function createAventureirosScreen({ game, modal, toast }) {
     const item = game.data.itens[e.item];
     const c = new Container();
     const bg = new Graphics();
-    const p = portraitSprite(e.adv, 48);
+    const p = portraitSprite(e.adv, 64);
     p.position.set(12, 12);
     const t = txt('Aventureiro especial do dia', C.dim, 11, true);
-    t.position.set(70, 12);
+    t.position.set(88, 12);
     const n = txt(adv.nome, C.text, 15, true);
-    n.position.set(70, 12 + t.height + 1);
+    n.position.set(88, 12 + t.height + 1);
     const status = e.atendido ? '✓ Atendido hoje' : e.visitou ? 'Já passou por aqui hoje' : 'Vai aparecer em algum momento do dia';
-    const pedido = para(`Pede: ${item.nome}. Atenda bem e ele paga a mais.`, C.accent, 12, w - 84, { bold: true });
-    pedido.position.set(70, n.y + n.height + 3);
+    const pedido = para(`Pede: ${item.nome}. Atenda bem e ele paga a mais.`, C.accent, 12, w - 102, { bold: true });
+    pedido.position.set(88, n.y + n.height + 3);
     const s = txt(status, e.atendido ? C.good : C.dim, 11);
-    s.position.set(70, pedido.y + pedido.height + 3);
+    s.position.set(88, pedido.y + pedido.height + 3);
     c.addChild(bg, p, t, n, pedido, s);
-    const h = Math.max(72, s.y + s.height + 12);
+    const h = Math.max(88, s.y + s.height + 12);
     drawCard(bg, w, h, { fill: C.card, accent: e.atendido ? C.good : C.accent });
     return { c, h };
   }
@@ -287,6 +287,7 @@ export function createAventureirosScreen({ game, modal, toast }) {
 
   // ---------- coleção ----------
   const CELULA = 52;
+  const CELULA_RETRATO = 72;     // os retratos (32 px de arte) aparecem em 64: múltiplo inteiro
   const espaco = 8;
 
   function barraFina(w, frac, cor) {
@@ -321,29 +322,29 @@ export function createAventureirosScreen({ game, modal, toast }) {
   }
 
   // grade de células tocáveis: `celulas` = [{ chave, desenhar(container, tam), descoberto, ao tocar }]
-  function grade(w, celulas) {
-    const cols = Math.max(1, Math.floor((w + espaco) / (CELULA + espaco)));
-    const folga = (w - (cols * CELULA + (cols - 1) * espaco)) / 2;
+  function grade(w, celulas, CEL = CELULA) {
+    const cols = Math.max(1, Math.floor((w + espaco) / (CEL + espaco)));
+    const folga = (w - (cols * CEL + (cols - 1) * espaco)) / 2;
     const c = new Container();
     celulas.forEach((cel, i) => {
-      const x = folga + (i % cols) * (CELULA + espaco);
-      const y = Math.floor(i / cols) * (CELULA + espaco);
+      const x = folga + (i % cols) * (CEL + espaco);
+      const y = Math.floor(i / cols) * (CEL + espaco);
       const b = new Container();
       const bg = new Graphics();
-      bg.roundRect(0, 0, CELULA, CELULA, 10).fill({ color: cel.descoberto ? C.cardHi : C.card, alpha: cel.descoberto ? 1 : 0.6 })
+      bg.roundRect(0, 0, CEL, CEL, 10).fill({ color: cel.descoberto ? C.cardHi : C.card, alpha: cel.descoberto ? 1 : 0.6 })
         .stroke({ width: 1, color: cel.cor ?? 0xffffff, alpha: cel.descoberto ? 0.55 : 0.08 });
       b.addChild(bg);
-      cel.desenhar(b, CELULA);
+      cel.desenhar(b, CEL);
       b.position.set(x, y);
       b.eventMode = 'static';
       b.cursor = 'pointer';
-      b.hitArea = new Rectangle(0, 0, CELULA, CELULA);
+      b.hitArea = new Rectangle(0, 0, CEL, CEL);
       b.on('pointertap', () => { if (!wasDragged()) { sfx.tap(); cel.aoTocar(); } });
-      reg(cel.chave, b, CELULA, CELULA);
+      reg(cel.chave, b, CEL, CEL);
       c.addChild(b);
     });
     const linhas = Math.ceil(celulas.length / cols);
-    return { c, h: linhas * CELULA + Math.max(0, linhas - 1) * espaco };
+    return { c, h: linhas * CEL + Math.max(0, linhas - 1) * espaco };
   }
 
   const misterio = (b, tam) => {
@@ -460,13 +461,13 @@ export function createAventureirosScreen({ game, modal, toast }) {
           chave: `adv:${adv.id}`, descoberto: visto, cor: cl.cor,
           desenhar: (b, tam) => {
             if (!visto) return misterio(b, tam);
-            const r = portraitSprite(adv.id, 40);
-            r.position.set((tam - 40) / 2, (tam - 40) / 2);
+            const r = portraitSprite(adv.id, 64);
+            r.position.set((tam - 64) / 2, (tam - 64) / 2);
             b.addChild(r);
           },
           aoTocar: () => detalheAventureiro(adv),
         };
-      })));
+      }), CELULA_RETRATO));
     }
   }
 

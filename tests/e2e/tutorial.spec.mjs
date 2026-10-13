@@ -85,6 +85,9 @@ test('o começo é curto (só a Loja) e cada aba ganha o seu tutorial na primeir
   await esperarPasso(page, 'mercado-mapa');
   await page.waitForFunction(() => window.__loja.mercado.sub() === 'mapa', null, { timeout: 5000 });
   await botaoOk(page);
+  await esperarPasso(page, 'mercado-minijogo');
+  await page.waitForFunction(() => window.__loja.mercado.sub() === 'minijogo', null, { timeout: 5000 });
+  await botaoOk(page);
   expect(await passo(page)).toBe(-1);
 
   // ---- Aventureiros ----

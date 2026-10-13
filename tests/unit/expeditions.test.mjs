@@ -1,3 +1,4 @@
+import { DATA as DADOS } from '../../src/data/index.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
@@ -143,8 +144,17 @@ test('melhorias dão mais vagas e mais material', () => {
   const base = unidadesDe(game, tierDe(game, 'media'));
   comprarMelhoria(game, 'guia_batedores');
   assert.equal(unidadesDe(game, tierDe(game, 'media')), Math.round(base * 1.2));
-  assert.equal(comprarMelhoria(game, 'caravana_propria').ok, true);
+  assert.equal(comprarMelhoria(game, 'posto_avancado').ok, true);
   assert.equal(slotsExpedicao(game), 3);
+  assert.equal(comprarMelhoria(game, 'caravana_propria').ok, true);
+  assert.equal(slotsExpedicao(game), 4);
+});
+
+test('o segundo grupo de batedores chega cedo e barato; o quarto só bem mais tarde', () => {
+  const mapa = DADOS.melhorias.mapa_regiao;
+  assert.ok(mapa.nivelRep <= 4 && mapa.custo <= 300);
+  const slots = ['mapa_regiao', 'posto_avancado', 'caravana_propria'].map((id) => DADOS.melhorias[id].nivelRep);
+  assert.deepEqual([...slots].sort((a, b) => a - b), slots, 'cada grupo novo exige mais reputação');
 });
 
 test('com o jogo fechado a expedição termina; o save guarda tudo', () => {

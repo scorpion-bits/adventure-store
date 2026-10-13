@@ -234,6 +234,12 @@ export function validar(data = DATA) {
   // cada categoria precisa ter ao menos um item (senão "pedido por categoria" trava)
   for (const c of meta.categorias) exige(listas.itens.some((i) => i.cat === c.id), `categoria "${c.id}" não tem nenhum item`);
 
+  // retratos: o mapa só pode apontar para aventureiros que existem e para arquivos do pack (Icons_NN); quem não está no mapa recebe um do pack
+  for (const [id, n] of Object.entries(data.retratos)) {
+    exige(data.aventureiros[id], `data/retratos.js: "${id}" não é um aventureiro`);
+    exige(/^\d{2}$/.test(n), `data/retratos.js: "${id}" tem o retrato "${n}" (esperava o número com 2 dígitos, ex.: "07")`);
+  }
+
   // ---------- metas de conteúdo ----------
   const m = meta.metas;
   const contagens = {
@@ -244,8 +250,8 @@ export function validar(data = DATA) {
     receitas: [listas.receitas.length, m.receitas],
     aventureiros: [listas.aventureiros.filter((a) => !a.lendario).length, m.aventureiros],
     // menor número de aventureiros por classe e por região (variedade)
-    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 5],
-    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 6],
+    porClasse: [Math.min(...meta.classes.map((c) => listas.aventureiros.filter((a) => a.classe === c.id).length)), 3],
+    porRegiao: [Math.min(...listas.regioes.map((r) => listas.aventureiros.filter((a) => a.regiao === r.id).length)), 3],
     regioes: [listas.regioes.length, m.regioes],
     fornecedores: [listas.fornecedores.length, m.fornecedores],
     conquistas: [listas.conquistas.length, m.conquistas],

@@ -1,36 +1,42 @@
-// Leitor e gravador mínimos de PNG (RGBA de 8 bits, sem entrelaçamento): o suficiente para empacotar o atlas
+// Leitor e gravador mínimos de PNG (sem entrelaçamento): o suficiente para empacotar os atlas
 // sem depender de nenhuma biblioteca de imagem.
 import { inflateSync, deflateSync } from 'node:zlib';
 
 const ASSINATURA = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
+// Lê PNG sem entrelaçamento: RGBA ou RGB de 8 bits e paleta (1, 2, 4 ou 8 bits, com transparência da chunk tRNS). Devolve sempre RGBA.
 export function lerPng(buf) {
   if (!buf.subarray(0, 8).equals(ASSINATURA)) throw new Error('não é um PNG');
   let pos = 8;
-  let w = 0; let h = 0; let ok = false;
+  let w = 0; let h = 0; let profundidade = 0; let tipoCor = 0; let entrelacado = 0;
+  let paleta = null; let transparencia = null;
   const dados = [];
   while (pos < buf.length) {
     const len = buf.readUInt32BE(pos);
     const tipo = buf.toString('ascii', pos + 4, pos + 8);
     const corpo = buf.subarray(pos + 8, pos + 8 + len);
-    if (tipo === 'IHDR') {
-      w = corpo.readUInt32BE(0); h = corpo.readUInt32BE(4);
-      ok = corpo[8] === 8 && corpo[9] === 6 && corpo[12] === 0;
-    } else if (tipo === 'IDAT') dados.push(corpo);
+    if (tipo === 'IHDR') { w = corpo.readUInt32BE(0); h = corpo.readUInt32BE(4); profundidade = corpo[8]; tipoCor = corpo[9]; entrelacado = corpo[12]; }
+    else if (tipo === 'PLTE') paleta = corpo;
+    else if (tipo === 'tRNS') transparencia = corpo;
+    else if (tipo === 'IDAT') dados.push(corpo);
     else if (tipo === 'IEND') break;
     pos += 12 + len;
   }
-  if (!ok) throw new Error('só PNG RGBA de 8 bits sem entrelaçamento é suportado');
+  const suportado = entrelacado === 0 && ((tipoCor === 6 && profundidade === 8) || (tipoCor === 2 && profundidade === 8) || (tipoCor === 3 && profundidade <= 8));
+  if (!suportado) throw new Error('só PNG sem entrelaçamento, RGBA/RGB de 8 bits ou com paleta é suportado');
+  const canais = tipoCor === 6 ? 4 : tipoCor === 2 ? 3 : 1;
+  const bitsPixel = canais * profundidade;
+  const stride = Math.ceil((w * bitsPixel) / 8);          // bytes por linha (sem o byte de filtro)
+  const bpp = Math.max(1, bitsPixel >> 3);                 // bytes por pixel para os filtros
   const raw = inflateSync(Buffer.concat(dados));
-  const stride = w * 4;
-  const px = Buffer.alloc(h * stride);
+  const bruto = Buffer.alloc(h * stride);
   for (let y = 0; y < h; y++) {
     const filtro = raw[y * (stride + 1)];
     const linha = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
     for (let x = 0; x < stride; x++) {
-      const a = x >= 4 ? px[y * stride + x - 4] : 0;
-      const b = y > 0 ? px[(y - 1) * stride + x] : 0;
-      const c = x >= 4 && y > 0 ? px[(y - 1) * stride + x - 4] : 0;
+      const a = x >= bpp ? bruto[y * stride + x - bpp] : 0;
+      const b = y > 0 ? bruto[(y - 1) * stride + x] : 0;
+      const c = x >= bpp && y > 0 ? bruto[(y - 1) * stride + x - bpp] : 0;
       let v = linha[x];
       if (filtro === 1) v += a;
       else if (filtro === 2) v += b;
@@ -40,7 +46,24 @@ export function lerPng(buf) {
         const pa = Math.abs(p - a); const pb = Math.abs(p - b); const pc = Math.abs(p - c);
         v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
       }
-      px[y * stride + x] = v & 0xff;
+      bruto[y * stride + x] = v & 0xff;
+    }
+  }
+  if (tipoCor === 6) return { w, h, px: bruto };
+  const px = Buffer.alloc(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const o = (y * w + x) * 4;
+      if (tipoCor === 2) {
+        const i = y * stride + x * 3;
+        px[o] = bruto[i]; px[o + 1] = bruto[i + 1]; px[o + 2] = bruto[i + 2]; px[o + 3] = 255;
+      } else {
+        const bit = x * profundidade;
+        const byte = bruto[y * stride + (bit >> 3)];
+        const idx = (byte >> (8 - profundidade - (bit & 7))) & ((1 << profundidade) - 1);
+        px[o] = paleta[idx * 3]; px[o + 1] = paleta[idx * 3 + 1]; px[o + 2] = paleta[idx * 3 + 2];
+        px[o + 3] = transparencia && idx < transparencia.length ? transparencia[idx] : 255;
+      }
     }
   }
   return { w, h, px };

@@ -4,12 +4,16 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { drawIcon } from './icons.js';
 import { iconSprite } from '../assets.js';
+import { categoria } from '../data/index.js';
 import {
   produzir, podeProduzir, coletar, desbloquearOficio, oficioAberto, nivelOficio, progressoOficio, xpParaNivel,
   slotsDe, filaMaxDe, emProducao, naFila, chancesQualidade, duracaoDe, faltando, totalProntos, alternarRepetir,
 } from '../core/craft.js';
 import { fmt, fmtTime } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
+
+// faixas de nível das receitas para o filtro (o último vai até o nível máximo)
+const FAIXAS = [[1, 3], [4, 6], [7, 10]];
 
 const MOTIVOS = {
   materiais: 'Faltam materiais',
@@ -25,6 +29,7 @@ export function createOficinaScreen({ game, toast }) {
 
   let R = { x: 0, y: 0, w: 360, h: 600 };
   let sel = 'ferraria';
+  const filtros = {};         // filtro de receitas escolhido em cada ofício: 'todas' | 'fazer' | 'cat:<categoria>'
   let dirty = true;
   let quadros = 0;
   let barras = [];            // barras de progresso atualizadas a cada quadro: { g, w, job }
@@ -121,7 +126,7 @@ export function createOficinaScreen({ game, toast }) {
       b.eventMode = 'static';
       b.cursor = 'pointer';
       b.hitArea = new Rectangle(0, 0, cw, ch);
-      b.on('pointertap', () => { if (!wasDragged() && sel !== o.id) { sel = o.id; sfx.tap(); marcar(); } });
+      b.on('pointertap', () => { if (!wasDragged() && sel !== o.id) { sel = o.id; filtroAberto = false; sfx.tap(); marcar(); } });
       reg(`oficio:${o.id}`, b, cw, ch);
       out.addChild(b);
     });
@@ -284,6 +289,84 @@ export function createOficinaScreen({ game, toast }) {
     return { c, h: hh };
   }
 
+  // ---------- filtros das receitas ----------
+  // "Dá para fazer": nível e materiais em dia (a fila cheia não conta: é questão de esperar)
+  const daParaFazer = (r) => oficioAberto(game, r.oficio) && nivelOficio(game, r.oficio) >= r.nivel && Object.keys(faltando(game, r)).length === 0;
+
+  function filtroDe(receitas) {
+    const f = filtros[sel] ?? 'todas';
+    if (f === 'fazer') return receitas.filter(daParaFazer);
+    if (f.startsWith('cat:')) return receitas.filter((r) => game.data.itens[r.item]?.cat === f.slice(4));
+    if (f.startsWith('niv:')) { const [a, b] = f.slice(4).split('-').map(Number); return receitas.filter((r) => r.nivel >= a && r.nivel <= b); }
+    return receitas;
+  }
+
+  // Um botão só ("Filtro: Todas · 26"); ao tocar, abre as opções (e fecha ao escolher uma). Só aparece com receitas demais para olhar de uma vez.
+  let filtroAberto = false;
+  function barraFiltros(w, receitas) {
+    if (receitas.length < 6) return null;
+    const cats = game.data.meta.categorias.filter((c) => receitas.some((r) => game.data.itens[r.item]?.cat === c.id));
+    const opcoes = [
+      { id: 'todas', nome: 'Todas', n: receitas.length },
+      { id: 'fazer', nome: 'Dá para fazer', n: receitas.filter(daParaFazer).length },
+      ...(cats.length > 1 ? cats.map((c) => ({ id: `cat:${c.id}`, nome: categoria(c.id).nome, n: receitas.filter((r) => game.data.itens[r.item]?.cat === c.id).length })) : []),
+      // faixas de nível do ofício (muita receita: separa as iniciais das avançadas)
+      ...(receitas.length >= 10 ? FAIXAS.map(([a, b]) => ({ id: `niv:${a}-${b}`, nome: b >= 10 ? `Nível ${a}+` : `Nível ${a}-${b}`, n: receitas.filter((r) => r.nivel >= a && r.nivel <= b).length })).filter((o) => o.n > 0) : []),
+    ];
+    if (!opcoes.some((o) => o.id === (filtros[sel] ?? 'todas'))) filtros[sel] = 'todas';
+    const atual = opcoes.find((o) => o.id === (filtros[sel] ?? 'todas'));
+    const c = new Container();
+
+    // o botão do filtro
+    const ativo = atual.id !== 'todas';
+    const cab = new Container();
+    const cbg = new Graphics();
+    const h0 = 38;
+    cbg.roundRect(0, 0, w, h0, 12).fill({ color: ativo ? C.accent : C.card, alpha: ativo ? 0.22 : 1 })
+      .stroke({ width: 1, color: ativo ? C.accent : 0xffffff, alpha: ativo ? 0.8 : 0.12 });
+    const rot = txt(`Filtro: ${atual.nome} · ${atual.n}`, ativo ? C.text : C.dim, 13, true);
+    rot.position.set(14, (h0 - rot.height) / 2);
+    const seta = new Graphics();
+    const sx = w - 24;
+    const sy = h0 / 2;
+    if (filtroAberto) seta.poly([sx - 5, sy + 3, sx + 5, sy + 3, sx, sy - 3]).fill(C.dim);
+    else seta.poly([sx - 5, sy - 3, sx + 5, sy - 3, sx, sy + 3]).fill(C.dim);
+    cab.addChild(cbg, rot, seta);
+    cab.eventMode = 'static';
+    cab.cursor = 'pointer';
+    cab.hitArea = new Rectangle(0, 0, w, h0);
+    cab.on('pointertap', () => { if (!wasDragged()) { filtroAberto = !filtroAberto; sfx.tap(); marcar(); } });
+    reg('filtro', cab, w, h0);
+    c.addChild(cab);
+    if (!filtroAberto) return { c, h: h0 };
+
+    // as opções (quebra de linha)
+    let x = 0;
+    let y = h0 + 8;
+    const alt = 32;
+    for (const o of opcoes) {
+      const t = txt(`${o.nome} · ${o.n}`, o.id === atual.id ? C.text : C.dim, 12, true);
+      const cw = t.width + 22;
+      if (x + cw > w && x > 0) { x = 0; y += alt + 6; }
+      const b = new Container();
+      const bg = new Graphics();
+      const on = o.id === atual.id;
+      bg.roundRect(0, 0, cw, alt, alt / 2).fill({ color: on ? C.accent : C.card, alpha: on ? 0.28 : 1 })
+        .stroke({ width: 1, color: on ? C.accent : 0xffffff, alpha: on ? 0.85 : 0.12 });
+      t.position.set(11, (alt - t.height) / 2);
+      b.addChild(bg, t);
+      b.position.set(x, y);
+      b.eventMode = 'static';
+      b.cursor = 'pointer';
+      b.hitArea = new Rectangle(0, 0, cw, alt);
+      b.on('pointertap', () => { if (!wasDragged()) { filtros[sel] = o.id; filtroAberto = false; sfx.tap(); marcar(); } });
+      reg(`filtro:${o.id}`, b, cw, alt);
+      c.addChild(b);
+      x += cw + 6;
+    }
+    return { c, h: y + alt };
+  }
+
   // ---------- montagem ----------
   function render() {
     dirty = false;
@@ -330,9 +413,17 @@ export function createOficinaScreen({ game, toast }) {
         scroll.add(t, t.height);
         for (const j of jobs) { const l = linhaProducao(w, j); scroll.add(l.c, l.h); }
       }
+      const todas = game.data.listas.receitas.filter((x) => x.oficio === sel);
       const t = txt('Receitas', C.dim, 12, true);
       scroll.add(t, t.height);
-      for (const r of game.data.listas.receitas.filter((x) => x.oficio === sel)) {
+      const barra = barraFiltros(w, todas);
+      if (barra) scroll.add(barra.c, barra.h + 4);
+      const mostradas = filtroDe(todas);
+      if (!mostradas.length) {
+        const vazio = para('Nenhuma receita aqui agora: faltam materiais ou nível. Veja o Mercado e o Mapa.', C.dim, 13, w);
+        scroll.add(vazio, vazio.height);
+      }
+      for (const r of mostradas) {
         const cardR = receitaCard(w, r);
         scroll.add(cardR.c, cardR.h);
       }
