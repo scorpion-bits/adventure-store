@@ -1,6 +1,7 @@
 // App instalável (PWA): registra o service worker (só na versão autossuficiente, já compilada) e cuida do convite de instalação.
 // O service worker é gerado no build por scripts/pwa-plugin.mjs e guarda o jogo inteiro para rodar sem internet.
 
+const INTERVALO_BUSCA = 20 * 60 * 1000;   // de quanto em quanto tempo procurar versão nova com o app aberto
 let convite = null;               // evento `beforeinstallprompt` guardado até o jogador pedir para instalar
 const ouvintes = new Set();
 
@@ -37,10 +38,22 @@ export function iniciarPwa({ aviso } = {}) {
   // `__PWA__` vem do vite.config.js: falso na versão do site (scorpionbits.com/loja), que usa o PixiJS do site
   if (typeof __PWA__ !== 'undefined' && __PWA__ && import.meta.env.PROD && 'serviceWorker' in navigator) {
     const tinhaControle = !!navigator.serviceWorker.controller;
+    let recarregando = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // uma versão nova assumiu: o jogo aberto ainda roda a antiga até reabrir
-      if (tinhaControle) aviso?.('Nova versão instalada: feche e abra o jogo para atualizar.');
+      // uma versão nova assumiu: o jogo aberto ainda roda a antiga, então recarrega sozinho (o progresso é salvo no `pagehide`)
+      if (!tinhaControle || recarregando) return;
+      recarregando = true;
+      aviso?.('Nova versão instalada! Atualizando…');
+      setTimeout(() => location.reload(), 1800);
     });
-    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('Service worker indisponível:', err));
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      // O navegador só procura versão nova ao abrir a página; um app instalado costuma ser só "retomado" do segundo plano
+      // e ficaria preso na versão antiga. Por isso pergunta ao voltar para o app, ao voltar a internet e de tempos em tempos.
+      const procurar = () => { if (navigator.onLine) reg.update().catch(() => {}); };
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) procurar(); });
+      window.addEventListener('online', procurar);
+      setInterval(procurar, INTERVALO_BUSCA);
+      procurar();
+    }).catch((err) => console.warn('Service worker indisponível:', err));
   }
 }

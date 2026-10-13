@@ -4,17 +4,17 @@
 // .mp3 é o formato mais seguro). Sem arquivo nenhum, não toca nada e o resto funciona igual.
 import { settings } from '../settings.js';
 import { getAudioContext } from './sfx.js';
+import { ganhoDaMusica } from './volume.js';
 
 const FILES = Object.values(import.meta.glob('../assets/music/*.{mp3,ogg,wav}', { eager: true, query: '?url', import: 'default' }))
   .sort(() => Math.random() - 0.5);
-const MAX_GAIN = 0.45;   // a música nunca passa disso, para não cobrir os efeitos
 
 let buffer = null;
 let loading = null;
 let source = null;
 let gain = null;
 
-const level = () => (settings.music ? settings.musicVolume * MAX_GAIN : 0);
+const level = () => (settings.music ? ganhoDaMusica(settings.musicVolume) : 0);
 
 function load(ctx) {
   if (buffer) return Promise.resolve(buffer);

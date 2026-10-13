@@ -16,8 +16,10 @@ const SW = (versao, arquivos) => `// Gerado por scripts/pwa-plugin.mjs — não 
 const CACHE = 'loja-${versao}';
 const ARQUIVOS = ${JSON.stringify(arquivos)};
 
+// cache: 'reload' pula o cache HTTP do navegador (a página tem max-age de minutos): sem isso o service worker novo podia guardar
+// o index.html velho e o app ficava preso na versão antiga
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARQUIVOS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

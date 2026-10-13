@@ -7,7 +7,7 @@ const defaults = () => ({
   sound: true,                      // efeitos sonoros
   volume: 0.6,                      // 0..1 (efeitos)
   music: true,                      // música de fundo (só toca se existir um arquivo em audio/music.js)
-  musicVolume: 0.5,                 // 0..1
+  musicVolume: 0.6,                 // 0..1
   motion: !prefersReducedMotion(),  // partículas e animações decorativas
   haptics: true,                    // vibração em celulares que suportam
 });
