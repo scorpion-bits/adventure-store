@@ -1,29 +1,36 @@
 // Música de fundo em loop (Web Audio, sem emendas audíveis).
 // A trilha é opcional: coloque arquivos .mp3/.ogg em src/assets/music/ e o jogo toca um deles
-// (sorteado a cada abertura). Sem arquivo nenhum, não toca nada e o resto funciona igual.
+// (sorteado a cada abertura; se o navegador não decodifica o formato, tenta o próximo — o Safari não lê .ogg, por isso o
+// .mp3 é o formato mais seguro). Sem arquivo nenhum, não toca nada e o resto funciona igual.
 import { settings } from '../settings.js';
 import { getAudioContext } from './sfx.js';
 
-const FILES = Object.values(import.meta.glob('../assets/music/*.{mp3,ogg,wav}', { eager: true, query: '?url', import: 'default' }));
+const FILES = Object.values(import.meta.glob('../assets/music/*.{mp3,ogg,wav}', { eager: true, query: '?url', import: 'default' }))
+  .sort(() => Math.random() - 0.5);
 const MAX_GAIN = 0.45;   // a música nunca passa disso, para não cobrir os efeitos
 
 let buffer = null;
 let loading = null;
 let source = null;
 let gain = null;
-const url = FILES.length ? FILES[Math.floor(Math.random() * FILES.length)] : null;
 
 const level = () => (settings.music ? settings.musicVolume * MAX_GAIN : 0);
 
 function load(ctx) {
   if (buffer) return Promise.resolve(buffer);
-  if (!url) return Promise.resolve(null);
+  if (!FILES.length) return Promise.resolve(null);
   if (!loading) {
-    loading = fetch(url)
-      .then((r) => r.arrayBuffer())
-      .then((data) => ctx.decodeAudioData(data))
-      .then((b) => { buffer = b; return b; })
-      .catch(() => { loading = null; return null; });
+    loading = (async () => {
+      for (const url of FILES) {
+        try {
+          const data = await (await fetch(url)).arrayBuffer();
+          buffer = await ctx.decodeAudioData(data);
+          return buffer;
+        } catch { /* formato que este navegador não lê, ou falha de rede: tenta o próximo */ }
+      }
+      loading = null;
+      return null;
+    })();
   }
   return loading;
 }
@@ -33,7 +40,7 @@ export const hasMusic = () => FILES.length > 0;
 // Começa a tocar (idempotente). Precisa de um gesto do jogador antes, como todo áudio no navegador.
 export async function startMusic() {
   const ctx = getAudioContext();
-  if (!ctx || !settings.music || source || !url) return;
+  if (!ctx || !settings.music || source || !FILES.length) return;
   const buf = await load(ctx);
   if (!buf || source || !settings.music) return;
 
@@ -62,7 +69,7 @@ export function updateMusicVolume() {
   if (gain && ctx) gain.gain.setTargetAtTime(level(), ctx.currentTime, 0.15);
 }
 
-export const musicState = () => ({ playing: !!source, available: !!url });
+export const musicState = () => ({ playing: !!source, available: FILES.length > 0 });
 
 // aba em segundo plano: pausa o áudio (economiza bateria) e retoma ao voltar
 document.addEventListener('visibilitychange', () => {
