@@ -39,11 +39,12 @@ test.describe('mercado (retrato)', () => {
 
   test('"Máx" compra o máximo possível e sem ouro não compra nada', async ({ page }) => {
     const errors = await openGame(page);
+    await page.evaluate(() => { window.__loja.state().ouro = 40; window.__loja.game.emit('ouro'); });          // pouco ouro: acaba antes do estoque
     await abrirMercado(page);
     await clicar(page, await botao(page, 'mineradora_pedra', 'cobre', 'max'));
     const s = await page.evaluate(() => window.__loja.state());
-    expect(s.materiais.cobre).toBeGreaterThan(5);
-    expect(s.ouro).toBeLessThan(5);                                   // gastou quase tudo
+    expect(s.materiais.cobre).toBeGreaterThan(4);
+    expect(s.ouro).toBeLessThan(8);                                   // gastou quase tudo
     const ouro = s.ouro;
     await clicar(page, await botao(page, 'mineradora_pedra', 'cobre', 'x1'));
     expect((await page.evaluate(() => window.__loja.state())).ouro).toBe(ouro);
@@ -102,4 +103,26 @@ test.describe('mercado (desktop e paisagem)', () => {
       });
     });
   }
+});
+
+test.describe('mercado: estoque aos poucos e compra urgente', () => {
+  test.use({ viewport: VIEWPORTS.portrait });
+
+  test('acabou o estoque liberado: a compra urgente aparece, custa o dobro e tem limite', async ({ page }) => {
+    const errors = await openGame(page);
+    await page.evaluate(() => { window.__loja.give(100000); });
+    await abrirMercado(page);
+    await clicar(page, await botao(page, 'ferreiro_toras', 'carvao', 'max'));
+    await pronta(page);
+    const ofertas = await page.evaluate(() => window.__loja.mercado.ofertas('ferreiro_toras').find((o) => o.material === 'carvao'));
+    expect(ofertas.restante).toBe(0);
+    expect(ofertas.urgente).toBeGreaterThan(0);
+    await page.screenshot({ path: shotPath('portrait-mercado-urgente') });
+    const antes = await page.evaluate(() => window.__loja.state().ouro);
+    await clicar(page, await botao(page, 'ferreiro_toras', 'carvao', 'x1'));
+    const s = await page.evaluate(() => window.__loja.state());
+    expect(antes - s.ouro).toBe(ofertas.precoUrgente);
+    expect(s.mercado.comprado['ferreiro_toras:carvao!']).toBe(1);
+    expect(errors).toEqual([]);
+  });
 });

@@ -1,10 +1,10 @@
-// Tela do Mercado: o depósito (o que você tem) e os fornecedores do dia, com preço e estoque que mudam à meia-noite.
+// Tela do Mercado: o depósito (o que você tem) e os fornecedores do dia, com preço que muda todo dia e estoque que chega aos poucos.
 // A lógica está em core/market.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
 import { montarMapa, pintarMapa } from './mapa.js';
 import { iconSprite } from '../assets.js';
-import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '../core/market.js';
+import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, LIBERACOES } from '../core/market.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -20,6 +20,8 @@ export function createMercadoScreen({ game, toast, modal }) {
   let quadros = 0;
   const refs = {};     // `${fornecedor}:${material}:${tipo}` -> { c, w, h }
   let sub = 'fornecedores';
+  let estoqueVisto = 0;
+  let fracaoVista = liberacaoAgora(game).f;
   let barras = [];     // progresso das expedições
   let tempos = [];
   let relogio = 0;
@@ -89,17 +91,19 @@ export function createMercadoScreen({ game, toast, modal }) {
     return { c, h };
   }
 
-  function botaoCompra(rotulo, w, o, f, tipo) {
-    const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o);
-    const pode = tipo === 'max' ? n > 0 : o.restante > 0;
-    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: pode ? C.accent : C.dim });
+  // `urgente`: o estoque normal acabou; a reserva urgente custa mais (botões em laranja)
+  function botaoCompra(rotulo, w, o, f, tipo, urgente) {
+    const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o, urgente);
+    const disp = urgente ? o.urgente : o.restante;
+    const pode = tipo === 'max' ? n > 0 : disp > 0;
+    const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: !pode ? C.dim : urgente ? C.bad : C.accent });
     if (!pode) b.setDisabled(true);
     b.tap(() => {
-      const r = comprar(game, f.id, o.material, n);
+      const r = comprar(game, f.id, o.material, n, { urgente });
       if (r.ok) {
         sfx.buy();
         haptic(8);
-        toast(`−${fmt(r.custo)} ouro · +${r.qtd} ${o.nome}`, C.accent);
+        toast(`−${fmt(r.custo)} ouro · +${r.qtd} ${o.nome}`, urgente ? C.bad : C.accent);
       } else {
         sfx.deny();
         toast(r.motivo === 'sem-ouro' ? 'Ouro insuficiente' : 'Sem estoque no fornecedor', C.bad);
@@ -111,24 +115,35 @@ export function createMercadoScreen({ game, toast, modal }) {
   function linha(w, f, o) {
     const c = new Container();
     const bg = new Graphics();
+    const urgente = o.restante <= 0 && o.urgente > 0;
     drawCard(bg, w, ROW_H, { fill: C.card, radius: 12 });
     const ic = iconSprite('material', o.material, 36);
     ic.position.set(10, 10);
     const nome = txt(o.nome, C.text, 14, true);
     nome.position.set(54, 9);
-    const preco = txt(`${fmt(o.preco)} ouro`, o.tendencia < 0 ? C.good : o.tendencia > 0 ? C.warn : C.gold, 14, true);
+    const precoMostrado = urgente ? o.precoUrgente : o.preco;
+    const preco = txt(`${fmt(precoMostrado)} ouro`, urgente ? C.bad : o.tendencia < 0 ? C.good : o.tendencia > 0 ? C.warn : C.gold, 14, true);
     preco.position.set(w - preco.width - 12, 9);
-    const sub = txt(`${o.restante > 0 ? `Estoque ${fmt(o.restante)}` : 'Esgotado hoje'} · você tem ${fmt(game.state.materiais[o.material] ?? 0)}`, o.restante > 0 ? C.dim : C.bad, 11);
+    const tem = fmt(game.state.materiais[o.material] ?? 0);
+    const { proximaHora } = liberacaoAgora(game);
+    const estoque = o.restante > 0 ? `Estoque ${fmt(o.restante)}`
+      : urgente ? `Acabou${proximaHora !== null ? ` · mais às ${proximaHora}h` : ''}`
+        : 'Esgotado hoje';
+    const sub = txt(`${estoque} · você tem ${tem}`, o.restante > 0 ? C.dim : urgente ? C.bad : C.bad, 11);
     sub.position.set(54, 9 + nome.height + 1);
     c.addChild(bg, ic, nome, preco, sub);
-    if (o.tendencia !== 0) {
+    if (urgente) {
+      const tag = txt(`urgente 2× · ${fmt(o.urgente)} un.`, C.bad, 10, true);
+      tag.position.set(w - tag.width - 12, 9 + preco.height);
+      c.addChild(tag);
+    } else if (o.tendencia !== 0) {
       const tag = txt(o.tendencia < 0 ? 'promoção' : 'em alta', o.tendencia < 0 ? C.good : C.warn, 10, true);
       tag.position.set(w - tag.width - 12, 9 + preco.height);
       c.addChild(tag);
     }
     const bw = Math.min(70, (w - 54 - 12 - 12) / 3);
     [['+1', 'x1'], ['+5', 'x5'], ['Máx', 'max']].forEach(([rot, tipo], i) => {
-      const b = botaoCompra(rot, bw, o, f, tipo);
+      const b = botaoCompra(rot, bw, o, f, tipo, urgente);
       b.position.set(w - 12 - (3 - i) * bw - (2 - i) * 6, ROW_H - 44);
       c.addChild(b);
       refs[`${f.id}:${o.material}:${tipo}`] = { c: b, w: bw, h: 38 };
@@ -183,7 +198,8 @@ export function createMercadoScreen({ game, toast, modal }) {
     } else {
       const dep = cartaoDeposito(w);
       scroll.add(dep.c, dep.h);
-      const aviso = txt('Preços e estoques mudam à meia-noite (horário do seu aparelho).', C.faint, 11);
+      const horas = LIBERACOES.filter((l) => l.hora > 0).map((l) => `${l.hora}h`).join(', ');
+      const aviso = para(`O estoque do dia chega aos poucos (às ${horas}, horário do seu aparelho) e o preço muda à meia-noite. Acabou? A compra urgente custa o dobro.`, C.faint, 11, w);
       scroll.add(aviso, aviso.height);
 
       const todos = game.data.listas.fornecedores;
@@ -218,11 +234,15 @@ export function createMercadoScreen({ game, toast, modal }) {
       if (dirty) { render(); return; }
       quadros += 1;
       relogio += dt;
+      // chegou a hora de mais estoque dos fornecedores: refaz a lista
+      estoqueVisto += dt;
+      if (estoqueVisto > 5000) { estoqueVisto = 0; const f = liberacaoAgora(game).f; if (f !== fracaoVista) { fracaoVista = f; marcar(); } }
       if (relogio >= 250) { relogio = 0; if (barras.length || tempos.length) pintarMapa(game, barras, tempos); }
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
       sub: () => sub,
+      ofertas: (fornecedorId) => ofertas(game, game.data.fornecedores[fornecedorId]),
       nomes: () => Object.keys(refs),
       retangulo: (nome) => retanguloGlobal(refs[nome]),
       irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },

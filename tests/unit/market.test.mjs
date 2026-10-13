@@ -6,9 +6,9 @@ import { createRng } from '../../src/core/rng.js';
 import { createClock } from '../../src/core/time.js';
 import { DATA } from '../../src/data/index.js';
 import { repParaNivel } from '../../src/core/economy.js';
-import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel } from '../../src/core/market.js';
+import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, LIBERACOES, URGENTE } from '../../src/core/market.js';
 
-const dia = (y, m, d) => new Date(y, m - 1, d, 12).getTime();
+const dia = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
 const novo = (data = [2026, 10, 12], mexer) => {
   const clock = createClock(dia(...data));
   const state = defaultState(clock.now());
@@ -50,7 +50,7 @@ test('comprar: gasta ouro, soma no depósito e reduz o estoque do fornecedor', (
   assert.equal(r.qtd, 3);
   assert.equal(game.state.ouro, 100 - 3 * o.preco);
   assert.equal(game.state.materiais[o.material], 3);
-  assert.equal(ofertas(game, minerio)[0].restante, o.total - 3);
+  assert.equal(ofertas(game, minerio)[0].restante, o.liberado - 3);
   assert.equal(game.state.stats.comprados, 3);
 });
 
@@ -64,7 +64,7 @@ test('comprar: sem ouro não leva nada; pedir mais que o estoque leva só o que 
   const rico = novo([2026, 10, 12], (s) => { s.ouro = 1e6; }).game;
   const o2 = ofertas(rico, minerio)[0];
   const r = comprar(rico, minerio.id, o2.material, 1000);
-  assert.equal(r.qtd, o2.total);
+  assert.equal(r.qtd, o2.liberado);
   assert.equal(comprar(rico, minerio.id, o2.material, 1).motivo, 'sem-estoque');
 });
 
@@ -81,7 +81,7 @@ test('maxCompravel respeita ouro e estoque', () => {
 test('o estoque do fornecedor volta no dia seguinte', () => {
   const { game, clock } = novo([2026, 10, 12], (s) => { s.ouro = 1e6; });
   const o = ofertas(game, minerio)[0];
-  comprar(game, minerio.id, o.material, o.total);
+  comprar(game, minerio.id, o.material, o.liberado);
   assert.equal(ofertas(game, minerio)[0].restante, 0);
   clock.set(dia(2026, 10, 13));
   game.verificarDia();
@@ -114,4 +114,73 @@ test('um fornecedor que vende item pronto põe na prateleira', () => {
   assert.equal(r.ok, true);
   assert.equal(g.state.estoque['pao_aventureiro:1'], 4);
   delete g.data.fornecedores.forn_item;
+});
+
+// ---------- estoque que chega aos poucos e compra urgente ----------
+test('o estoque do dia é liberado em partes ao longo do dia e nunca passa do total', () => {
+  const horas = LIBERACOES.map((l) => l.hora);
+  assert.deepEqual(horas, [...horas].sort((a, b) => a - b));
+  assert.equal(LIBERACOES.at(-1).f, 1);
+  let antes = 0;
+  for (const h of [1, 9, 15, 21]) {
+    const { game } = novo([2026, 10, 12], undefined);
+    game.clock.set(dia(2026, 10, 12, h));
+    const o = ofertas(game, minerio)[0];
+    assert.ok(o.liberado >= antes, `às ${h}h: ${o.liberado}`);
+    assert.ok(o.liberado <= o.total);
+    antes = o.liberado;
+    if (h === 21) assert.equal(o.liberado, o.total);
+  }
+  const cedo = novo().game;
+  cedo.clock.set(dia(2026, 10, 12, 1));
+  assert.deepEqual(liberacaoAgora(cedo), { f: 0.4, proximaHora: 8 });
+  const noite = novo().game;
+  noite.clock.set(dia(2026, 10, 12, 22));
+  assert.deepEqual(liberacaoAgora(noite), { f: 1, proximaHora: null });
+});
+
+test('quem não comprou guarda o estoque: o liberado soma durante o dia', () => {
+  const { game, clock } = novo([2026, 10, 12], (s) => { s.ouro = 1e6; });
+  clock.set(dia(2026, 10, 12, 9));
+  const o9 = ofertas(game, minerio)[0];
+  comprar(game, minerio.id, o9.material, 2);
+  clock.set(dia(2026, 10, 12, 15));
+  const o15 = ofertas(game, minerio)[0];
+  assert.equal(o15.restante, o15.liberado - 2);
+  assert.ok(o15.restante > o9.restante - 2, 'chegou mais estoque');
+});
+
+test('compra urgente: só depois de acabar o estoque normal, por mais caro e com limite', () => {
+  const { game, clock } = novo([2026, 10, 12], (s) => { s.ouro = 1e6; });
+  clock.set(dia(2026, 10, 12, 9));
+  const o = ofertas(game, minerio)[0];
+  assert.ok(o.precoUrgente >= o.preco * 1.9 && o.precoUrgente > o.preco);
+  assert.equal(comprar(game, minerio.id, o.material, 1, { urgente: true }).motivo, 'use-estoque-normal');
+  comprar(game, minerio.id, o.material, o.restante);
+  const sem = ofertas(game, minerio)[0];
+  assert.equal(sem.restante, 0);
+  assert.ok(sem.urgente >= 1);
+  const ouro = game.state.ouro;
+  const r = comprar(game, minerio.id, o.material, 1, { urgente: true });
+  assert.equal(r.ok, true);
+  assert.equal(r.custo, sem.precoUrgente);
+  assert.equal(game.state.ouro, ouro - sem.precoUrgente);
+  // a reserva urgente é limitada
+  const todos = comprar(game, minerio.id, o.material, 1000, { urgente: true });
+  assert.equal(todos.qtd, sem.urgente - 1);
+  assert.equal(comprar(game, minerio.id, o.material, 1, { urgente: true }).motivo, 'sem-estoque');
+  assert.ok(sem.urgente <= Math.max(1, Math.round(o.total * URGENTE.fracao)));
+  assert.equal(maxCompravel(game, ofertas(game, minerio)[0], true), 0);
+});
+
+test('o estoque urgente também volta no dia seguinte', () => {
+  const { game, clock } = novo([2026, 10, 12], (s) => { s.ouro = 1e6; });
+  clock.set(dia(2026, 10, 12, 21));
+  const o = ofertas(game, minerio)[0];
+  comprar(game, minerio.id, o.material, o.total);
+  comprar(game, minerio.id, o.material, 1000, { urgente: true });
+  assert.equal(ofertas(game, minerio)[0].urgente, 0);
+  clock.set(dia(2026, 10, 13, 9));
+  game.verificarDia();
+  assert.ok(ofertas(game, minerio)[0].urgente > 0);
 });

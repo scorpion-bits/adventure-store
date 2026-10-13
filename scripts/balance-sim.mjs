@@ -34,8 +34,12 @@ function precoMaisBarato(game, material) {
   let melhor = null;
   for (const f of game.data.listas.fornecedores) {
     if (!fornecedorDisponivel(game, f)) continue;
-    const o = ofertas(game, f).find((x) => x.material === material && x.restante > 0);
-    if (o && (!melhor || o.preco < melhor.preco)) melhor = { fornecedor: f.id, preco: o.preco, restante: o.restante };
+    const o = ofertas(game, f).find((x) => x.material === material);
+    if (!o) continue;
+    // estoque normal; se acabou, a reserva urgente (preço dobrado)
+    const c = o.restante > 0 ? { fornecedor: f.id, preco: o.preco, restante: o.restante, urgente: false }
+      : o.urgente > 0 ? { fornecedor: f.id, preco: o.precoUrgente, restante: o.urgente, urgente: true } : null;
+    if (c && (!melhor || c.preco < melhor.preco)) melhor = c;
   }
   return melhor;
 }
@@ -47,7 +51,7 @@ function comprarFaltas(game, receita) {
     if (falta <= 0) continue;
     const p = precoMaisBarato(game, m);
     if (!p || p.restante < falta || game.state.ouro < p.preco * falta) return false;
-    if (!comprar(game, p.fornecedor, m, falta).ok) return false;
+    if (!comprar(game, p.fornecedor, m, falta, { urgente: p.urgente }).ok) return false;
   }
   return true;
 }
