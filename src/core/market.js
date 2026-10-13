@@ -71,7 +71,9 @@ export function ofertas(game, f) {
 export const maxCompravel = (game, oferta, urgente = false) => {
   const disp = urgente ? oferta.urgente : oferta.restante;
   const preco = urgente ? oferta.precoUrgente : oferta.preco;
-  return Math.max(0, Math.min(disp, Math.floor(game.state.ouro / preco)));
+  // item pronto vai para as prateleiras: o que não cabe lá não pode ser comprado
+  const cabe = game.data.itens[oferta.material] ? espacoLivre(game) : Infinity;
+  return Math.max(0, Math.min(disp, cabe, Math.floor(game.state.ouro / preco)));
 };
 
 // Compra `qtd` unidades (ou o que sobrar do estoque do fornecedor). Com `urgente`, usa a reserva de compra urgente (preço dobrado),

@@ -189,3 +189,26 @@ test('o estoque urgente também volta no dia seguinte', () => {
   game.verificarDia();
   assert.ok(ofertas(game, minerio)[0].urgente > 0);
 });
+
+test('item pronto de fornecedor só pode ser comprado até caber nas prateleiras (Máx respeita o espaço, e o motivo da recusa é claro)', () => {
+  const { game: g } = novo([2026, 10, 12]);
+  g.state.rep = repParaNivel(5);
+  g.state.ouro = 100000;
+  const correio = DATA.fornecedores.correio_vale;
+  const oferta = () => ofertas(g, correio).find((o) => o.material === 'carta_lacrada');
+  assert.ok(oferta().restante > 3);
+  const cap = DATA.meta.loja.capacidadeBase + (g.mods.capacidade ?? 0);
+  g.state.estoque = {};
+  g.state.estoque['pao_aventureiro:1'] = cap - 2;                     // sobram 2 lugares
+  assert.equal(maxCompravel(g, oferta()), 2);
+  g.state.estoque['pao_aventureiro:1'] = cap;                         // cheias
+  assert.equal(maxCompravel(g, oferta()), 0);
+  const r = comprar(g, 'correio_vale', 'carta_lacrada', 1);
+  assert.equal(r.ok, false);
+  assert.equal(r.motivo, 'prateleiras-cheias');
+});
+
+test('as expedições também podem achar itens novos do pack Ninja', () => {
+  const achaveis = new Set(DATA.listas.regioes.flatMap((r) => r.drops.map((d) => d.item)));
+  for (const id of ['moedas_cobre', 'ametista', 'topazio', 'esmeralda', 'rubi', 'bau_tesouro', 'dado_20']) assert.ok(achaveis.has(id), id);
+});
