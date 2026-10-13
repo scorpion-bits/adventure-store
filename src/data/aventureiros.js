@@ -35,7 +35,7 @@ export const AVENTUREIROS = [
       caro: ['Ai, ai... será que vale?'],
     } },
   { id: 'maga_estudante', nome: 'Maga estudante', classe: 'mago', temperamento: 'desconfiado', orcamento: 1.15,
-    prefere: ['magia', 'pocoes'], regiao: 'vila', nivelRep: 1, peso: 8,
+    prefere: ['magia', 'pocoes'], regiao: 'vila', nivelRep: 2, peso: 8,
     falas: {
       chega: ['Preciso de material para a prova da academia.', 'Isso aqui é de boa procedência?'],
       compra: ['Está dentro do esperado. Levo.'],
@@ -228,7 +228,7 @@ export const AVENTUREIROS = [
   // ============ Lendários (história em capítulos: data/lendarios.js) ============
   { id: 'ser_aldric', nome: 'Ser Aldric', classe: 'guerreiro', temperamento: 'leal', orcamento: 3.2, prefere: ['armaduras', 'armas'], regiao: 'vila', nivelRep: 3, peso: 0, lendario: true,
     falas: { chega: ['Procuro algo para proteger o braço esquerdo.', 'Ser Aldric, às suas ordens, ainda que sem escudo.'], compra: ['Um cavaleiro nunca esquece uma gentileza.'], recusa: ['Voltarei quando puder pagar a honra.'] } },
-  { id: 'lyra_seda', nome: 'Lyra Mãos-de-Seda', classe: 'ladino', temperamento: 'generoso', orcamento: 3.4, prefere: ['acessorios', 'curiosidades'], regiao: 'vila', nivelRep: 4, peso: 0, lendario: true,
+  { id: 'lyra_seda', nome: 'Lyra Mãos-de-Seda', classe: 'ladino', temperamento: 'generoso', orcamento: 3.4, prefere: ['acessorios', 'curiosidades'], regiao: 'vila', nivelRep: 10, peso: 0, lendario: true,
     falas: { chega: ['Shh. Só quero uma coisinha... pagando, desta vez.', 'Você não me viu entrar, certo?'], compra: ['Foi um prazer, e você nunca me viu.'], recusa: ['Hoje não. Mas eu volto.'] } },
   { id: 'merlindo', nome: 'Merlindo', classe: 'mago', temperamento: 'curioso', orcamento: 3.4, prefere: ['magia', 'pocoes'], regiao: 'vila', nivelRep: 6, peso: 0, lendario: true,
     falas: { chega: ['Alguém viu o meu chapéu? Ah, está aqui!', 'Eu juro que esta vez não vou explodir nada.'], compra: ['Perfeito! Isto vai dar certo. Provavelmente.'], recusa: ['Hm, e se eu tentasse um feitiço de desconto?'] } },
