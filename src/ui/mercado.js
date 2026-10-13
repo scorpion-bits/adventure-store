@@ -2,11 +2,12 @@
 // A lógica está em core/market.js; aqui só desenho e toques.
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retanguloGlobal, iconeComNome } from './ui.js';
-import { montarMapa, pintarMapa } from './mapa.js';
+import { createMundo } from './mundo.js';
 import { createMinijogo } from './minijogo.js';
 import { createCodigo } from './codigo.js';
 import { iconSprite } from '../assets.js';
 import { ofertas, comprar, maxCompravel, deposito, fornecedorDisponivel, liberacaoAgora, INTERVALO_ESTOQUE_H } from '../core/market.js';
+import { espacoLivre, totalEstoque, capacidadeEstoque } from '../core/estoque.js';
 import { fmt } from '../format.js';
 import { sfx, haptic } from '../audio/sfx.js';
 
@@ -24,9 +25,9 @@ export function createMercadoScreen({ game, toast, modal }) {
   let sub = 'fornecedores';
   let estoqueVisto = 0;
   let fracaoVista = liberacaoAgora(game).f;
-  let barras = [];     // progresso das expedições
-  let tempos = [];
-  let relogio = 0;
+  const mundo = createMundo({ game, toast, modal });      // a aba Mapa: o mapa-múndi arrastável
+  mundo.root.visible = false;
+  root.addChild(mundo.root);
   const marcar = () => { dirty = true; };
   // os dois mini-jogos aparecem um embaixo do outro; só uma partida de cada vez
   const minijogo = createMinijogo({ game, toast, pedirRender: () => marcar(), outroEmJogo: () => codigo.emJogo() });
@@ -69,7 +70,11 @@ export function createMercadoScreen({ game, toast, modal }) {
     const lista = deposito(game);
     const titulo = txt('Depósito', C.text, 16, true);
     titulo.position.set(14, 12);
-    c.addChild(bg, titulo);
+    // espaço nas prateleiras da Loja: itens prontos comprados dos fornecedores vão para lá
+    const cheia = espacoLivre(game) <= 0;
+    const prat = txt(`Prateleiras ${totalEstoque(game)}/${capacidadeEstoque(game)}`, cheia ? C.warn : C.dim, 12, true);
+    prat.position.set(w - prat.width - 14, 15);
+    c.addChild(bg, titulo, prat);
     let y = 12 + titulo.height + 8;
     if (!lista.length) {
       const t = para('Vazio. Compre materiais dos fornecedores abaixo para produzir na Oficina.', C.dim, 13, w - 28);
@@ -100,7 +105,8 @@ export function createMercadoScreen({ game, toast, modal }) {
   function botaoCompra(rotulo, w, o, f, tipo, urgente) {
     const n = tipo === 'x1' ? 1 : tipo === 'x5' ? 5 : maxCompravel(game, o, urgente);
     const disp = urgente ? o.urgente : o.restante;
-    const pode = tipo === 'max' ? n > 0 : disp > 0;
+    const semEspaco = !!game.data.itens[o.material] && espacoLivre(game) <= 0;
+    const pode = !semEspaco && (tipo === 'max' ? n > 0 : disp > 0);
     const b = labelButton(tipo === 'max' && n > 0 ? `${rotulo} (${n})` : rotulo, w, 38, { size: 12, tint: !pode ? C.dim : urgente ? C.bad : C.accent });
     if (!pode) b.setDisabled(true);
     b.tap(() => {
@@ -111,7 +117,7 @@ export function createMercadoScreen({ game, toast, modal }) {
         toast(`−${fmt(r.custo)} ouro · +${r.qtd} ${o.nome}`, urgente ? C.bad : C.accent);
       } else {
         sfx.deny();
-        toast(r.motivo === 'sem-ouro' ? 'Ouro insuficiente' : 'Sem estoque no fornecedor', C.bad);
+        toast(r.motivo === 'sem-ouro' ? 'Ouro insuficiente' : r.motivo === 'prateleiras-cheias' ? 'Prateleiras cheias: venda algo ou amplie o estoque' : 'Sem estoque no fornecedor', C.bad);
       }
     });
     return b;
@@ -193,10 +199,9 @@ export function createMercadoScreen({ game, toast, modal }) {
     scroll.clear();
     const w = R.w;
 
-    barras = [];
-    tempos = [];
     const sb = barraSub(w);
     scroll.add(sb.c, sb.h);
+    mundo.root.visible = sub === 'mapa';
 
     if (sub === 'minijogo') {
       const reg = (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; };
@@ -205,7 +210,10 @@ export function createMercadoScreen({ game, toast, modal }) {
       if (!emUm(codigo)) minijogo.montar(scroll, w, reg);
       if (!emUm(minijogo)) codigo.montar(scroll, w, reg);
     } else if (sub === 'mapa') {
-      montarMapa(scroll, { game, w, reg: (nome, c, ww, hh) => { refs[nome] = { c, w: ww, h: hh }; }, toast, modal, tempos, barras });
+      // o mapa não rola com a lista: ocupa o resto da tela, abaixo das abas
+      mundo.root.position.set(0, sb.h + 10);
+      mundo.resize({ w, h: Math.max(120, R.h - sb.h - 10) });
+      mundo.show();
     } else {
       const dep = cartaoDeposito(w);
       scroll.add(dep.c, dep.h);
@@ -223,11 +231,12 @@ export function createMercadoScreen({ game, toast, modal }) {
         for (const f of trancados) { const b = cartaoBloqueado(w, f); scroll.add(b.c, b.h); }
       }
     }
-    scroll.resize(R.h, w);
+    if (sub !== 'mapa') mundo.hide();
+    scroll.resize(sub === 'mapa' ? sb.h + 12 : R.h, w);
     scroll.scrollBy(keepY);
-    pintarMapa(game, barras, tempos);
   }
 
+  const achar = (nome) => refs[nome] ?? mundo.refs[nome];
   const global = (ref) => (ref ? ref.c.toGlobal({ x: ref.w / 2, y: ref.h / 2 }) : null);
 
   return {
@@ -243,12 +252,11 @@ export function createMercadoScreen({ game, toast, modal }) {
       if (!root.visible) return;
       if (dirty) { render(); return; }
       quadros += 1;
-      relogio += dt;
       // chegou a hora de mais estoque dos fornecedores: refaz a lista
       estoqueVisto += dt;
       if (estoqueVisto > 5000) { estoqueVisto = 0; const f = liberacaoAgora(game).f; if (f !== fracaoVista) { fracaoVista = f; marcar(); } }
       if (sub === 'minijogo') { minijogo.update(dt); codigo.update(dt); }
-      if (relogio >= 250) { relogio = 0; if (barras.length || tempos.length) pintarMapa(game, barras, tempos); }
+      mundo.update(dt);
     },
     hooks: {
       pronta: () => !dirty && quadros >= 2,
@@ -256,12 +264,13 @@ export function createMercadoScreen({ game, toast, modal }) {
       minijogo: minijogo.hooks,
       codigo: codigo.hooks,
       ofertas: (fornecedorId) => ofertas(game, game.data.fornecedores[fornecedorId]),
-      nomes: () => Object.keys(refs),
-      retangulo: (nome) => retanguloGlobal(refs[nome]),
+      nomes: () => [...Object.keys(refs), ...Object.keys(mundo.refs)],
+      mundo: mundo.hooks,
+      retangulo: (nome) => retanguloGlobal(achar(nome)),
       irParaSub: (id) => { if (sub !== id) { sub = id; marcar(); } },
 
       botaoCentro: (fornecedor, material, tipo) => global(refs[`${fornecedor}:${material}:${tipo}`]),
-      centro: (nome) => global(refs[nome]),
+      centro: (nome) => global(achar(nome)),
       renderAgora: render,
       // rola a lista até o item ficar à vista (usado pelos testes: com muito conteúdo, nem tudo cabe na tela)
       ver: (nome) => {

@@ -99,6 +99,8 @@ pântano (turfa, flor carnívora, pérola negra) e dragão (coração, chifre e 
 (comidas, armas ninja, gemas lapidadas) não repitam os mesmos ingredientes: o teste também falha se duas receitas tiverem exatamente os mesmos materiais.
 A razão entre o que a receita rende e o que custa fica acima de 1,2x (mediana por volta de 2,7x).
 
+**Mapa-múndi:** a aba Mapa do Mercado é uma imagem grande (arrastável, em escala 2×) feita com os tilesets do Ninja Adventure: `scripts/pack-mapa.mjs` (`npm run pack:mapa`, pack em `assets-src/ninja`) pinta o mar, uma ilha por região (bloco de terreno do TilesetField, em cores diferentes) e os enfeites, e grava `src/assets/mapa/mapa.png` + `mapa.json` (onde fica a ilha e o pino de cada região). Também gera `batedores.png` (a caminhada de 6 personagens). `src/ui/mundo.js` mostra o mapa: névoa nas regiões fechadas, pino com anel de progresso, "!" quando os batedores voltam e os batedores andando pelo caminho (vão na primeira metade do tempo da expedição, voltam na segunda). Tocar numa região abre a janela dela (`src/ui/mapa.js`): materiais, achados raros e expedições.
+
 **Interface:** botões, moldura de madeira e moedas vêm do Cryo's Mini GUI. As peças usadas e as margens do 9-slice ficam em
 `scripts/pack-gui.mjs`; `npm run pack:gui` (pack original em `assets-src/cryo`, fora do git) gera `src/assets/gui/`. Sem o atlas,
 a interface volta às formas desenhadas por código. A opção "Animações" das configurações (e `prefers-reduced-motion`) desliga as animações.
