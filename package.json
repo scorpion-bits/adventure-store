@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "build:site": "vite build --mode site",
     "publish:site": "node scripts/publish-site.mjs",
-    "pack:icons": "node scripts/pack-icons.mjs",
+    "pack:itens": "node scripts/pack-itens.mjs",
     "pack:gui": "node scripts/pack-gui.mjs",
     "pack:ninja": "node scripts/pack-ninja.mjs",
     "pack:mapa": "node scripts/pack-mapa.mjs",
