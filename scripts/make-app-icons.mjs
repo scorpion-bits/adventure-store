@@ -1,4 +1,4 @@
-// Gera os ícones do app (PWA/atlas de instalação) a partir do ícone da espada do pack de ícones já empacotado em src/assets/atlas.
+// Gera os ícones do app (PWA/atlas de instalação) a partir do ícone da espada (CC0) já empacotado em src/assets/itens (npm run pack:itens).
 // Uso:  npm run icons:app
 // Saída: public/icons/icon-192.png, icon-512.png, icon-maskable-512.png (arte dentro dos 80% centrais) e apple-touch-icon.png (180).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -6,13 +6,13 @@ import { resolve } from 'node:path';
 import { lerPng, gravarPng } from './lib/png.mjs';
 import { ICONES } from '../src/data/icones.js';
 
-const atlas = JSON.parse(readFileSync(resolve('src/assets/atlas/icones.json'), 'utf8'));
-const folha = lerPng(readFileSync(resolve('src/assets/atlas/icones-64.png')));
+const atlas = JSON.parse(readFileSync(resolve('src/assets/itens/itens.json'), 'utf8'));
+const folha = lerPng(readFileSync(resolve('src/assets/itens/itens.png')));
 const quadro = atlas.quadros[ICONES.espada_ferro];
-if (!quadro) throw new Error('Ícone da espada não está no atlas (rode npm run pack:icons).');
+if (!quadro) throw new Error('Ícone da espada não está no atlas (rode npm run pack:itens).');
 
-// recorta a arte de 64 px (RGBA)
-const ART = 64;
+// recorta a arte de 32 px (RGBA)
+const ART = atlas.tamanho;
 const arte = Buffer.alloc(ART * ART * 4);
 for (let y = 0; y < ART; y++) {
   folha.px.copy(arte, y * ART * 4, ((quadro[1] * ART + y) * folha.w + quadro[0] * ART) * 4, ((quadro[1] * ART + y) * folha.w + quadro[0] * ART + ART) * 4);

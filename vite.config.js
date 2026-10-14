@@ -118,5 +118,7 @@ export default defineConfig(({ mode }) => {
     // no site, fontes e logo vêm de assets/ do próprio site, então não copia a pasta public
     publicDir: site ? false : 'public',
     build: { outDir: site ? 'dist-site' : 'dist' },
+    // as artes originais (centenas de MB, fora do git), as saídas dos testes e as cópias de trabalho não precisam ser vigiadas
+    server: { watch: { ignored: ['**/assets-src/**', '**/tests/out/**', '**/dist/**', '**/dist-site/**', '**/.claude/**'] } },
   };
 });

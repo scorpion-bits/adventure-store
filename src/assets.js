@@ -5,9 +5,6 @@
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { DATA, raridade } from './data/index.js';
 import { FONT_DISPLAY } from './ui/theme.js';
-import ATLAS from './assets/atlas/icones.json';
-import ATLAS_32_URL from './assets/atlas/icones-32.png';
-import ATLAS_64_URL from './assets/atlas/icones-64.png';
 import GUI from './assets/gui/gui.json';
 import GUI_URL from './assets/gui/gui.png';
 import { retratoDe } from './data/retratos.js';
@@ -19,22 +16,18 @@ import MAPA from './assets/mapa/mapa.json';
 import MAPA_URL from './assets/mapa/mapa.png';
 import BATEDORES from './assets/mapa/batedores.json';
 import BATEDORES_URL from './assets/mapa/batedores.png';
-import ITENS_NJ from './assets/itens/itens.json';
-import ITENS_NJ_URL from './assets/itens/itens.png';
+import ITENS from './assets/itens/itens.json';
+import ITENS_URL from './assets/itens/itens.png';
 
 let renderer = null;
 const cache = new Map();
-// Quadros do atlas, por tamanho da arte (32 ou 64 px): nome do quadro (ex.: 'fb123') -> Texture.
-const atlas = { 32: new Map(), 64: new Map() };
 const retratosArte = new Map();       // chave do retrato (ex.: c_Knight) -> Texture (pack Ninja Adventure, 38 px, fundo transparente)
-const itensNinja = new Map();         // quadro 'nj_Pasta_Nome' -> Texture (ícones 16x16 do pack Ninja Adventure, em atlas próprio)
-const emotesArte = new Map();
+const itensArte = new Map();          // quadro do atlas de ícones (cc_..., nj_..., ns_...; veja data/icones.js) -> Texture 32x32, pixel-art de packs CC0
+const emotesArte = new Map();         // número do emote (1 a 30) -> Texture (14x13)
 let mapaArte = null;                  // a imagem do mapa-múndi (pack Ninja, gerada por `npm run pack:mapa`)
-const batedoresArte = new Map();      // `${personagem}:${direcao}:${passo}` -> Texture 16x16         // número do emote (1 a 30) -> Texture (14x13)
+const batedoresArte = new Map();      // `${personagem}:${direcao}:${passo}` -> Texture 16x16
 
-// Qual arte usar: telas de alta densidade (celulares) pedem a de 64 px; as demais, a de 32 px.
-const tamanhoDaArte = () => ((renderer?.resolution ?? 1) >= 1.5 ? 64 : 32);
-const quadroDoAtlas = (nome) => (nome.startsWith('nj_') ? itensNinja.get(nome) : atlas[tamanhoDaArte()].get(nome)) ?? null;
+const quadroDoAtlas = (nome) => itensArte.get(nome) ?? null;
 
 const CAT_COR = {
   armas: 0xb35a4a, armaduras: 0x6d86a8, pocoes: 0x4fae7a, magia: 0x8a6fd0,
@@ -46,12 +39,12 @@ export function initAssets(app) {
   renderer = app.renderer;
 }
 
-// Carrega o atlas de ícones (src/assets/atlas, gerado por `npm run pack:icons`). Se falhar, o jogo segue com os provisórios.
+// Carrega o atlas de ícones (src/assets/itens, gerado por `npm run pack:itens`) e as demais artes. Se falhar, o jogo segue com os provisórios.
 export async function carregarAtlas() {
   try {
-    const [t32, t64, tRet, tEmo, tNj, tMapa, tBat] = await Promise.all([
-      Assets.load(ATLAS_32_URL), Assets.load(ATLAS_64_URL),
-      Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null), Assets.load(ITENS_NJ_URL).catch(() => null),
+    const [tIcones, tRet, tEmo, tMapa, tBat] = await Promise.all([
+      Assets.load(ITENS_URL),
+      Assets.load(RETRATOS_URL).catch(() => null), Assets.load(EMOTES_URL).catch(() => null),
       Assets.load(MAPA_URL).catch(() => null), Assets.load(BATEDORES_URL).catch(() => null),
     ]);
     if (tMapa) { tMapa.source.scaleMode = 'nearest'; mapaArte = tMapa; }
@@ -62,11 +55,8 @@ export async function carregarAtlas() {
         for (let d = 0; d < 4; d++) for (let p = 0; p < 4; p++) batedoresArte.set(`${i}:${d}:${p}`, new Texture({ source: tBat.source, frame: new Rectangle(d * T, i * 4 * T + p * T, T, T) }));
       });
     }
-    if (tNj) {
-      tNj.source.scaleMode = 'nearest';
-      const T = ITENS_NJ.tamanho;
-      for (const [nome, [cx, cy]] of Object.entries(ITENS_NJ.quadros)) itensNinja.set(nome, new Texture({ source: tNj.source, frame: new Rectangle(cx * T, cy * T, T, T) }));
-    }
+    tIcones.source.scaleMode = 'nearest';                   // pixel-art: sem suavizar
+    for (const [nome, [cx, cy]] of Object.entries(ITENS.quadros)) itensArte.set(nome, new Texture({ source: tIcones.source, frame: new Rectangle(cx * ITENS.tamanho, cy * ITENS.tamanho, ITENS.tamanho, ITENS.tamanho) }));
     if (tRet) {
       tRet.source.scaleMode = 'nearest';
       const T = RETRATOS_ATLAS.tamanho;
@@ -76,12 +66,6 @@ export async function carregarAtlas() {
       tEmo.source.scaleMode = 'nearest';
       const { largura: ew, altura: eh } = EMOTES;
       for (const [n, [cx, cy]] of Object.entries(EMOTES.quadros)) emotesArte.set(Number(n), new Texture({ source: tEmo.source, frame: new Rectangle(cx * ew, cy * eh, ew, eh) }));
-    }
-    for (const [tam, tex] of [[32, t32], [64, t64]]) {
-      tex.source.scaleMode = 'nearest';                     // pixel-art: sem suavizar
-      for (const [nome, [cx, cy]] of Object.entries(ATLAS.quadros)) {
-        atlas[tam].set(nome, new Texture({ source: tex.source, frame: new Rectangle(cx * tam, cy * tam, tam, tam) }));
-      }
     }
     cache.clear();
     return true;
@@ -180,7 +164,7 @@ export const retratoDoPack = (advId) => retratosArte.has(retratoDe(advId, [...re
 
 // De onde vem a imagem de um item/material: 'atlas' (arte do pack) ou 'provisorio' (desenhada por código).
 export const origemTextura = (id) => (DATA.icones[id] && quadroDoAtlas(DATA.icones[id]) ? 'atlas' : 'provisorio');
-export const quadrosNoAtlas = () => atlas[32].size;
+export const quadrosNoAtlas = () => itensArte.size;
 
 function placeholder(nome, corBase, corBorda) {
   const c = new Container();

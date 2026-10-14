@@ -6,6 +6,7 @@ test.use({ viewport: VIEWPORTS.portrait });
 const caixa = (page) => page.getByTestId('backup');
 
 test('exportar gera o código, importar num jogo novo traz o progresso e pede confirmação antes de substituir', async ({ page, browser }) => {
+  test.slow();      // abre dois jogos e recarrega um deles: perto do limite de 30 s numa máquina mais lenta
   const errors = await openGame(page);
   await page.evaluate(() => {
     const L = window.__loja;
