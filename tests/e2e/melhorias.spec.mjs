@@ -78,10 +78,12 @@ test.describe('melhorias (retrato)', () => {
     const errors = await openGame(page);
     await page.evaluate(() => { window.__loja.give(5000); window.__loja.addRep(1e6); });
     await abrirMelhorias(page);
-    await page.evaluate(() => window.__loja.scrollTo(1e6));
+    await page.evaluate(() => window.__loja.melhorias.ver('comprar-tema:taverna'));
     await quadros(page);
     await clicar(page, 'comprar-tema:taverna');
     expect(await page.evaluate(() => window.__loja.state().loja.tema)).toBe('taverna');
+    await page.evaluate(() => window.__loja.melhorias.ver('usar:rustico'));
+    await quadros(page);
     await clicar(page, 'usar:rustico');
     expect(await page.evaluate(() => window.__loja.state().loja.tema)).toBe('rustico');
     const p = await page.evaluate(() => window.__loja.tabCenter(0));
