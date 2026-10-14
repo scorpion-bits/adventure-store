@@ -24,6 +24,16 @@ export function comprarMelhoria(game, id) {
   return { ok: true };
 }
 
+// dá a melhoria sem cobrar ouro (recompensa de anúncio); quem chama já conferiu que ela está disponível
+export function concederMelhoria(game, id) {
+  const m = game.data.melhorias[id];
+  if (!m || estadoMelhoria(game, m).estado !== 'disponivel') return { ok: false, motivo: 'indisponivel' };
+  game.state.melhorias[id] = true;
+  recalcularMods(game);
+  game.emit('melhoria', m);
+  return { ok: true };
+}
+
 export const melhoriasDoGrupo = (game, grupo) => game.data.listas.melhorias.filter((m) => m.grupo === grupo);
 
 // ---------- equipe ----------
@@ -49,9 +59,16 @@ export function contratar(game, id) {
 }
 
 // ---------- decoração ----------
+// vale a decoração comprada com ouro ou, nos temas da loja de apoio, o tema comprado por código (que não se perde ao recomeçar)
+export const possuiDecoracao = (game, id) => {
+  const d = game.data.decoracoes[id];
+  return !!game.state.decoracoes[id] || (!!d?.premium && game.apoio.tem(d.premium));
+};
+
 export function comprarDecoracao(game, id) {
   const d = game.data.decoracoes[id];
   if (!d) return { ok: false, motivo: 'inexistente' };
+  if (d.premium) return { ok: false, motivo: 'loja-de-apoio' };      // tema pago: não se compra com ouro
   if (game.state.decoracoes[id]) return { ok: false, motivo: 'ja-comprada' };
   if (game.nivel() < (d.nivelRep ?? 1)) return { ok: false, motivo: 'reputacao', nivel: d.nivelRep };
   if (!game.gastarOuro(d.custo)) return { ok: false, motivo: 'sem-ouro' };
@@ -61,11 +78,15 @@ export function comprarDecoracao(game, id) {
 }
 
 export function usarDecoracao(game, id) {
-  if (!game.state.decoracoes[id]) return { ok: false, motivo: 'nao-comprada' };
+  if (!possuiDecoracao(game, id)) return { ok: false, motivo: 'nao-comprada' };
   game.state.loja.tema = id;
   recalcularMods(game);
   game.emit('decoracao', game.data.decoracoes[id]);
   return { ok: true };
 }
 
-export const temaAtual = (game) => game.data.decoracoes[game.state.loja.tema] ?? game.data.decoracoes.rustico;
+// o tema em uso; se for um tema pago que o jogador não tem (ex.: o código foi removido), volta ao rústico
+export const temaAtual = (game) => {
+  const d = game.data.decoracoes[game.state.loja.tema];
+  return d && (!d.premium || possuiDecoracao(game, d.id)) ? d : game.data.decoracoes.rustico;
+};

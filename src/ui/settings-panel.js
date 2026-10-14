@@ -47,7 +47,7 @@ function volumeRow(w, label, key, after) {
   return row;
 }
 
-export function settingsContent(scroll, w, { onReset, onTutorial, onBackup } = {}) {
+export function settingsContent(scroll, w, { onReset, onTutorial, onBackup, onApoio, apoiador = false } = {}) {
   scroll.add(toggleRow(w, 'Efeitos sonoros', 'sound', () => applyVolume()), ROW_H);
   scroll.add(volumeRow(w, 'Volume dos efeitos', 'volume', () => applyVolume()), ROW_H);
   if (hasMusic()) {
@@ -67,6 +67,12 @@ export function settingsContent(scroll, w, { onReset, onTutorial, onBackup } = {
       const dica = para('Para instalar no iPhone ou iPad: toque em Compartilhar e depois em "Adicionar à Tela de Início".', C.dim, 13, w);
       scroll.add(dica, dica.height + 6);
     }
+  }
+
+  if (onApoio) {
+    const ap = labelButton('Apoie o jogo ♥', w, 48, { tint: C.gold });
+    ap.tap(onApoio);
+    scroll.add(ap, 48);
   }
 
   if (onBackup) {
@@ -96,7 +102,7 @@ export function settingsContent(scroll, w, { onReset, onTutorial, onBackup } = {
   }
 
   const about = new Container();
-  const t = txt(`Loja do Aventureiro · Scorpion Bits · v${__APP_VERSION__}`, C.faint, 12);
+  const t = txt(`Loja do Aventureiro · Scorpion Bits · v${__APP_VERSION__}${apoiador ? ' · apoiador ♥' : ''}`, C.faint, 12);
   t.position.set(2, 4);
   about.addChild(t);
   scroll.add(about, 24);

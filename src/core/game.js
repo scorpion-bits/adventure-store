@@ -13,11 +13,12 @@ import { concluirCapitulo } from './legend-story.js';
 import { registrarDia, bonusEspecial } from './daily.js';
 import { ligarConquistas } from './achievements.js';
 import { modsBase, recalcularMods } from './mods.js';
+import { semApoio } from './apoio.js';
 
 // número do dia de jogo (1 no primeiro dia), contado em dias de calendário
 export const diaDeJogo = (state) => daysBetween(dayKey(state.criadoEm), state.dia.data) + 1;
 
-export function createGame({ state, data = DATA, clock = createClock(), rng = createRng() }) {
+export function createGame({ state, data = DATA, clock = createClock(), rng = createRng(), apoio = semApoio() }) {
   const handlers = new Map();
 
   // clientes que estavam na fila ao fechar o jogo voltam com a paciência cheia (e os de aventureiros que não existem mais somem)
@@ -26,6 +27,7 @@ export function createGame({ state, data = DATA, clock = createClock(), rng = cr
 
   const game = {
     state, data, clock, rng,
+    apoio,       // o que o jogador comprou na loja de apoio (core/apoio.js): temas e "sem anúncios"
     // modificadores vindos das melhorias, equipe, decoração... (recalculados por quem os concede; ver M5)
     mods: modsBase(),
 

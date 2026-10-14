@@ -9,7 +9,7 @@
 | --- | --- |
 | Repositório | Estou em `scorpion-bits/adventure-store` (branch `claude/clever-pasteur-n42qo5`), vazio. Mantenho este repo; o nome só importa na publicação (`/loja/`). |
 | `idle-game-scorpion` | Li `ui.js`, `theme.js`, `anim.js`, `sfx.js`, `music.js`, `settings.js`, `pixi-global.js`, `vite.config.js` (modo `site` com `window.PIXI`), `publish-site.mjs`, workflow do Pages e o `balance-sim.mjs`. Dá para portar quase tudo. O `main.js` (3.400 linhas) **não** será copiado: lá estado, lógica e UI estão misturados; aqui a lógica fica separada da UI. |
-| Pack de ícones | *Raven Fantasy Icons* (Clockwork Raven Studios): **2.192 ícones**, folhas de 16 colunas em 16/32/64 px, mais PNGs separados. Cobre armas, armaduras, escudos, elmos, botas, anéis/colares, poções, comida (pratos, frutas, carnes), gemas, minérios/barras, ervas, pergaminhos, livros, chaves, ferramentas, ícones de habilidades/efeitos e algumas construções. **Não tem** personagens, rostos nem cenário. |
+| Pack de ícones (histórico: já foi trocado pelos packs CC0, veja o CREDITS.md) | *Raven Fantasy Icons* (Clockwork Raven Studios): **2.192 ícones**, folhas de 16 colunas em 16/32/64 px, mais PNGs separados. Cobre armas, armaduras, escudos, elmos, botas, anéis/colares, poções, comida (pratos, frutas, carnes), gemas, minérios/barras, ervas, pergaminhos, livros, chaves, ferramentas, ícones de habilidades/efeitos e algumas construções. **Não tem** personagens, rostos nem cenário. |
 | Ferramentas | Node 22, Chromium + Playwright já instalados no container. |
 
 ## 1. Pontos que precisam da sua decisão (tenho um padrão para cada)
@@ -58,7 +58,7 @@ index.html  vite.config.js  .env.site  package.json
 scripts/
   balance-sim.mjs        simulador headless (usa só src/core + src/data)
   validate-data.mjs      confere referências, mínimos de conteúdo, ids duplicados
-  pack-icons.mjs         empacota o pack em atlas + gera mapa de ícones
+  pack-itens.mjs         empacota os ícones CC0 (cc0/Ninja) em atlas
   publish-site.mjs       build:site → <site>/loja/
 src/
   main.js                bootstrap Pixi, loop, layout

@@ -14,7 +14,7 @@ const TOTAIS = {
   oficios: (g) => g.data.meta.oficios.length,
   oficioNivel: (g) => g.data.meta.oficina.nivelMax,
   equipe: (g) => g.data.listas.equipe.length,
-  decoracoes: (g) => g.data.listas.decoracoes.length,
+  decoracoes: (g) => g.data.listas.decoracoes.filter((d) => !d.premium).length,      // os temas da loja de apoio não contam: só se ganha o que o jogo dá
   capitulos: (g) => soma(g.data.listas.lendarios.map((l) => l.capitulos.length)),
   eventos: (g) => g.data.listas.eventos.length,
   regioes: (g) => g.data.listas.regioes.length,
