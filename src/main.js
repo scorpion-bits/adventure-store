@@ -10,6 +10,8 @@ import { createModal } from './ui/modal.js';
 import { createToasts } from './ui/toast.js';
 import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
+import { abrirApoio } from './ui/apoio-dialog.js';
+import { criarApoio } from './core/apoio.js';
 import { abrirBackup } from './ui/backup-dialog.js';
 import { createDestaque } from './ui/destaque.js';
 import { unlockAudio, getAudioContext, sfx } from './audio/sfx.js';
@@ -74,7 +76,9 @@ async function start() {
   const clock = hoje ? createClock(new Date(`${hoje}T12:00:00`).getTime(), { correr: true }) : createClock();
   // jogo novo com data fixa: o dia de início e a sequência já nascem nessa data
   if (hoje && origem !== 'carregado') { state.criadoEm = clock.now(); state.dia.data = dayKey(clock.now()); }
-  const game = createGame({ state, clock });
+  const apoio = criarApoio({ storage });
+  apoio.reconferir();          // confere de novo os códigos guardados, em segundo plano
+  const game = createGame({ state, clock, apoio });
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) { game.state.tutorial.feito = true; for (const a of ABAS_COM_TUTORIAL) game.state.tutorial.abas[a] = true; }
   // em desenvolvimento, ?semconquistas desliga os prêmios de conquista (os testes contam o ouro exato)
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semconquistas')) game.semConquistas = true;
@@ -124,7 +128,7 @@ async function start() {
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  screens = createScreens({ toast: toasts.show, game, modal, ir: irPara, alvoOuro: () => topbar.ouroCentro(), pulsarOuro: () => topbar.pulsar() });
+  screens = createScreens({ toast: toasts.show, game, modal, abrirApoio: () => abrirJanelaApoio(), ir: irPara, alvoOuro: () => topbar.ouroCentro(), pulsarOuro: () => topbar.pulsar() });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
@@ -164,11 +168,16 @@ async function start() {
     return abrirBackup({ getState: () => game.state, onImportar: substituirProgresso });
   }
 
+  function abrirJanelaApoio() {
+    guardar();
+    return abrirApoio({ game, toast: (t, c) => toasts.show(t, c) });
+  }
+
   function openSettings() {
     sfx.tap();
     modal.open({
       title: 'Configurações',
-      build: (scroll, w) => settingsContent(scroll, w, { onReset: apagarProgresso, onBackup: () => { modal.close(); abrirJanelaBackup(); }, onTutorial: () => { modal.close(); tutorial.reiniciar(); tutorial.abaAtual(TABS[active].id); } }),
+      build: (scroll, w) => settingsContent(scroll, w, { apoiador: apoio.apoiador(), onReset: apagarProgresso, onApoio: () => { modal.close(); abrirJanelaApoio(); }, onBackup: () => { modal.close(); abrirJanelaBackup(); }, onTutorial: () => { modal.close(); tutorial.reiniciar(); tutorial.abaAtual(TABS[active].id); } }),
     });
   }
 
@@ -289,6 +298,8 @@ async function start() {
       gearCenter: () => topbar.gearCenter(),
       openSettings,
       abrirBackup: abrirJanelaBackup,
+      abrirApoio: abrirJanelaApoio,
+      apoio,
       closeModal: () => modal.close(),
       modalOpen: () => modal.isOpen(),
       toast: (text) => toasts.show(text),

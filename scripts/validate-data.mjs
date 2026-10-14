@@ -244,6 +244,20 @@ export function validar(data = DATA) {
     exige(atlasRetratos.quadros[chave], `data/retratos.js: o retrato "${chave}" (${id}) não está no atlas: rode npm run pack:ninja`);
   }
 
+  // loja de apoio: cada produto é válido, os temas apontam para decorações pagas e os pacotes só incluem produtos que existem
+  const prods = data.apoio.produtos;
+  exige(data.apoio.pix.chave && data.apoio.chavePublica?.kty === 'EC' && data.apoio.chavePublica?.crv === 'P-256', 'data/apoio.js: faltam a chave Pix e a chave pública (EC P-256)');
+  for (const p of data.apoio.lista) {
+    exige(p.preco > 0, `apoio ${p.id}: preço inválido`);
+    exige(['sem_anuncios', 'tema', 'pacote'].includes(p.tipo), `apoio ${p.id}: tipo "${p.tipo}" desconhecido`);
+    if (p.tipo === 'tema') exige(data.decoracoes[p.decoracao]?.premium === p.id, `apoio ${p.id}: a decoração "${p.decoracao}" precisa existir com premium: '${p.id}'`);
+    if (p.tipo === 'pacote') for (const i of p.inclui ?? []) exige(prods[i] && prods[i].tipo !== 'pacote', `apoio ${p.id}: inclui "${i}", que não é um produto simples`);
+  }
+  for (const d of listas.decoracoes.filter((x) => x.premium)) {
+    exige(prods[d.premium]?.decoracao === d.id, `decoração ${d.id}: o produto "${d.premium}" não existe em data/apoio.js`);
+    exige((d.efeitos ?? []).length === 0 && d.custo === 0, `decoração ${d.id}: tema pago só muda a aparência (sem efeitos e sem custo em ouro)`);
+  }
+
   // ---------- metas de conteúdo ----------
   const m = meta.metas;
   const contagens = {

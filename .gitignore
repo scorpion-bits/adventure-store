@@ -6,3 +6,4 @@ tests/out
 # packs de arte originais (licença: não redistribuir); só o atlas gerado entra no git
 assets-src/
 .DS_Store
+segredos/

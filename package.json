@@ -11,6 +11,8 @@
     "publish:site": "node scripts/publish-site.mjs",
     "pack:icons": "node scripts/pack-icons.mjs",
     "pack:gui": "node scripts/pack-gui.mjs",
+    "apoio:chaves": "node scripts/apoio-chaves.mjs",
+    "apoio:codigo": "node scripts/emitir-codigo.mjs",
     "pack:ninja": "node scripts/pack-ninja.mjs",
     "pack:mapa": "node scripts/pack-mapa.mjs",
     "icons:app": "node scripts/make-app-icons.mjs",

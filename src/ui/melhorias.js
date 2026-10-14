@@ -5,7 +5,7 @@ import { C, txt, para, drawCard, createScroll, labelButton, wasDragged, retangul
 import { descreverEfeito } from '../core/mods.js';
 import {
   comprarMelhoria, estadoMelhoria, melhoriasDoGrupo, contratar, proximoNivel, nivelFuncionario,
-  comprarDecoracao, usarDecoracao,
+  comprarDecoracao, usarDecoracao, possuiDecoracao,
 } from '../core/upgrades.js';
 import { progressoConquista, ganha, totalGanhas } from '../core/achievements.js';
 import {
@@ -27,7 +27,7 @@ const MOTIVOS = {
   'ja-comprada': 'Você já tem esta melhoria',
 };
 
-export function createMelhoriasScreen({ game, toast, modal }) {
+export function createMelhoriasScreen({ game, toast, modal, abrirApoio }) {
   const root = new Container();
   const scroll = createScroll(300);
   root.addChild(scroll.root);
@@ -132,7 +132,7 @@ export function createMelhoriasScreen({ game, toast, modal }) {
 
   // ---------- decoração ----------
   function cartaoDecoracao(w, d) {
-    const dono = !!game.state.decoracoes[d.id];
+    const dono = possuiDecoracao(game, d.id);
     const emUso = game.state.loja.tema === d.id;
     const c = new Container();
     const bg = new Graphics();
@@ -159,7 +159,12 @@ export function createMelhoriasScreen({ game, toast, modal }) {
       y += t.height + 1;
     }
     const nivelOk = game.nivel() >= (d.nivelRep ?? 1);
-    if (!dono && !nivelOk) {
+    if (!dono && d.premium) {
+      const t = txt('Tema da loja de apoio', C.info, 11, true);
+      t.position.set(76, y + 2);
+      c.addChild(t);
+      y += t.height + 2;
+    } else if (!dono && !nivelOk) {
       const t = txt(`Reputação ${d.nivelRep}`, C.warn, 11);
       t.position.set(76, y + 2);
       c.addChild(t);
@@ -176,6 +181,13 @@ export function createMelhoriasScreen({ game, toast, modal }) {
       b.tap(() => { usarDecoracao(game, d.id); sfx.tap(); });
       c.addChild(b);
       reg(`usar:${d.id}`, b, bw, 40);
+    } else if (d.premium) {
+      // tema da loja de apoio: não se compra com ouro
+      const b = labelButton('Loja de apoio', bw, 40, { tint: C.info, size: 12 });
+      b.position.set(w - bw - 12, 12);
+      b.tap(() => { sfx.tap(); abrirApoio?.(); });
+      c.addChild(b);
+      reg(`apoio-tema:${d.id}`, b, bw, 40);
     } else {
       const pode = nivelOk && game.state.ouro >= d.custo;
       const b = labelButton(`${fmt(d.custo)}`, bw, 40, { tint: pode ? C.gold : C.dim, size: 14 });
