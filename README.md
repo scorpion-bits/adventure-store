@@ -6,7 +6,7 @@ para celular em pé (toque), em pt-BR. Feito com [PixiJS 8](https://pixijs.com/)
 
 > Estado atual: **mini-jogo de memória** (Mercado → Mini-jogo, ganha um pouco de material), estoque dos fornecedores a cada 3 h com compra urgente, mais batedores cedo e filtro de receitas na Oficina. Antes, M12 (balanceamento): simulador `npm run sim`, reputação que não cai de nível, ritmo de ~2 semanas até a primeira expansão. Antes, M11 (arte e polimento): botões e molduras em pixel-art, "+ouro" nas vendas, opção de reduzir animações. Antes: M10, prestígio: "Expandir para uma nova cidade" com Herança e 12 bônus permanentes. Antes: M9, conquistas e coleção. Já tem retenção (encomendas e especial do dia, sequência com perdão, baú semanal, eventos sazonais),
 > 106 conquistas com prêmio e a Coleção (enciclopédia de itens e de aventureiros). Conteúdo: 30 aventureiros (cada um com o seu retrato do pack: humanos, orcs, sapos, slimes, golens...) em 8 classes e 6 regiões, 10 lendários com 33 capítulos, 38 eventos
-> aleatórios, mapa com expedições, 198 itens, 175 receitas, 68 materiais, 15 fornecedores, ícones do pack e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
+> aleatórios, mapa com expedições, 198 itens, 175 receitas, 68 materiais, 15 fornecedores, ícones CC0 e 21 melhorias por ofício. Há topo, cinco abas, configurações, sons, layout responsivo,
 > save com migração, dados e validador, e a **Loja** funcionando: fila de clientes, pedidos, três preços,
 > temperamentos e reputação, e o **Mercado**: fornecedores com preço e estoque do dia e o depósito de materiais.
 > A **Oficina** produz em tempo real (continua com o jogo fechado). **Melhorias**: ampliar, prateleiras, balcão, decoração, equipe
@@ -77,16 +77,7 @@ meta `'todos'` acompanha o conteúdo que você acrescentar.
 
 Os números de balanceamento (preços, qualidades, temperamentos, reputação) ficam em `src/data/meta.js`.
 
-**Ícones:** cada item/material aponta para um ícone do pack em `src/data/icones.js` (`id: 'fbNN'`, onde NN é o
-número do ícone). Depois de mudar essa lista, rode `npm run pack:icons` (com o pack original em `assets-src/raven`,
-fora do git): ele gera o atlas pequeno em `src/assets/atlas/`, que é o que vai para o repositório e para o jogo.
-
-**Retratos dos aventureiros:** vêm do pack "Ninja Adventure" (Pixel-boy e AAA, CC0, 38×38). São ~150 personagens (humanos, criaturas, animais
-e chefes). O mapa aventureiro → retrato fica em `src/data/retratos.js` (a chave é a pasta do pack: `c_Knight`, `m_Slime`, `b_DragonBlue`, `a_Cat`; o mesmo
-retrato pode servir a mais de um aventureiro); `npm run pack:ninja` (pack original em `assets-src/ninja`, fora do git) **tira o fundo** dos retratos e gera
-o atlas em `src/assets/retratos/`; o mesmo comando gera os emotes das reações em `src/assets/emotes/`. Os retratos aparecem em múltiplos inteiros (76, 114, 152 px). Aventureiro novo sem retrato recebe um do pack, sempre o mesmo para o mesmo id; não existem retratos desenhados por código.
-
-**Itens do pack Ninja:** ~86 itens do catálogo (armas ninja, comidas, sementes, dados, baús, gemas lapidadas, cartas...) usam ícones 16×16 do Ninja Adventure, só os que não repetiam algo que o jogo já tinha. No `src/data/icones.js` o quadro se chama `nj_<Pasta>_<Nome>` (ex.: `nj_Weapons_Katana`); `npm run pack:ninja` gera o atlas em `src/assets/itens/`. Parte tem receita (oficina) e parte vem de dois fornecedores novos da vila, a Sementeira do Vale e o Correio do Vale.
+**Ícones:** cada item/material aponta para um quadro do atlas de ícones em `src/data/icones.js`. Todos os ícones vêm de packs de licença livre **CC0** (nada de licença que proíba anúncios ou venda; veja o `CREDITS.md`): `cc_<pacote>__<caminho>` é um PNG 32×32 dos packs do OpenGameArt (Idylwild, 7Soul1, OpenClipart/AntumDeluge e outros) baixados em `assets-src/cc0/pacotes/`; `nj_<Pasta>_<Nome>` é um ícone 16×16 do Ninja Adventure (ampliado 2× no atlas, pixel exato) e `ns_<Categoria>_<Nome>` o primeiro quadro de um personagem ou monstro dele. Um `~H+60`, `~V0.7` ou `~T1,0.5,0.4` no fim do nome faz uma variante da mesma arte (matiz, brilho, cor), como o cogumelo azul. Depois de mudar `icones.js`, rode `npm run pack:itens` (com `assets-src/ninja` e `assets-src/cc0/pacotes`, fora do git): ele gera o atlas `src/assets/itens/`, que é o que vai para o repositório e para o jogo. Um teste confere que todo ícone vem de um pacote registrado no `CREDITS.md`. Os itens que estão no jogo desde o começo e os do pack Ninja (armas ninja, comidas, sementes, dados, baús, gemas lapidadas, cartas) usam o mesmo atlas; parte tem receita (oficina) e parte vem de dois fornecedores da vila, a Sementeira do Vale e o Correio do Vale.
 
 **Níveis dos itens e materiais regionais:** o `nivelRep` de um item é a reputação em que os clientes passam a pedi-lo, então ele precisa
 ser possível de fazer nessa reputação. A regra (conferida por `tests/unit/crafts.test.mjs`): para todo item com receita, `nivelRep` >= a reputação em que o
@@ -192,7 +183,7 @@ O jogo (tanto a versão da página do repositório, `npm run build`, em `scorpio
 
 Como funciona: `public/manifest.webmanifest` descreve o app (nome, cores, tela cheia, ícones); o plugin `scripts/pwa-plugin.mjs` gera `dist/sw.js` no build,
 um service worker que guarda o jogo inteiro na primeira visita. Quando sai uma versão nova, o app avisa para fechar e abrir de novo. O save continua no
-`localStorage` do aparelho. Os ícones (uma espada do pack Raven sobre madeira escura) saem de `npm run icons:app`.
+`localStorage` do aparelho. Os ícones (uma espada CC0 sobre madeira escura) saem de `npm run icons:app`.
 A versão do site (`npm run build:site`, publicada em `scorpionbits.com/loja/`) também é instalável e offline: o service worker dela (escopo `/loja/`)
 guarda, além do jogo, o PixiJS, as fontes e o logo que vêm de `/assets/` do site.
 `npm run test:pwa` confere, nas duas versões, manifesto, ícones, instalação do service worker e abertura offline (a versão do site é testada numa cópia
