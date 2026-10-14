@@ -24,6 +24,16 @@ export function comprarMelhoria(game, id) {
   return { ok: true };
 }
 
+// dá a melhoria sem cobrar ouro (recompensa de anúncio); quem chama já conferiu que ela está disponível
+export function concederMelhoria(game, id) {
+  const m = game.data.melhorias[id];
+  if (!m || estadoMelhoria(game, m).estado !== 'disponivel') return { ok: false, motivo: 'indisponivel' };
+  game.state.melhorias[id] = true;
+  recalcularMods(game);
+  game.emit('melhoria', m);
+  return { ok: true };
+}
+
 export const melhoriasDoGrupo = (game, grupo) => game.data.listas.melhorias.filter((m) => m.grupo === grupo);
 
 // ---------- equipe ----------

@@ -11,7 +11,9 @@ import { createToasts } from './ui/toast.js';
 import { createScreens } from './ui/screens.js';
 import { settingsContent } from './ui/settings-panel.js';
 import { abrirApoio } from './ui/apoio-dialog.js';
+import { assistirAnuncio } from './ui/anuncio-dialog.js';
 import { criarApoio } from './core/apoio.js';
+import { ofertaAtual } from './core/anuncios.js';
 import { abrirBackup } from './ui/backup-dialog.js';
 import { createDestaque } from './ui/destaque.js';
 import { unlockAudio, getAudioContext, sfx } from './audio/sfx.js';
@@ -79,6 +81,13 @@ async function start() {
   const apoio = criarApoio({ storage });
   apoio.reconferir();          // confere de novo os códigos guardados, em segundo plano
   const game = createGame({ state, clock, apoio });
+  // quem comprou "Sem anúncios": a página (o site) pode esconder os próprios anúncios com [data-sem-anuncios="true"] ou ouvindo o evento
+  const avisarApoio = () => {
+    document.documentElement.dataset.semAnuncios = apoio.semAnuncios() ? 'true' : 'false';
+    window.dispatchEvent(new CustomEvent('scorpionbits:apoio', { detail: { semAnuncios: apoio.semAnuncios(), produtos: apoio.produtos() } }));
+  };
+  apoio.aoMudar(avisarApoio);
+  avisarApoio();
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semtutorial')) { game.state.tutorial.feito = true; for (const a of ABAS_COM_TUTORIAL) game.state.tutorial.abas[a] = true; }
   // em desenvolvimento, ?semconquistas desliga os prêmios de conquista (os testes contam o ouro exato)
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('semconquistas')) game.semConquistas = true;
@@ -128,7 +137,7 @@ async function start() {
   app.stage.addChild(modal.root);
   const eventos = createEventos({ game, modal, toast: toasts.show });
   const lendas = createLendas({ game, modal, toast: toasts.show });
-  screens = createScreens({ toast: toasts.show, game, modal, abrirApoio: () => abrirJanelaApoio(), ir: irPara, alvoOuro: () => topbar.ouroCentro(), pulsarOuro: () => topbar.pulsar() });
+  screens = createScreens({ toast: toasts.show, game, modal, abrirApoio: () => abrirJanelaApoio(), assistirAnuncio: () => assistirAnuncio({ game, toast: (t, c) => toasts.show(t, c) }), ir: irPara, alvoOuro: () => topbar.ouroCentro(), pulsarOuro: () => topbar.pulsar() });
   screens.forEach((s) => { s.root.visible = false; screensLayer.addChild(s.root); });
 
   let active = 0;
@@ -300,6 +309,7 @@ async function start() {
       abrirBackup: abrirJanelaBackup,
       abrirApoio: abrirJanelaApoio,
       apoio,
+      anuncios: { oferta: () => ofertaAtual(game)?.id ?? null, duracao: (s) => { game.data.anuncios.oferta.duracaoS = s; } },
       closeModal: () => modal.close(),
       modalOpen: () => modal.isOpen(),
       toast: (text) => toasts.show(text),

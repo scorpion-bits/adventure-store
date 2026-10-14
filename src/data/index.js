@@ -18,6 +18,7 @@ import { HERANCA, CIDADES } from './heranca.js';
 import { RETRATOS } from './retratos.js';
 import { ICONES } from './icones.js';
 import { APOIO } from './apoio.js';
+import { ANUNCIOS } from './anuncios.js';
 
 const indexar = (lista) => Object.fromEntries(lista.map((x) => [x.id, x]));
 
@@ -41,6 +42,7 @@ export const DATA = {
   diario: DIARIO,
   semanal: SEMANAL,
   icones: ICONES,
+  anuncios: ANUNCIOS,
   apoio: { ...APOIO, produtos: indexar(APOIO.produtos), lista: APOIO.produtos },
   retratos: RETRATOS,
   // listas na ordem em que foram escritas (para sorteios e telas)

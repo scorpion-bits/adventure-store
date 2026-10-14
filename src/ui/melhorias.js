@@ -8,6 +8,7 @@ import {
   comprarDecoracao, usarDecoracao, possuiDecoracao,
 } from '../core/upgrades.js';
 import { progressoConquista, ganha, totalGanhas } from '../core/achievements.js';
+import { ofertaAtual, resgatarOferta } from '../core/anuncios.js';
 import {
   estadoExpansao, expandir, comprarHeranca, nivelHeranca, custoHeranca, nomeDaCidade, ouroDestaCidade,
 } from '../core/prestige.js';
@@ -27,7 +28,7 @@ const MOTIVOS = {
   'ja-comprada': 'Você já tem esta melhoria',
 };
 
-export function createMelhoriasScreen({ game, toast, modal, abrirApoio }) {
+export function createMelhoriasScreen({ game, toast, modal, abrirApoio, assistirAnuncio }) {
   const root = new Container();
   const scroll = createScroll(300);
   root.addChild(scroll.root);
@@ -39,7 +40,8 @@ export function createMelhoriasScreen({ game, toast, modal, abrirApoio }) {
   let quadros = 0;
   const refs = {};
   const marcar = () => { dirty = true; };
-  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao', 'conquista', 'heranca', 'expandiu']) game.on(ev, marcar);
+  for (const ev of ['ouro', 'rep', 'melhoria', 'equipe', 'decoracao', 'conquista', 'heranca', 'expandiu', 'anuncio', 'apoio']) game.on(ev, marcar);
+  game.apoio.aoMudar(marcar);          // comprou/ativou algo na loja de apoio: o cartão da oferta e os temas mudam
   game.on('melhoria', (m) => toast(`${m.nome} comprada!`, C.accent));
   game.on('equipe', ({ id, nivel }) => toast(`${game.data.equipe[id].nome}: nível ${nivel}`, C.accent));
 
@@ -128,6 +130,41 @@ export function createMelhoriasScreen({ game, toast, modal, abrirApoio }) {
       .map((m, i) => ({ m, i, e: estadoMelhoria(game, m).estado }))
       .sort((a, b) => ORDEM[a.e] - ORDEM[b.e] || a.i - b.i);
     return lista.map(({ m }) => cartaoMelhoria(w, m));
+  }
+
+  // ---------- oferta "assista e leve de graça" ----------
+  function cartaoOferta(w, m) {
+    const gratis = game.apoio.semAnuncios();        // quem comprou "Sem anúncios" leva sem assistir
+    const c = new Container();
+    const bg = new Graphics();
+    const tag = txt('OFERTA', C.gold, 11, true);
+    tag.position.set(14, 10);
+    const nome = txt(m.nome, C.text, 15, true);
+    nome.position.set(14, tag.y + tag.height + 1);
+    const tw = w - 28;
+    const desc = para(m.desc, C.dim, 12, tw);
+    desc.position.set(14, nome.y + nome.height + 1);
+    const como = para(gratis ? `Leve de graça (custaria ${fmt(m.custo)} de ouro). Obrigado por apoiar o jogo!` : `Assista a um anúncio e leve de graça (custaria ${fmt(m.custo)} de ouro).`, C.accent, 12, tw, { bold: true });
+    como.position.set(14, desc.y + desc.height + 4);
+    c.addChild(bg, tag, nome, desc, como);
+    const b = labelButton(gratis ? 'Resgatar de graça' : `Assistir ao anúncio (${game.data.anuncios.oferta.duracaoS} s)`, w - 28, 44, { tint: C.gold, size: 14 });
+    b.position.set(14, como.y + como.height + 8);
+    let ocupado = false;
+    b.tap(async () => {
+      if (ocupado) return;
+      ocupado = true;
+      sfx.tap();
+      const ok = game.apoio.semAnuncios() ? true : await (assistirAnuncio?.() ?? Promise.resolve(false));
+      ocupado = false;
+      if (!ok) return;
+      const r = resgatarOferta(game);
+      if (r.ok) { sfx.levelUp(); toast(`${r.melhoria.nome}: de graça!`, C.gold); } else { sfx.deny(); toast('Essa oferta não está mais disponível.', C.bad); }
+    });
+    c.addChild(b);
+    reg('oferta-anuncio', b, w - 28, 44);
+    const h = b.y + 44 + 12;
+    drawCard(bg, w, h, { fill: C.cardHi, accent: C.gold });
+    return { c, h };
   }
 
   // ---------- decoração ----------
@@ -513,6 +550,8 @@ export function createMelhoriasScreen({ game, toast, modal, abrirApoio }) {
 
     add(barraSub(w));
     if (sub === 'loja') {
+      const oferta = ofertaAtual(game);
+      if (oferta) add(cartaoOferta(w, oferta));
       add(secao('Melhorias da loja'));
       listaMelhorias(w, 'loja').forEach(add);
       add(secao('Decoração'));
